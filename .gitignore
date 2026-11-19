@@ -4,3 +4,20 @@
 !.env.example
 __pycache__/
 *.pyc
+
+# 本机模型凭据、用户档案、市场数据库及运行产物
+/secrets/
+/credentials/
+/user/
+/data/
+/cache/
+/runtime/
+/logs/
+/.venv/
+node_modules/
+*.sqlite
+*.sqlite3
+*.sqlite-wal
+*.sqlite-shm
+*.pem
+*.key

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>local.chives.git-sync</string>
+	<key>ProcessType</key>
+	<string>Background</string>
+	<key>ProgramArguments</key>
+	<array>
+		<string>/bin/bash</string>
+		<string>/Users/xiong/.agents/scripts/chives-autosync.sh</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>StandardErrorPath</key>
+	<string>/Users/xiong/.agents/state/chives-autosync/stderr.log</string>
+	<key>StandardOutPath</key>
+	<string>/Users/xiong/.agents/state/chives-autosync/stdout.log</string>
+	<key>StartInterval</key>
+	<integer>60</integer>
+</dict>
+</plist>
