@@ -20,3 +20,5 @@ launchctl print "gui/$(id -u)/local.chives.git-sync"
 ```
 
 最近推送结果与错误可在 `~/.agents/state/chives-autosync/stderr.log` 查看。修改同步脚本后，将新副本复制到上述共享脚本路径。
+
+如需临时暂停自动提交，执行 `launchctl bootout "gui/$(id -u)/local.chives.git-sync"`。重新加载启动项后，期间积累的开发改动会在下一次检查时同步。
