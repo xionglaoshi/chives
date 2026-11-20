@@ -1,0 +1,30 @@
+# T65 trading guard: every order-like tool must pass a one-shot approval.
+# Native Cordis plugin on the `tools/pre-execute` waterfall (no core changes).
+# - paper_* order tools -> ask (approval service; without an answerer the call fails closed)
+# - any non-paper order tool -> never (deny)
+# - paper_get_account / paper_list_orders / paper_verify_ledger -> unrestricted
+- insert:
+    - id: fin-trading-guard
+      name: /Users/xiong/.chives/overlays/trading-guard.plugin.mjs
+      config:
+        paperPrefix: paper_
+        nonPaperPolicy: never
+        readOnlyTools:
+          - paper_get_account
+          - paper_list_orders
+          - paper_verify_ledger
+        orderWords:
+          - place_order
+          - submit_order
+          - create_order
+          - cancel_order
+          - transfer
+        askPatterns:
+          - '*place_order*'
+          - '*submit_order*'
+          - '*create_order*'
+          - '*cancel_order*'
+          - '*transfer*'
+          - paper_place_order
+        askReason: simulated paper order requires one-shot human approval
+        denyReason: 'trading-guard: non-paper order tools are never allowed'

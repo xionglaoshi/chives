@@ -1,0 +1,6 @@
+.expert-assets { margin-block: 1rem; }
+.expert-assets summary { cursor: pointer; font-weight: 550; }
+.expert-assets fieldset { margin: .8rem 0; border: 1px solid var(--border, #aaa6); border-radius: .5rem; }
+.expert-assets fieldset label { display: inline-flex; align-items: center; gap: .35em; padding: .25em .55em; font-size: .88em; overflow-wrap: anywhere; }
+.expert-assets > label { display: block; margin-block: .7rem; }
+.expert-assets textarea { display: block; margin-top: .35rem; padding: .55rem; width: 100%; min-height: 5rem; color: inherit; background: transparent; border: 1px solid var(--border,#aaa6); border-radius: .4rem; }

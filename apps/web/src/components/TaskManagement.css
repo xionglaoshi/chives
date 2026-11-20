@@ -1,0 +1,15 @@
+.routine-manager__header,.routine-manager__controls,.routine-manager__list li{display:flex;align-items:center;gap:12px}
+.routine-manager__header{justify-content:space-between;padding:8px 2px 16px}
+.routine-manager__header h3{margin:0}
+.routine-manager__header p{font-size:13px;margin:4px 0 0}
+.routine-manager__list{border:1px solid var(--desk-line);border-radius:12px;list-style:none;margin:0;padding:0;overflow:hidden}
+.routine-manager__list li{padding:16px}
+.routine-manager__list li+li{border-top:1px solid var(--desk-line)}
+.routine-manager__task{flex:1;min-width:0;overflow-wrap:anywhere}
+.routine-manager__meta{display:flex;align-items:baseline;flex-wrap:wrap;gap:2px 12px;margin-top:4px;font-size:13px;color:var(--color-text-muted)}
+.desk-settings .routine-manager__meta button{min-height:0;padding:0;font-size:inherit;border:0;background:none;color:inherit}
+.desk-settings .routine-manager__meta button:hover{text-decoration:underline}
+.routine-manager__advanced{margin-block-start:24px;border-top:1px solid var(--desk-line);padding-top:16px}
+.routine-manager__advanced summary{cursor:pointer}.routine-manager__advanced .routine-manager__header{margin-top:12px}
+.routine-manager__note{font-size:13px}
+@media(max-width:600px){.routine-manager__list li{padding:12px 8px;gap:8px}.routine-manager__controls{flex-wrap:wrap;justify-content:flex-end}}

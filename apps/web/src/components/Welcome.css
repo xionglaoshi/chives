@@ -1,0 +1,105 @@
+.welcome {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  min-height: 0;
+  padding: calc(var(--chat-header-height, 64px) + var(--space-10)) var(--space-14) var(--space-14);
+  overflow-y: auto;
+}
+
+.welcome__inner {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-14);
+  width: 100%;
+  max-width: 760px;
+}
+
+.welcome__hero {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+}
+
+.welcome__title {
+  margin: 0;
+  color: var(--color-text);
+  font-size: var(--text-hero);
+  font-weight: var(--weight-semibold);
+  letter-spacing: -0.01em;
+  line-height: var(--leading-tight);
+}
+
+.welcome__subtitle {
+  margin: 0;
+  color: var(--color-text-secondary);
+  font-size: var(--text-md);
+}
+
+.welcome__starters {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-6);
+}
+
+.welcome__starter {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  padding: var(--space-7) var(--space-8);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-xl);
+  background: var(--color-card);
+  color: var(--color-text);
+  text-align: left;
+  transition: border-color var(--duration-fast) var(--ease-standard);
+}
+
+.welcome__starter:hover {
+  border-color: var(--color-gold);
+}
+
+.welcome__starter-title {
+  font-weight: var(--weight-semibold);
+}
+
+.welcome__starter-description {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+}
+
+.welcome__boundaries {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-10);
+  padding-top: var(--space-9);
+  border-top: 1px solid var(--color-line);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+@media (max-width: 720px) {
+  .welcome {
+    align-items: flex-start;
+    padding: calc(var(--chat-header-height, 64px) + var(--space-6)) var(--space-6) var(--space-8);
+  }
+
+  .welcome__inner {
+    gap: var(--space-10);
+  }
+
+  .welcome__title {
+    font-size: var(--text-display);
+  }
+
+  .welcome__starters {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-4);
+  }
+
+  .welcome__boundaries {
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+}

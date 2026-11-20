@@ -1,0 +1,15 @@
+# cn-watch: read-only local watch engine over stdio MCP (health, state, alerts, rules).
+- insert:
+    - id: fin-cn-watch
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: cn_watch
+        transport: stdio
+        command: /Users/xiong/.chives/packages/cn-watch-mcp/.venv/bin/python
+        args:
+          - -m
+          - cn_watch_mcp
+        cwd: /Users/xiong/.chives/packages/cn-watch-mcp
+        env:
+          WATCH_ENGINE: http://127.0.0.1:8865
+        failOnStartupError: true

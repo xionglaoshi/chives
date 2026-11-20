@@ -1,0 +1,179 @@
+/*
+ * Chives "乌金" dark theme. Every colour in the app comes from this file;
+ * components use the custom properties below instead of literal values.
+ */
+:root {
+  color-scheme: dark;
+
+  /* Ground, panels and lines */
+  --color-bg: #0c0b0a;
+  --color-nav: #090807;
+  --color-panel: #151311;
+  --color-card: #131110;
+  --color-raised: #1e1b18;
+  --color-bubble: #24201c;
+  --color-line: #2a2622;
+  --color-line-strong: #3a352f;
+  --color-overlay: rgba(0, 0, 0, 0.4);
+
+  /* Text */
+  --color-text: #ede8df;
+  --color-text-secondary: #b5aea2;
+  --color-text-muted: #948d82;
+  --color-white: #ffffff;
+
+  /* Brand and market direction */
+  --color-gold: #c8a96a;
+  --color-gold-highlight: #e0c58c;
+  --color-up: #e0685e;
+  --color-down: #5db28a;
+  --color-price-up: var(--color-up);
+  --color-price-down: var(--color-down);
+  --color-stone: #5a544b;
+  --color-stone-deep: #4a453e;
+
+  /* Avatar tones (ids match the server manifest: gold/silver/bronze/jade/ink) */
+  --color-avatar-gold: #c8a96a;
+  --color-avatar-silver: #b9bec4;
+  --color-avatar-bronze: #b07a52;
+  --color-avatar-jade: #7fa693;
+  --color-avatar-ink: #3a352f;
+  --color-avatar-gold-foreground: #0c0b0a;
+  --color-avatar-silver-foreground: #0c0b0a;
+  --color-avatar-bronze-foreground: #0c0b0a;
+  --color-avatar-jade-foreground: #0c0b0a;
+  --color-avatar-ink-foreground: #ede8df;
+
+  /* Typography */
+  --font-sans: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Helvetica Neue', 'PingFang SC',
+    'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', 'Segoe UI', system-ui, sans-serif;
+  --font-display: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Helvetica Neue',
+    'PingFang SC', 'Hiragino Sans GB', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'SFMono-Regular', Menlo, Consolas, monospace;
+  /* Figures in panels and tables: proportional sans with tabular digits reads calmer than mono. */
+  --font-figures: var(--font-sans);
+  --text-2xs: 11px;
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-base: 14px;
+  --text-md: 15px;
+  --text-lg: 16px;
+  --text-xl: 17px;
+  --text-2xl: 19px;
+  --text-3xl: 22px;
+  --text-display: 28px;
+  --text-hero: 36px;
+  /* PingFang's Semibold is heavy on dark ground; Medium carries emphasis more quietly. */
+  --weight-light: 300;
+  --weight-regular: 400;
+  --weight-normal: 400;
+  --weight-medium: 500;
+  --weight-semibold: 500;
+  --weight-bold: 600;
+  --leading-tight: 1.35;
+  --leading-snug: 1.5;
+  --leading-normal: 1.65;
+  --leading-relaxed: 1.8;
+  --tracking-tight: -0.01em;
+  --tracking-normal: 0.01em;
+  --tracking-wide: 0.06em;
+
+  /* Spacing */
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 10px;
+  --space-6: 12px;
+  --space-7: 14px;
+  --space-8: 16px;
+  --space-9: 18px;
+  --space-10: 20px;
+  --space-11: 22px;
+  --space-12: 24px;
+  --space-14: 28px;
+  --space-16: 32px;
+  --space-20: 40px;
+
+  /* Shape */
+  --radius-xs: 4px;
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 14px;
+  --radius-2xl: 16px;
+  --radius-3xl: 18px;
+  --radius-pill: 999px;
+
+  /* Elevation and focus */
+  --shadow-soft: 0 12px 32px rgba(0, 0, 0, 0.35);
+  --shadow-pop: 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-focus: 0 0 0 2px var(--color-bg), 0 0 0 4px var(--color-gold);
+
+  /* Layout */
+  --size-sidebar: 264px;
+  --size-content: 820px;
+  --size-touch: 44px;
+  --size-avatar-lg: 36px;
+  --size-avatar-sm: 28px;
+
+  /* Motion */
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --ease-standard: ease;
+}
+
+
+/* Match the system canvas while the saved appearance is loading. */
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme]) {
+    color-scheme: light;
+    --color-bg: #ffffff;
+  }
+}
+
+/* White canvas, neutral gray surfaces and charcoal type. */
+[data-theme='light'] {
+  color-scheme: light;
+
+  --color-bg: #ffffff;
+  --color-nav: #f7f7f8;
+  --search-mark-bg: #e1e2e4;
+  --panel-badge-fg: #ffffff;
+  --anchor-highlight-bg: #f2f2f3;
+  --anchor-highlight-border: #cecfd2;
+  --color-panel: #ffffff;
+  --color-card: #ffffff;
+  --color-raised: #ededee;
+  --color-bubble: #f2f2f3;
+  --color-line: #e1e1e3;
+  --color-line-strong: #bfc0c3;
+  --color-overlay: rgba(24, 24, 27, 0.24);
+
+  --color-text: #222326;
+  --color-text-secondary: #505156;
+  --color-text-muted: #67686e;
+  --color-white: #ffffff;
+
+  --color-gold: #414247;
+  --color-gold-highlight: #25262a;
+  --color-up: #c23b32;
+  --color-down: #1f7a55;
+  --color-stone: #999a9d;
+  --color-stone-deep: #76777b;
+
+  --color-avatar-gold-foreground: #222326;
+  --color-avatar-silver-foreground: #222326;
+  --color-avatar-bronze-foreground: #222326;
+  --color-avatar-jade-foreground: #222326;
+  --color-avatar-ink-foreground: #ffffff;
+
+  --shadow-soft: 0 12px 32px rgba(24, 24, 27, 0.08);
+  --shadow-pop: 0 8px 24px rgba(24, 24, 27, 0.13);
+}
+
+/* 绿涨红跌：只影响行情涨跌，不影响错误/状态色。 */
+[data-change-color='green-up'] {
+  --color-price-up: var(--color-down);
+  --color-price-down: var(--color-up);
+}

@@ -1,0 +1,38 @@
+id: zhushenglang
+name: 主升浪
+role: 只按主升浪策略引擎的结果，汇报首板观察池与主升浪阶段池的每日变化与复核要点。
+headline: 策略引擎播报员
+persona: bots/zhushenglang/persona.md
+avatar:
+  emblem: peak
+  tone: jade
+strategies:
+  - zhushenglang
+skills:
+  - zhushenglang
+  - stock-analysis
+  - research-conventions
+  - watch-briefing
+mcp:
+  - cn_market
+  - strategy
+tools:
+  code: sandboxed
+  write: workspace-only
+model: default
+can_delegate_to:
+  - equity-analyst
+routines:
+  - id: surge-post-close
+    title: 主升浪盘后简报
+    schedule: {cron: "50 15 * * 1-5", tz: "Asia/Shanghai"}
+    trading_days_only: true
+    prompt: "按 zhushenglang 技能出主升浪盘后简报：先调 strategy_pools 取当日两个池，说明最新计算日；结论（今日池子变化）→ 优先级一/二 → 主升浪池前列与移出 → 需要人工复核的票 → 不确定性。若 15:35 的当日计算尚未完成，明确写“尚未计算”，不要用前一交易日冒充当日；计算完成后会由服务端策略事件唤醒补发。末尾不加免责声明。"
+
+memory:
+  user: read
+  bot: read-write
+background: false
+trading_guard: false
+panels: [strategy:zhushenglang]
+watches: true

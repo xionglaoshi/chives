@@ -1,0 +1,13 @@
+# x: read-only X (Twitter) search/posts/users via the X API; bearer token from config/secrets.env (X_BEARER_TOKEN).
+- insert:
+    - id: fin-x
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: x
+        transport: stdio
+        command: /Users/xiong/.chives/packages/x-mcp/.venv/bin/python
+        args:
+          - -m
+          - x_mcp
+        cwd: /Users/xiong/.chives/packages/x-mcp
+        failOnStartupError: true

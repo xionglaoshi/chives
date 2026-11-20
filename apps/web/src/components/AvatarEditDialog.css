@@ -1,0 +1,220 @@
+.avatar-dialog__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--space-6);
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.avatar-dialog {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-5);
+  width: min(560px, 100%);
+  max-height: calc(100dvh - 32px);
+  overflow-y: auto;
+  padding: var(--space-8);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-3xl);
+  background: var(--color-panel);
+  box-shadow: var(--shadow-pop);
+}
+
+.avatar-dialog__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-5);
+}
+
+.avatar-dialog__title {
+  flex: 1;
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--weight-semibold);
+}
+
+.avatar-dialog__close {
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--text-3xl);
+  line-height: 1;
+}
+
+.avatar-dialog__close:hover {
+  background: var(--color-raised);
+  color: var(--color-text);
+}
+
+.avatar-dialog__preview {
+  display: flex;
+  align-items: center;
+  gap: var(--space-6);
+}
+
+.avatar-dialog__preview-name {
+  overflow-wrap: anywhere;
+  font-size: var(--text-2xl);
+  font-weight: var(--weight-semibold);
+}
+
+.avatar-dialog__label {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.avatar-dialog__input {
+  min-height: var(--size-touch);
+  padding: 0 var(--space-7);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--text-lg);
+}
+
+.avatar-dialog__hint {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.avatar-dialog__group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.avatar-dialog__group-label {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.avatar-dialog__emblems {
+  max-height: min(38dvh, 320px);
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.avatar-dialog__emblem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-width: 0;
+  min-height: 70px;
+  padding: var(--space-2);
+  border: 2px solid transparent;
+  border-radius: var(--radius-lg);
+  background: var(--color-raised);
+  color: var(--color-text-secondary);
+  font-size: var(--text-2xs);
+}
+
+.avatar-dialog__emblem .bot-avatar {
+  pointer-events: none;
+}
+
+.avatar-dialog__emblem:hover {
+  border-color: var(--color-line-strong);
+}
+
+.avatar-dialog__emblem--selected {
+  border-color: var(--color-gold);
+  color: var(--color-text);
+}
+
+.avatar-dialog__tones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-6);
+}
+
+.avatar-dialog__tone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 52px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
+.avatar-dialog__tone-swatch {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  outline: 2px solid transparent;
+  outline-offset: 3px;
+}
+
+.avatar-dialog__tone--selected .avatar-dialog__tone-swatch {
+  outline-color: var(--color-gold);
+}
+
+.avatar-dialog__tone--selected {
+  color: var(--color-text);
+}
+
+.avatar-dialog__error {
+  color: var(--color-up);
+  font-size: var(--text-sm);
+}
+
+.avatar-dialog__footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+  padding-top: var(--space-7);
+  border-top: 1px solid var(--color-line);
+}
+
+.avatar-dialog__button {
+  min-height: var(--size-touch);
+  padding: 0 var(--space-9);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-md);
+  background: transparent;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+}
+
+.avatar-dialog__button--primary {
+  border-color: transparent;
+  background: var(--color-gold);
+  color: var(--color-bg);
+  font-weight: var(--weight-semibold);
+}
+
+.avatar-dialog__button--quiet {
+  margin-left: auto;
+  border-color: transparent;
+  color: var(--color-text-secondary);
+}
+
+@media (max-width: 430px) {
+  .avatar-dialog {
+    padding: var(--space-6);
+  }
+
+  .avatar-dialog__emblems {
+  max-height: min(38dvh, 320px);
+  overflow-y: auto;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .avatar-dialog__button--quiet {
+    margin-left: 0;
+  }
+}

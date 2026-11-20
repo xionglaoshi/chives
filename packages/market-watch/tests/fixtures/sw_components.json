@@ -1,0 +1,83 @@
+{
+ "code": "200",
+ "message": "ok",
+ "data": {
+  "count": 103,
+  "next": "http://www.swsresearch.com/api/index_publish/details/component_stocks/?page=2&page_size=100&swindexcode=801010",
+  "previous": null,
+  "results": [
+   {
+    "stockcode": "000505",
+    "stockname": "京粮控股",
+    "newweight": "0.2904",
+    "beginningdate": "2021-12-13T08:00:00+08:00"
+   },
+   {
+    "stockcode": "000592",
+    "stockname": "平潭发展",
+    "newweight": "1.8592",
+    "beginningdate": "2021-12-13T08:00:00+08:00"
+   },
+   {
+    "stockcode": "000702",
+    "stockname": "正虹科技",
+    "newweight": "0.1743",
+    "beginningdate": "2021-12-13T08:00:00+08:00"
+   },
+   {
+    "stockcode": "000713",
+    "stockname": "国投丰乐",
+    "newweight": "0.4146",
+    "beginningdate": "2021-12-13T08:00:00+08:00"
+   },
+   {
+    "stockcode": "000735",
+    "stockname": "罗牛山",
+    "newweight": "0.8044",
+    "beginningdate": "2021-12-13T08:00:00+08:00"
+   },
+   {
+    "stockcode": "000798",
+    "stockname": "中水渔业",
+    "newweight": "0.2302",
+    "beginningdate": "2021-12-13T08:00:00+08:00"
+   },
+   {
+    "stockcode": "000911",
+    "stockname": "*ST广糖",
+    "newweight": "0.1501",
+    "beginningdate": "2021-12-13T08:00:00+08:00"
+   },
+   {
+    "stockcode": "000930",
+    "stockname": "中粮科技",
+    "newweight": "0.6862",
+    "beginningdate": "2021-12-13T08:00:00+08:00"
+   },
+   {
+    "stockcode": "000972",
+    "stockname": "中基健康",
+    "newweight": "0.2737",
+    "beginningdate": "2021-12-13T08:00:00+08:00"
+   },
+   {
+    "stockcode": "000998",
+    "stockname": "隆平高科",
+    "newweight": "1.4385",
+    "beginningdate": "2021-12-13T08:00:00+08:00"
+   },
+   {
+    "stockcode": "001201",
+    "stockname": "东瑞股份",
+    "newweight": "0.3858",
+    "beginningdate": "2021-12-13T08:00:00+08:00"
+   },
+   {
+    "stockcode": "002041",
+    "stockname": "登海种业",
+    "newweight": "0.5134",
+    "beginningdate": "2021-12-13T08:00:00+08:00"
+   }
+  ]
+ }
+}

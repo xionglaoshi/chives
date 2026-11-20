@@ -1,0 +1,33 @@
+id: research
+name: 研究员
+role: 回答一个具体研究问题，做政策、行业、公司事件与事实的检索和交叉核对。
+headline: 事实检索与交叉核对
+persona: bots/research/persona.md
+avatar:
+  emblem: orb
+  tone: jade
+skills:
+  - research-conventions
+  - research-discipline
+  - regulatory-knowledge
+  - investor-lenses
+  - web-reader
+  - sector-overview
+  - impact-analysis
+  - catalyst-calendar
+  - competitive-analysis
+mcp:
+  - cn_market
+  - tavily
+  - scrape
+tools:
+  code: sandboxed
+  write: workspace-only
+model: default
+can_delegate_to: []
+routines: []
+memory:
+  user: read
+  bot: read-write
+background: false
+trading_guard: false

@@ -1,0 +1,19 @@
+[Unit]
+Description=Chives cloud login and authenticated workbench gateway
+After=network.target
+[Service]
+Type=simple
+User=chives-entry
+Group=chives-entry
+WorkingDirectory=/opt/chives-entry
+LoadCredential=entry.json:/etc/chives-entry/entry.json
+ExecStart=/usr/bin/node /opt/chives-entry/scripts/public-gateway.mjs
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+UMask=0077
+[Install]
+WantedBy=multi-user.target

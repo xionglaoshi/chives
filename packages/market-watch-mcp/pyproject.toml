@@ -1,0 +1,14 @@
+[project]
+name = "market-watch-mcp"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp>=1.0,<2",
+    "requests>=2.31,<3",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]

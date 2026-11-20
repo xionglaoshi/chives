@@ -1,0 +1,13 @@
+# cn-extra: read-only A-share minute bars, quote snapshots and deterministic intraday summaries.
+- insert:
+    - id: fin-cn-extra
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: cn_extra
+        transport: stdio
+        command: /Users/xiong/.chives/packages/cn-extra-mcp/.venv/bin/python
+        args:
+          - -m
+          - cn_extra_mcp
+        cwd: /Users/xiong/.chives/packages/cn-extra-mcp
+        failOnStartupError: true

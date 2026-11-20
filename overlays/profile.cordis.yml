@@ -1,0 +1,16 @@
+# profile: the user's investing profile (risk, horizon, preferences). Writes a managed block into $DSH_HOME/AGENTS.md,
+# which dsh loads into every new session. DSH_HOME is passed explicitly: the stdio child does not inherit it by default.
+- insert:
+    - id: fin-profile
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: profile
+        transport: stdio
+        command: /Users/xiong/.chives/packages/profile-mcp/.venv/bin/python
+        args:
+          - -m
+          - profile_mcp
+        cwd: /Users/xiong/.chives/packages/profile-mcp
+        env:
+          DSH_HOME: !!js (process.env.DSH_HOME || (process.env.HOME + '/.dsh'))
+        failOnStartupError: true

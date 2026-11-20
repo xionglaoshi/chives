@@ -1,0 +1,106 @@
+.delegation-row {
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-lg);
+  background: transparent;
+}
+
+.delegation-row--running {
+  border-color: var(--color-line-strong);
+}
+
+.delegation-row__toggle {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  width: 100%;
+  min-height: var(--size-touch);
+  padding: 0 var(--space-7);
+  border: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  text-align: left;
+}
+
+.delegation-row__toggle:hover {
+  color: var(--color-text);
+}
+
+.delegation-row__chevron {
+  flex: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.delegation-row__avatar {
+  flex: none;
+}
+
+.delegation-row__title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.delegation-row__title strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.delegation-row__status {
+  flex: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.delegation-row--running .delegation-row__status {
+  color: var(--color-gold-highlight);
+}
+
+.delegation-row--failed .delegation-row__status,
+.delegation-row--interrupted .delegation-row__status {
+  color: var(--color-up);
+}
+
+.delegation-row__detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--space-7) var(--space-6);
+  border-top: 1px solid var(--color-line);
+  background: var(--color-panel);
+}
+
+.delegation-row__label {
+  color: var(--color-text-muted);
+  font-size: var(--text-2xs);
+}
+
+.delegation-row__brief,
+.delegation-row__error,
+.delegation-row__loading {
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.delegation-row__error {
+  color: var(--color-up);
+}
+
+.delegation-row__result {
+  padding: var(--space-4) var(--space-5);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.delegation-row .task-progress__steps {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}

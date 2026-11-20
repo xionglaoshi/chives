@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Chives 色调方案</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 900px; box-sizing: border-box; padding: 44px 56px; background: #1B1A18; color: #EDE8DF; font-family: -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif; font-size: 14px; line-height: 1.6; font-variant-numeric: tabular-nums; display: flex; flex-direction: column; gap: 22px">
+
+<div style="display: flex; align-items: baseline; gap: 16px">
+<h1 style="margin: 0; font-size: 28px; font-weight: 600">色调方案</h1>
+<span style="color: #B5AEA2">现在的版本是偏蓝的墨色配亮金，蓝底让金色显得跳。下面三套都把底色里的蓝拿掉，金色降低饱和度。</span>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; flex: 1">
+<sc-for list="{{palettes}}" as="p" hint-placeholder-count="3">
+<section style="display: flex; flex-direction: column; gap: 14px">
+
+<div style="border-radius: 18px; background: {{p.ground}}; color: {{p.text}}; border: 1px solid {{p.line}}; padding: 18px; display: flex; flex-direction: column; gap: 14px; flex: 1">
+
+<div style="display: flex; align-items: center; gap: 10px">
+<svg width="22" height="22" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 8L11 20v24l21 12 21-12V20z" fill="{{p.accent}}"></path><path d="M32 8L11 20v22l10-17 11 14 11-14 10 17V20z" fill="#5A544B"></path></svg>
+<span style="font-size: 16px; font-weight: 600">Chives</span>
+<span style="margin-left: auto; font-size: 12px; color: {{p.text2}}">11 月 16 日 周一</span>
+</div>
+
+<div style="display: flex; align-items: center; gap: 10px; padding: 10px; border-radius: 12px; background: {{p.raised}}">
+<span style="flex: none; width: 34px; height: 34px; border-radius: 50%; background: {{p.accent}}; color: {{p.ground}}; display: flex; align-items: center; justify-content: center; font-weight: 700"><svg width="58%" height="58%" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17h16M5 17l-1-9 5 4 3-6 3 6 5-4-1 9"></path></svg></span>
+<span style="flex: 1; min-width: 0"><span style="display: block; font-weight: 600">投资专家</span><span style="display: block; font-size: 12px; color: {{p.text2}}">三季报点评已完成</span></span>
+<span style="font-size: 12px; color: {{p.text2}}">15:42</span>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px">
+<div style="border-radius: 12px; background: {{p.panel}}; border: 1px solid {{p.line}}; padding: 10px 12px"><div style="font-size: 12px; color: {{p.text2}}">恒生指数</div><div style="font-size: 20px; font-weight: 300">23,871.32</div><div style="font-size: 12px; color: {{p.up}}">▲ 0.99%</div></div>
+<div style="border-radius: 12px; background: {{p.panel}}; border: 1px solid {{p.line}}; padding: 10px 12px"><div style="font-size: 12px; color: {{p.text2}}">纳斯达克</div><div style="font-size: 20px; font-weight: 300">25,136.27</div><div style="font-size: 12px; color: {{p.down}}">▼ 0.91%</div></div>
+</div>
+
+<div style="display: flex; justify-content: flex-end"><div style="max-width: 80%; background: {{p.bubble}}; border-radius: 14px 14px 4px 14px; padding: 8px 14px">茅台三季报值不值得加仓</div></div>
+
+<div>三季报平稳，估值在近三年的中位附近。<span style="color: {{p.accent}}; font-weight: 600">可以持有</span>，加仓没有明显的赔率优势。<span style="color: {{p.text2}}">市盈率 21.84 倍，分位 51%。</span></div>
+
+<div style="display: flex; gap: 10px; margin-top: auto">
+<span style="display: flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 18px; border-radius: 10px; background: {{p.accent}}; color: {{p.ground}}; font-weight: 600">允许这一次</span>
+<span style="display: flex; align-items: center; justify-content: center; min-height: 40px; padding: 0 18px; border-radius: 10px; border: 1px solid {{p.line}}; color: {{p.text}}">拒绝</span>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: baseline; gap: 10px"><span style="font-size: 18px; font-weight: 600">{{p.name}}</span><span style="font-size: 12px; color: #B5AEA2">{{p.tag}}</span></div>
+<div style="color: #B5AEA2; min-height: 66px">{{p.desc}}</div>
+<div style="display: flex; gap: 6px">
+<sc-for list="{{p.swatches}}" as="s" hint-placeholder-count="6">
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px">
+<div style="height: 34px; border-radius: 8px; background: {{s.hex}}; border: 1px solid #3A3733"></div>
+<div style="font-size: 11px; color: #B5AEA2; line-height: 1.3">{{s.label}}<br>{{s.hex}}</div>
+</div>
+</sc-for>
+</div>
+</div>
+
+</section>
+</sc-for>
+</div>
+
+<div style="color: #B5AEA2; font-size: 13px">已选定乌金，并应用到全部页面。素宣可以作为之后的浅色主题与它配对。</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+function sw(p) { return [
+{ label: '底色', hex: p.ground }, { label: '面板', hex: p.panel }, { label: '分隔线', hex: p.line },
+{ label: '文字', hex: p.text }, { label: '强调', hex: p.accent }, { label: '涨', hex: p.up }, { label: '跌', hex: p.down } ]; }
+var list = [
+{ name: '乌金', tag: '暖黑 + 香槟金 · 已选定', desc: '底色是不带蓝的暖黑，金色降到香槟色，文字用象牙白。像漆器和旧金，沉稳、不刺眼，长时间看盘不累。',
+  ground: '#0C0B0A', panel: '#151311', raised: '#1E1B18', line: '#2A2622', text: '#EDE8DF', text2: '#A8A196', accent: '#C8A96A', up: '#E0685E', down: '#5DB28A', bubble: '#24201C' },
+{ name: '墨玉', tag: '墨绿黑 + 浅金', desc: '底色带一点墨绿，像玉和老钱风格的绿绒面。比乌金更有性格，但绿底会和“绿跌”抢一点注意力。',
+  ground: '#0A0F0D', panel: '#111815', raised: '#18211D', line: '#223029', text: '#E8EDE9', text2: '#9DAAA2', accent: '#D0B878', up: '#E06A5F', down: '#62B894', bubble: '#1B2621' },
+{ name: '素宣', tag: '宣纸白 + 古铜 · 浅色主题', desc: '暖白纸底配墨色文字，强调色用古铜而不是亮金，保证白底上的对比度。适合白天和投屏，研报感最强。',
+  ground: '#F5F1E8', panel: '#FFFFFF', raised: '#EDE7DA', line: '#DDD5C5', text: '#1B1916', text2: '#5E574C', accent: '#7A5C1E', up: '#C23B32', down: '#1F7A55', bubble: '#E9E2D3' }
+];
+return { palettes: list.map(function (p) { p.swatches = sw(p); return p; }) };
+}
+}
+</script>
+</body>
+</html>

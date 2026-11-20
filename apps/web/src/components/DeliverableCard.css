@@ -1,0 +1,104 @@
+.deliverables {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  align-items: stretch;
+  min-width: 0;
+}
+
+.deliverable-card {
+  display: flex;
+  flex: 1 1 240px;
+  align-items: center;
+  gap: var(--space-5);
+  min-width: 0;
+  min-height: var(--size-touch);
+  padding: var(--space-5) var(--space-7);
+  border: 1px solid var(--color-line-strong);
+  border-radius: var(--radius-lg);
+  background: var(--color-panel);
+  color: var(--color-text);
+  text-align: left;
+  transition:
+    border-color var(--duration-fast) var(--ease-standard),
+    background var(--duration-fast) var(--ease-standard);
+}
+
+.deliverable-card:hover {
+  border-color: var(--color-gold);
+}
+
+.deliverable-card--active {
+  border-color: var(--color-gold);
+  background: var(--color-raised);
+}
+
+.deliverable-card__icon {
+  flex: none;
+  color: var(--color-gold);
+}
+
+.deliverable-card__body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.deliverable-card__name {
+  overflow: hidden;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deliverable-card__meta {
+  overflow: hidden;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.deliverable-card__size {
+  flex: none;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.deliverable-card__state {
+  flex: none;
+  color: var(--color-gold-highlight);
+  font-size: var(--text-xs);
+}
+
+.deliverables__more {
+  align-self: center;
+  min-height: 36px;
+  padding: 0 var(--space-6);
+  border: 1px dashed var(--color-line-strong);
+  border-radius: var(--radius-lg);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+}
+
+.deliverables__more:hover {
+  border-color: var(--color-gold);
+  color: var(--color-gold);
+}
+
+.deliverables__overflow {
+  align-self: center;
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+@media (max-width: 720px) {
+  .deliverable-card {
+    flex-basis: 100%;
+  }
+}

@@ -1,0 +1,23 @@
+# cn-watch-trigger 示例配置：只读分析，不接模拟盘下单或交易防护配置。
+engine: http://127.0.0.1:8865
+state_dir: ../../runtime/watch/analyses
+poll_seconds: 3.0
+prompt_template: ../../presets/finance/alert-analysis.md
+
+triggers:
+  - rule_ids: ["pct_up_3", "pct_down_3", "vwap_dev_2"]
+    codes: ["*"]
+  - rule_ids: ["*"]
+    codes: ["002553.SZ"]
+
+limits:
+  max_runs_per_day: 20
+  cooldown_seconds: 1800
+  max_alert_age_seconds: 300
+  run_timeout_seconds: 600
+  max_queue: 5
+
+runner:
+  command: ["/Users/xiong/.chives/scripts/run-dsh.sh", "--profile", "headless", "--json", "{prompt}"]
+  env: {}
+  cwd: ../..

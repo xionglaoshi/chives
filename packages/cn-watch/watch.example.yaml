@@ -1,0 +1,44 @@
+watchlist: [002553.SZ, 300750.SZ]
+polling:
+  base_seconds: 3.0
+  fast_seconds: 1.0
+  hot_band_pct: 0.3
+  fast_hold_seconds: 30
+  idle_seconds: 30
+  jitter_pct: 10
+  timeout_seconds: 3
+  backoff_seconds: [3, 6, 12, 30]
+  stale_after_seconds: 15
+  # 数据落后墙钟超过该秒数即视为陈旧（可选，默认 20）
+  max_lag_seconds: 20
+alerts:
+  cooldown_seconds: 300
+  rearm_pct: 0.5
+active_windows: ["09:30:00-11:30:00", "13:00:00-14:57:00"]
+# 引擎在 polls.jsonl / GET /health / GET /state 里输出：
+#   session             non_trading_day | pre_open | open | break | after_hours
+#                       （窗口两端都算 open）
+#   last_rule_eval_ts   最近一次真正评估规则的轮询时刻；从未评估为 null
+# 规则只在 session=open 时评估。收盘后启动的引擎不会评估规则，
+# 所以 last_rule_eval_ts=null、fired_count=0 不代表规则链路坏了。
+# 交易日历（可选，缺省等价于 {source: weekdays}）：
+#   weekdays  周一至周五为交易日；不识别法定节假日与调休补班
+#   file      读取 JSON 数组（列出所有交易日），路径相对本配置文件所在目录
+#             例：calendar: {source: file, file: trade_calendar.json}
+#   akshare   调 AKShare 取日历，缓存到 <out-dir>/trade_calendar.json
+#             可用 cache_path 覆盖缓存路径；取不到时回退缓存，再回退 weekdays
+# 非交易日不评估规则、不告警，stale 恒为 false，mode=idle
+calendar: {source: weekdays}
+# 计划规则读取的市场上下文（只读、仅回环）：默认 http://127.0.0.1:8866
+# market_watch_url: http://127.0.0.1:8866
+# 行情只经本机数据网关（只读、仅回环）：默认 http://127.0.0.1:8868
+# gateway_url: http://127.0.0.1:8868
+rules:
+  - {id: pct_up_3, type: pct_change, direction: up, threshold_pct: 3.0}
+  - {id: pct_down_3, type: pct_change, direction: down, threshold_pct: 3.0}
+  - {id: vwap_dev_2, type: vwap_deviation, threshold_pct: 2.0, min_amount_yuan: 20000000}
+  - {id: near_up, type: limit_proximity, side: up, within_pct: 0.5}
+  - {id: near_down, type: limit_proximity, side: down, within_pct: 0.5}
+  - {id: cross_16, type: price_cross, level: 16.00, direction: up}
+  - {id: surge_3x, type: volume_surge, window_seconds: 60, multiple: 3.0, min_window_amount_yuan: 5000000}
+api: {host: 127.0.0.1, port: 8865}

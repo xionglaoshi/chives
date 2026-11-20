@@ -1,0 +1,36 @@
+[build-system]
+requires = ['hatchling']
+build-backend = 'hatchling.build'
+
+[project]
+name = 'paper-broker-mcp'
+version = '0.1.0'
+description = 'Simulated China A-share paper-trading MCP server. No real broker connectivity.'
+readme = 'README.md'
+requires-python = '>=3.12'
+license = { text = 'MIT' }
+dependencies = [
+    "mcp>=1.0,<2",
+    "requests>=2.31,<3",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[project.scripts]
+paper-broker-mcp = 'paper_broker_mcp.__main__:main'
+
+[tool.hatch.build.targets.wheel]
+packages = ['src/paper_broker_mcp']
+
+[tool.pytest.ini_options]
+asyncio_mode = 'auto'
+asyncio_default_fixture_loop_scope = 'function'
+testpaths = ['tests']
+addopts = "-m 'not network'"
+markers = [
+    'network: hits real public market-data endpoints; not run by default',
+]

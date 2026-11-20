@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>Chives 时间线搜索</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#C8A96A;text-decoration:none}a:hover{color:#E0C58C}
+button{font:inherit;cursor:pointer}
+</style>
+</helmet>
+<div style="min-height: 1000px; display: flex; flex-wrap: wrap; background: #0C0B0A; color: #EDE8DF; font-family: -apple-system, 'PingFang SC', 'Noto Sans SC', 'Microsoft YaHei', system-ui, sans-serif; font-size: 14px; line-height: 1.6; font-variant-numeric: tabular-nums">
+
+<nav aria-label="Bot 列表" style="flex: 1 1 264px; max-width: 280px; min-width: 240px; box-sizing: border-box; background: #090807; border-right: 1px solid #2A2622; padding: 20px 12px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: center; gap: 10px; padding: 0 8px 14px">
+<svg width="26" height="26" viewBox="0 0 64 64" aria-hidden="true"><path d="M32 8L11 20v24l21 12 21-12V20z" fill="#C8A96A"></path><path d="M32 8L11 20v22l10-17 11 14 11-14 10 17V20z" fill="#5A544B"></path></svg>
+<span style="font-size: 17px; font-weight: 600">Chives</span>
+</div>
+<a href="Main.dc.html" aria-current="page" style="display: flex; gap: 10px; align-items: center; padding: 10px 8px; border-radius: 10px; background: #1E1B18; color: #EDE8DF"><span style="flex: none; width: 36px; height: 36px; border-radius: 50%; background: #C8A96A; color: #0C0B0A; display: flex; align-items: center; justify-content: center; font-weight: 700"><svg width="58%" height="58%" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17h16M5 17l-1-9 5 4 3-6 3 6 5-4-1 9"></path></svg></span><span style="flex: 1; font-weight: 600">投资专家</span></a>
+<a href="Moments.dc.html" style="display: flex; gap: 10px; align-items: center; padding: 10px 8px; border-radius: 10px; color: #EDE8DF"><span style="flex: none; width: 36px; height: 36px; border-radius: 50%; background: #B9BEC4; color: #0C0B0A; display: flex; align-items: center; justify-content: center; font-weight: 700"><svg width="58%" height="58%" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M7 20h10M5 8h14M5 8l-2.5 6h5zM19 8l-2.5 6h5z"></path></svg></span><span style="flex: 1; font-weight: 600">个股分析师</span></a>
+<a href="Profile.dc.html" style="display: flex; gap: 10px; align-items: center; padding: 10px 8px; border-radius: 10px; color: #EDE8DF"><span style="flex: none; width: 36px; height: 36px; border-radius: 50%; background: #7FA693; color: #0C0B0A; display: flex; align-items: center; justify-content: center; font-weight: 700"><svg width="58%" height="58%" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10.5 5a5.5 5.5 0 100 11 5.5 5.5 0 000-11zM15 15l5 5"></path></svg></span><span style="flex: 1; font-weight: 600">研究员</span></a>
+<a href="Bots.dc.html" style="display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 10px; color: #B5AEA2"><span style="flex: none; width: 28px; height: 28px; border-radius: 50%; background: #3A352F; color: #EDE8DF; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700"><svg width="58%" height="58%" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V10M12 20V5M19 20v-7M3 20h18"></path></svg></span><span style="flex: 1">数据员</span></a>
+<a href="Bots.dc.html" style="display: flex; gap: 10px; align-items: center; padding: 8px; border-radius: 10px; color: #B5AEA2"><span style="flex: none; width: 28px; height: 28px; border-radius: 50%; background: #B07A52; color: #0C0B0A; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700"><svg width="58%" height="58%" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7 4h10v14a2 2 0 01-2 2H7zM7 4a2 2 0 00-2 2v2h2M10 9h4M10 13h4"></path></svg></span><span style="flex: 1">报告员</span></a>
+<a href="Bots.dc.html" style="margin-top: auto; display: flex; align-items: center; min-height: 44px; padding: 0 8px; border-top: 1px solid #2A2622; color: #B5AEA2">全部 Bot</a>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; min-height: 1000px">
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px; padding: 14px 28px; border-bottom: 1px solid #2A2622">
+<form style="flex: 1; min-width: 240px; display: flex; align-items: center; gap: 10px; background: #151311; border: 1px solid #C8A96A; border-radius: 12px; padding: 0 14px">
+<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="#B5AEA2" stroke-width="1.5"><circle cx="7" cy="7" r="4.5"></circle><path d="M10.5 10.5L14 14" stroke-linecap="round"></path></svg>
+<label for="q" style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0)">搜索与投资专家的时间线</label>
+<input id="q" type="text" value="茅台" style="flex: 1; min-width: 0; min-height: 44px; background: transparent; border: 0; outline: 0; color: #EDE8DF; font: inherit">
+<span style="font-size: 12px; color: #948D82">3 个任务 · 7 处提到</span>
+</form>
+<a href="Main.dc.html" style="display: flex; align-items: center; min-height: 44px; padding: 0 14px; border-radius: 10px; border: 1px solid #3A352F; color: #B5AEA2; box-sizing: border-box">关闭搜索</a>
+</header>
+
+<div style="flex: 1; display: flex; flex-wrap: wrap">
+
+<section aria-label="搜索结果" style="flex: 1 1 380px; min-width: 0; padding: 20px 20px 20px 28px; border-right: 1px solid #2A2622; display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 12px; color: #948D82">按任务归组，最近的在前</div>
+
+<button type="button" aria-pressed="true" style="text-align: left; padding: 14px 16px; border-radius: 12px; border: 1px solid #C8A96A; background: #151311; color: #EDE8DF; display: flex; flex-direction: column; gap: 6px">
+<span style="display: flex; justify-content: space-between; gap: 10px"><span style="font-weight: 600">贵州茅台三季报点评</span><span style="font-size: 12px; color: #948D82">今天 15:42</span></span>
+<span style="font-size: 13px; color: #B5AEA2">结论：可以持有，加仓没有明显的赔率优势。</span>
+<span style="font-size: 12px; color: #948D82">3 处提到 · 2 个文件</span>
+</button>
+
+<button type="button" aria-pressed="false" style="text-align: left; padding: 14px 16px; border-radius: 12px; border: 1px solid #2A2622; background: transparent; color: #EDE8DF; display: flex; flex-direction: column; gap: 6px">
+<span style="display: flex; justify-content: space-between; gap: 10px"><span style="font-weight: 600">白酒行业政策梳理</span><span style="font-size: 12px; color: #948D82">11 月 13 日</span></span>
+<span style="font-size: 13px; color: #B5AEA2">委派给研究员；结论里把<mark style="background: #3A3020; color: #EDE8DF; padding: 0 2px; border-radius: 3px">茅台</mark>列为受影响最小的一家。</span>
+<span style="font-size: 12px; color: #948D82">2 处提到 · 1 个文件</span>
+</button>
+
+<button type="button" aria-pressed="false" style="text-align: left; padding: 14px 16px; border-radius: 12px; border: 1px solid #2A2622; background: transparent; color: #EDE8DF; display: flex; flex-direction: column; gap: 6px">
+<span style="display: flex; justify-content: space-between; gap: 10px"><span style="font-weight: 600">持仓体检</span><span style="font-size: 12px; color: #948D82">11 月 10 日</span></span>
+<span style="font-size: 13px; color: #B5AEA2">你提到过想把<mark style="background: #3A3020; color: #EDE8DF; padding: 0 2px; border-radius: 3px">茅台</mark>的仓位控制在两成以内。</span>
+<span style="font-size: 12px; color: #948D82">2 处提到</span>
+</button>
+
+<div style="margin-top: 8px; padding: 12px 14px; border-radius: 12px; background: #131110; font-size: 13px; color: #B5AEA2">也可以直接问：“上次茅台的结论是什么？”投资专家会自己去翻这些记录。</div>
+</section>
+
+<section aria-label="任务小结" style="flex: 2 1 480px; min-width: 0; padding: 20px 28px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+<span style="padding: 2px 8px; border-radius: 999px; border: 1px solid #3A352F; color: #B5AEA2; font-size: 12px">任务小结</span>
+<h2 style="margin: 0; font-size: 18px; font-weight: 600; flex: 1; min-width: 200px">贵州茅台三季报点评</h2>
+<span style="font-size: 12px; color: #948D82">11 月 16 日 15:39–15:42 · 14 步</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 12px; color: #948D82">结论</div>
+<div>三季报平稳，估值在近三年的中位附近。可以持有，加仓没有明显的赔率优势。</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 12px; color: #948D82">关键数字（带来源和时间）</div>
+<ul style="margin: 0; padding-left: 18px; color: #B5AEA2; display: flex; flex-direction: column; gap: 2px">
+<li>前三季每股收益 51.53 元；净利润同比 −0.25% <span style="color: #948D82">· 三季报，2026-10-31</span></li>
+<li>市盈率（TTM）21.84 倍，近三年分位 51% <span style="color: #948D82">· 东方财富，2026-11-13</span></li>
+<li>2026 年一致预期 EPS 66.81 元 <span style="color: #948D82">· 卖方预测汇总</span></li>
+</ul>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 12px; color: #948D82">没解决的问题</div>
+<div style="color: #B5AEA2">四季度批价走势没有可靠数据；这条结论超过一个月后需要重看。</div>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<a href="Deliverable.dc.html" style="display: flex; align-items: center; gap: 8px; padding: 0 14px; min-height: 44px; border: 1px solid #3A352F; border-radius: 12px; color: #EDE8DF; box-sizing: border-box">贵州茅台_2026Q3_点评.md</a>
+<a href="Deliverable.dc.html" style="display: flex; align-items: center; gap: 8px; padding: 0 14px; min-height: 44px; border: 1px solid #3A352F; border-radius: 12px; color: #EDE8DF; box-sizing: border-box">估值分位.png</a>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; gap: 10px; border-top: 1px solid #2A2622; padding-top: 16px">
+<button type="button" style="min-height: 44px; padding: 0 18px; border-radius: 10px; border: 0; background: #C8A96A; color: #0C0B0A; font-weight: 600">接着这个任务聊</button>
+<button type="button" style="min-height: 44px; padding: 0 18px; border-radius: 10px; border: 1px solid #3A352F; background: transparent; color: #EDE8DF">在时间线里定位</button>
+<button type="button" style="min-height: 44px; padding: 0 18px; border-radius: 10px; border: 1px solid #3A352F; background: transparent; color: #EDE8DF">查看完整过程</button>
+</div>
+</section>
+
+</div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1000}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

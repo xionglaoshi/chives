@@ -1,0 +1,87 @@
+/** Figure, external link and missing states for markdown images. */
+
+.md-figure {
+  margin: 0.9em 0 0;
+}
+
+.md-figure__button {
+  display: block;
+  width: 100%;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-card);
+  cursor: zoom-in;
+}
+
+.md-figure__button:hover {
+  border-color: var(--color-line-strong);
+}
+
+.md-figure__frame {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 96px;
+}
+
+.md-figure__placeholder {
+  position: absolute;
+  inset: var(--space-4);
+  border-radius: var(--radius-sm);
+}
+
+.md-figure__image {
+  display: block;
+  width: auto;
+  max-width: 100%;
+  max-height: 520px;
+  height: auto;
+  margin: 0 auto;
+  border-radius: calc(var(--radius-md) - 1px);
+}
+
+.md-figure__image--loading {
+  opacity: 0;
+}
+
+.md-figure figcaption {
+  margin-top: var(--space-3);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+  line-height: 1.5;
+}
+
+.md-image-missing {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  max-width: 100%;
+  margin-top: 0.9em;
+  padding: var(--space-4) var(--space-6);
+  border: 1px dashed var(--color-line-strong);
+  border-radius: var(--radius-sm);
+  background: var(--color-raised);
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.md-image-external {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-6);
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-raised);
+  color: var(--color-text-secondary);
+  font-size: var(--text-xs);
+  text-decoration: none;
+}
+
+.md-image-external:hover {
+  border-color: var(--color-line-strong);
+  color: var(--color-gold-highlight);
+}

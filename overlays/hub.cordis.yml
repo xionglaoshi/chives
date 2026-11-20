@@ -1,0 +1,16 @@
+# hub: read chives-hub signals/plans and propose agent plans (always pending user confirmation).
+# Plans only remind; there is no order path. CHIVES_HUB_URL is passed through when set; empty lets the package use its loopback default.
+- insert:
+    - id: fin-hub
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: hub
+        transport: stdio
+        command: /Users/xiong/.chives/packages/hub-mcp/.venv/bin/python
+        args:
+          - -m
+          - hub_mcp
+        cwd: /Users/xiong/.chives/packages/hub-mcp
+        env:
+          CHIVES_HUB_URL: !!js (process.env.CHIVES_HUB_URL || '')
+        failOnStartupError: true

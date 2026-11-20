@@ -1,0 +1,379 @@
+# OpenBB gateway: 59 read-only US equity/macro tools behind mcp-filter-proxy.
+# The upstream is the OpenBB MCP server restricted to eight keyless categories,
+# so the agent never sees the full ~1150-route catalogue.
+name: openbb
+upstream:
+  command: /Users/xiong/.chives/packages/openbb-gateway/.venv/bin/openbb-mcp
+  args:
+    - --transport
+    - stdio
+    - --allowed-categories
+    - equity,sec,news,yfinance,technical,nasdaq,federal_reserve,famafrench
+  cwd: /Users/xiong/.chives/packages/openbb-gateway
+  inherit_env: false
+  env:
+    HOME: /Users/xiong/.chives/packages/openbb-gateway/.home
+allow:
+  # equity: prices, profile, fundamentals, estimates, calendar, ownership, screens
+  - equity_price_historical
+  - equity_price_quote
+  - equity_profile
+  - equity_fundamental_income
+  - equity_fundamental_balance
+  - equity_fundamental_cash
+  - equity_fundamental_ratios
+  - equity_fundamental_metrics
+  - equity_fundamental_income_growth
+  - equity_fundamental_balance_growth
+  - equity_fundamental_cash_growth
+  - equity_fundamental_dividends
+  - equity_fundamental_historical_splits
+  - equity_fundamental_management
+  - equity_fundamental_filings
+  - equity_fundamental_historical_eps
+  - equity_estimates_consensus
+  - equity_estimates_price_target
+  - equity_calendar_earnings
+  - equity_calendar_splits
+  - equity_ownership_insider_trading
+  - equity_ownership_institutional
+  - equity_ownership_share_statistics
+  - equity_shorts_short_interest
+  - equity_historical_market_cap
+  - equity_compare_company_facts
+  - equity_screener
+  - equity_search
+  - equity_darkpool_otc
+  # yfinance: estimates, calendars, news, sector/industry, ownership
+  - yfinance_estimates_earnings
+  - yfinance_estimates_revenue
+  - yfinance_estimates_growth
+  - yfinance_estimates_recommendations
+  - yfinance_estimates_eps_trend
+  - yfinance_estimates_eps_revisions
+  - yfinance_company_calendar
+  - yfinance_news
+  - yfinance_sectors_overview
+  - yfinance_sectors_industries
+  - yfinance_industry_overview
+  - yfinance_industry_top_growth
+  - yfinance_industry_top_performing
+  - yfinance_ownership_insider_roster
+  - yfinance_ownership_insider_purchases
+  - yfinance_ownership_institutional
+  - yfinance_ownership_major
+  - yfinance_search
+  - yfinance_economy_calendar
+  # SEC: filings and as-reported statements
+  - sec_company_filings
+  - sec_company_overview
+  - sec_financial_statements
+  - sec_symbol_map
+  # technical indicators (input is a price series, not a symbol)
+  - technical_rsi
+  - technical_sma
+  - technical_macd
+  # Nasdaq: session status and delayed options chains
+  - nasdaq_markets_status
+  - nasdaq_options_chains
+  # keyless macro
+  - federal_reserve_treasury_rates
+  - famafrench_factors
+rename_prefix: "ob_"
+cache:
+  max_entries: 500
+  ttl_seconds:
+    default: 60
+    equity_price_historical: 300
+    equity_price_quote: 30
+    equity_profile: 3600
+    equity_fundamental_income: 3600
+    equity_fundamental_balance: 3600
+    equity_fundamental_cash: 3600
+    equity_fundamental_ratios: 3600
+    equity_fundamental_metrics: 3600
+    equity_fundamental_income_growth: 3600
+    equity_fundamental_balance_growth: 3600
+    equity_fundamental_cash_growth: 3600
+    equity_fundamental_dividends: 3600
+    equity_fundamental_historical_splits: 86400
+    equity_fundamental_management: 86400
+    equity_fundamental_filings: 1800
+    equity_fundamental_historical_eps: 3600
+    equity_estimates_consensus: 1800
+    equity_estimates_price_target: 1800
+    equity_calendar_earnings: 1800
+    equity_calendar_splits: 3600
+    equity_ownership_insider_trading: 1800
+    equity_ownership_institutional: 3600
+    equity_ownership_share_statistics: 3600
+    equity_shorts_short_interest: 3600
+    equity_historical_market_cap: 600
+    equity_compare_company_facts: 3600
+    equity_screener: 600
+    equity_search: 86400
+    equity_darkpool_otc: 3600
+    yfinance_estimates_earnings: 3600
+    yfinance_estimates_revenue: 3600
+    yfinance_estimates_growth: 3600
+    yfinance_estimates_recommendations: 3600
+    yfinance_estimates_eps_trend: 3600
+    yfinance_estimates_eps_revisions: 3600
+    yfinance_company_calendar: 3600
+    yfinance_news: 120
+    yfinance_sectors_overview: 3600
+    yfinance_sectors_industries: 3600
+    yfinance_industry_overview: 3600
+    yfinance_industry_top_growth: 3600
+    yfinance_industry_top_performing: 3600
+    yfinance_ownership_insider_roster: 3600
+    yfinance_ownership_insider_purchases: 3600
+    yfinance_ownership_institutional: 3600
+    yfinance_ownership_major: 3600
+    yfinance_search: 86400
+    yfinance_economy_calendar: 3600
+    sec_company_filings: 1800
+    sec_company_overview: 3600
+    sec_financial_statements: 3600
+    sec_symbol_map: 86400
+    technical_rsi: 300
+    technical_sma: 300
+    technical_macd: 300
+    nasdaq_markets_status: 30
+    nasdaq_options_chains: 300
+    federal_reserve_treasury_rates: 3600
+    famafrench_factors: 86400
+rate_limit:
+  max_calls_per_minute: 24
+annotations:
+  equity_price_historical:
+    units:
+      open: "USD per share"
+      high: "USD per share"
+      low: "USD per share"
+      close: "USD per share"
+      volume: "shares"
+    notes: "provider=yfinance by default in examples; adjustment defaults to splits_only."
+  equity_price_quote:
+    units:
+      last_price: "USD per share"
+      volume: "shares"
+      market_cap: "USD (raw dollars)"
+    notes: "field names vary by provider; monetary fields are raw USD, not millions."
+  equity_profile:
+    units:
+      market_cap: "USD (raw dollars)"
+      shares_outstanding: "shares"
+    notes: "company name/industry/sector plus price fields; price fields are USD per share."
+  equity_fundamental_income:
+    units:
+      total_revenue: "USD (raw dollars)"
+      operating_revenue: "USD (raw dollars)"
+      net_income: "USD (raw dollars)"
+      ebitda: "USD (raw dollars)"
+      diluted_earnings_per_share: "USD per share"
+    notes: "all monetary statement fields are raw USD (e.g. 416161000000 = $416.161B), not millions."
+  equity_fundamental_balance:
+    units:
+      total_assets: "USD (raw dollars)"
+      total_liabilities: "USD (raw dollars)"
+      total_equity: "USD (raw dollars)"
+    notes: "all monetary statement fields are raw USD, not millions."
+  equity_fundamental_cash:
+    units:
+      net_cash_from_operating_activities: "USD (raw dollars)"
+      capital_expenditure: "USD (raw dollars)"
+      free_cash_flow: "USD (raw dollars)"
+    notes: "all monetary statement fields are raw USD, not millions."
+  equity_fundamental_ratios:
+    units:
+      "all ratio fields": "未确认"
+    notes: "provider=nasdaq only; ratio scaling (decimal vs percent) was not independently confirmed."
+  equity_fundamental_metrics:
+    units:
+      market_cap: "USD (raw dollars)"
+      enterprise_value: "USD (raw dollars)"
+      "pe_ratio and other valuation ratios": "未确认"
+    notes: "market_cap is raw USD; ratio scaling was not independently confirmed."
+  equity_fundamental_income_growth:
+    units:
+      "growth fields": "未确认"
+    notes: "growth values appear to be provider-scaled; scaling was not independently confirmed."
+  equity_fundamental_balance_growth:
+    units:
+      "growth fields": "未确认"
+  equity_fundamental_cash_growth:
+    units:
+      "growth fields": "未确认"
+  equity_fundamental_dividends:
+    units:
+      amount: "USD per share (split-adjusted)"
+    notes: "yfinance returns split-adjusted historical amounts."
+  equity_fundamental_historical_splits:
+    units:
+      numerator: "split ratio numerator"
+      denominator: "split ratio denominator"
+  equity_fundamental_management:
+    notes: "executive names/titles; no monetary fields."
+  equity_fundamental_filings:
+    notes: "filing metadata only (dates, form types, links); no monetary fields."
+  equity_fundamental_historical_eps:
+    units:
+      eps_actual: "USD per share"
+      eps_estimate: "USD per share"
+  equity_estimates_price_target:
+    units:
+      target_high: "USD per share"
+      target_low: "USD per share"
+      target_consensus: "USD per share"
+      target_median: "USD per share"
+    notes: "price targets are USD per share."
+  equity_estimates_consensus:
+    units:
+      target_high: "USD per share"
+      target_low: "USD per share"
+      target_consensus: "USD per share"
+  equity_calendar_earnings:
+    notes: "calendar rows for many symbols; filter by symbol client-side."
+  equity_calendar_splits:
+    units:
+      numerator: "split ratio numerator"
+      denominator: "split ratio denominator"
+  equity_ownership_insider_trading:
+    units:
+      transaction_price: "USD per share"
+      securities_transacted: "shares"
+      securities_owned: "shares"
+  equity_ownership_institutional:
+    units:
+      shares: "shares"
+      value: "USD (raw dollars)"
+  equity_ownership_share_statistics:
+    units:
+      float_shares: "shares"
+      shares_outstanding: "shares"
+  equity_shorts_short_interest:
+    units:
+      current_short_position: "shares"
+      days_to_cover: "days"
+      average_daily_volume: "shares"
+  equity_historical_market_cap:
+    units:
+      market_cap: "USD (raw dollars)"
+  equity_compare_company_facts:
+    units:
+      value: "USD (raw dollars) for monetary facts; unit depends on the requested XBRL fact"
+    notes: "values are as-reported XBRL facts; the unit depends on the fact requested."
+  equity_screener:
+    units:
+      market_cap: "USD (raw dollars)"
+      price: "USD per share"
+      volume: "shares"
+  equity_search:
+    notes: "symbol/CIK/name lookup; no monetary fields."
+  equity_darkpool_otc:
+    units:
+      share_quantity: "shares"
+      notional: "USD (raw dollars)"
+  yfinance_estimates_earnings:
+    units:
+      mean: "USD per share (EPS estimate)"
+  yfinance_estimates_revenue:
+    units:
+      mean: "USD (raw dollars)"
+  yfinance_estimates_growth:
+    units:
+      "growth fields": "未确认"
+  yfinance_estimates_recommendations:
+    notes: "counts of strong_buy/buy/hold/sell/strong_sell; no monetary fields."
+  yfinance_company_calendar:
+    notes: "upcoming earnings/dividend dates; no monetary fields."
+  yfinance_news:
+    notes: "headlines and links; no monetary fields."
+  yfinance_sectors_overview:
+    units:
+      market_cap: "USD (raw dollars)"
+  yfinance_sectors_industries:
+    units:
+      market_cap: "USD (raw dollars)"
+  yfinance_industry_overview:
+    units:
+      market_cap: "USD (raw dollars)"
+  yfinance_industry_top_growth:
+    units:
+      market_cap: "USD (raw dollars)"
+  yfinance_industry_top_performing:
+    units:
+      market_cap: "USD (raw dollars)"
+  yfinance_ownership_insider_roster:
+    units:
+      shares: "shares"
+  yfinance_ownership_insider_purchases:
+    units:
+      shares: "shares"
+      value: "USD (raw dollars)"
+  yfinance_ownership_institutional:
+    units:
+      shares: "shares"
+      value: "USD (raw dollars)"
+  yfinance_ownership_major:
+    units:
+      "percent fields": "未确认 (likely percent, not verified)"
+  yfinance_search:
+    notes: "symbol lookup; no monetary fields."
+  yfinance_economy_calendar:
+    notes: "macro event calendar; consensus/previous units depend on the event."
+  sec_company_filings:
+    notes: "filing metadata and links; no monetary fields."
+  sec_company_overview:
+    notes: "Business (Item 1) narrative text from the latest filing; no monetary fields."
+  sec_financial_statements:
+    units:
+      value: "USD (raw dollars) for monetary XBRL tags; unit depends on the tag"
+    notes: "as-reported XBRL rows; the value unit depends on the tag."
+  sec_symbol_map:
+    notes: "CIK to ticker mapping; no monetary fields."
+  technical_rsi:
+    units:
+      rsi: "index 0-100 (unitless)"
+  technical_sma:
+    units:
+      sma: "USD per share"
+  technical_macd:
+    units:
+      macd: "USD per share"
+      signal: "USD per share"
+      histogram: "USD per share"
+  nasdaq_markets_status:
+    notes: "session status and next open/close timestamps; no monetary fields."
+  nasdaq_options_chains:
+    units:
+      strike: "USD per share"
+      last_price: "USD per contract premium"
+      implied_volatility: "未确认"
+      "greeks (delta/gamma/theta/vega)": "未确认"
+    notes: "delayed Nasdaq data; pass expiration to narrow the chain."
+  federal_reserve_treasury_rates:
+    units:
+      month_1: "decimal fraction (0.0406 = 4.06%)"
+      month_3: "decimal fraction (0.0406 = 4.06%)"
+      month_6: "decimal fraction (0.0406 = 4.06%)"
+      year_1: "decimal fraction (0.0406 = 4.06%)"
+      year_2: "decimal fraction (0.0406 = 4.06%)"
+      year_5: "decimal fraction (0.0406 = 4.06%)"
+      year_10: "decimal fraction (0.0406 = 4.06%)"
+      year_30: "decimal fraction (0.0406 = 4.06%)"
+  famafrench_factors:
+    units:
+      mkt_rf: "percent (source convention; not independently verified)"
+      smb: "percent (source convention; not independently verified)"
+      hml: "percent (source convention; not independently verified)"
+      rmw: "percent (source convention; not independently verified)"
+      cma: "percent (source convention; not independently verified)"
+      rf: "percent (source convention; not independently verified)"
+checks:
+  - tool: "*"
+    type: non_empty_result
+    hint: "上游返回空，可能是 Yahoo 限流或该 provider 没有这个标的的数据；可稍后重试，或在支持的情况下改用 provider=nasdaq / provider=sec"
+    allow_empty:
+      - equity_calendar_splits

@@ -1,0 +1,13 @@
+# fmp: read-only US fundamentals, analyst estimates, insider trades and calendars via the FMP stable API.
+- insert:
+    - id: fin-fmp
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: fmp
+        transport: stdio
+        command: /Users/xiong/.chives/packages/fmp-mcp/.venv/bin/python
+        args:
+          - -m
+          - fmp_mcp
+        cwd: /Users/xiong/.chives/packages/fmp-mcp
+        failOnStartupError: true

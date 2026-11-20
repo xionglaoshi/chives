@@ -1,0 +1,29 @@
+# Chives 主动告警路由（复制为 config/chives-alerts.yaml 后生效；缺失时使用内置默认）
+# 引擎地址只允许回环主机；规则只读，Chives 不会写任何引擎状态。
+sources:
+  cn-watch:
+    url: http://127.0.0.1:8865
+    enabled: true
+    batch_limit: 100
+  market-watch:
+    url: http://127.0.0.1:8866
+    enabled: true
+    batch_limit: 50
+
+# 按 source / rule_id / code 通配路由到某个 bot。
+# 计划告警的归属：
+# - detail.plan_id 以 `chives-` 开头（bot 建的盯盘）→ 唤醒该盯盘的所属 bot 做分析；
+# - `card-` 及其他前缀（hub 作战卡）→ 始终跳过，由 hub 处理。
+# 盯盘对账循环默认每 30 秒一次，可用环境变量 CHIVES_WATCH_SYNC_SECONDS 覆盖。
+routes:
+  - {source: cn-watch, rule_id: "*", code: "*", bot: expert}
+  - {source: market-watch, rule_id: "*", code: "*", bot: expert}
+
+# 告警处理规则。自动分析权限在 Agent 设置中管理。
+limits:
+  cooldown_seconds: 1800     # 同一 (code, rule_id) 冷却
+  max_alert_age_seconds: 300 # 告警 ts 超过该秒数视为过期
+  run_timeout_seconds: 600   # 单次主动任务超时后取消
+  batch_size: 5              # 每批只处理最新 5 条
+  poll_seconds: 3
+  observe_only: false        # true 时只记录 started/skipped，不启动任务

@@ -1,0 +1,16 @@
+.change {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.change--up {
+  color: var(--color-price-up);
+}
+
+.change--down {
+  color: var(--color-price-down);
+}
+
+.change--flat {
+  color: var(--color-text-muted);
+}

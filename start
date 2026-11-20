@@ -1,0 +1,36 @@
+#!/bin/bash
+set -eu
+cd "$(dirname "$0")"
+job=local.chives.workbench
+case "${1:-start}" in
+ start)
+   if ! launchctl print "gui/$(id -u)/$job" >/dev/null 2>&1; then
+     mkdir -p runtime
+     plist="$HOME/Library/LaunchAgents/$job.plist"
+     if [ -f "$plist" ]; then
+       launchctl bootstrap "gui/$(id -u)" "$plist"
+     else
+       launchctl submit -l "$job" -o "$PWD/runtime/workbench.log" -e "$PWD/runtime/workbench.log" -- /bin/bash "$PWD/scripts/serve-chives.sh"
+     fi
+   fi
+   for i in {1..100}; do
+     if curl --noproxy '*' -fsS http://127.0.0.1:8880/api/health >/dev/null 2>&1 && curl --noproxy '*' -fsS http://127.0.0.1:8888/ >/dev/null 2>&1; then
+       echo '老韭菜已启动 http://127.0.0.1:8888/'; exit 0
+     fi
+     sleep 1
+   done
+   echo '启动超时，请查 runtime/workbench.log' >&2; exit 1 ;;
+ stop)
+   if launchctl print "gui/$(id -u)/$job" >/dev/null 2>&1; then
+     launchctl bootout "gui/$(id -u)/$job"
+     for i in {1..100}; do
+       if ! launchctl print "gui/$(id -u)/$job" >/dev/null 2>&1; then exit 0; fi
+       sleep 0.25
+     done
+     echo '旧进程仍在退出，请查看 runtime/workbench.log' >&2
+     exit 1
+   fi ;;
+ status) exec bash scripts/chives.sh status --engines ;;
+ restart) "$0" stop; exec "$0" start ;;
+ *) echo '用法：./start start|stop|restart|status' >&2; exit 2 ;;
+esac

@@ -1,0 +1,27 @@
+[build-system]
+requires = ['hatchling']
+build-backend = 'hatchling.build'
+
+[project]
+name = 'hub-trigger'
+version = '0.1.0'
+description = 'Read-only fast-judgement runner for the chives hub trigger queue.'
+readme = 'README.md'
+requires-python = '>=3.12'
+license = { text = 'MIT' }
+authors = [{ name = 'dsh-finance' }]
+dependencies = []
+
+[project.optional-dependencies]
+test = [
+    'pytest>=8.0',
+]
+
+[project.scripts]
+hub-trigger = 'hub_trigger.cli:main'
+
+[tool.hatch.build.targets.wheel]
+packages = ['src/hub_trigger']
+
+[tool.hatch.build.targets.sdist]
+include = ['src/hub_trigger', 'tests', 'README.md', 'fastjudge.example.yaml', 'pytest.ini']

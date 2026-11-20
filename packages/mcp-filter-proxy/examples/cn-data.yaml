@@ -1,0 +1,16 @@
+name: cn_data
+upstream:
+  command: vibe-trading-mcp
+  args: []
+  cwd: null
+  inherit_env: true
+  env: {}
+allow: [search_symbol, get_fund_flow]
+rename_prefix: "cn_"
+cache:
+  max_entries: 500
+  ttl_seconds:
+    default: 60
+    get_fund_flow: 300
+rate_limit:
+  max_calls_per_minute: 60

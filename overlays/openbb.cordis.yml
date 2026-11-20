@@ -1,0 +1,15 @@
+# OpenBB gateway: 59 read-only US equity/macro tools behind mcp-filter-proxy.
+- insert:
+    - id: fin-openbb
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: openbb
+        transport: stdio
+        command: /Users/xiong/.chives/packages/mcp-filter-proxy/.venv/bin/python
+        args:
+          - -m
+          - mcp_filter_proxy
+          - --config
+          - /Users/xiong/.chives/gateways/openbb/config.yaml
+        cwd: /Users/xiong/.chives
+        failOnStartupError: true

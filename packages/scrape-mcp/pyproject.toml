@@ -1,0 +1,30 @@
+[build-system]
+requires = ['hatchling']
+build-backend = 'hatchling.build'
+
+[project]
+name = 'scrape-mcp'
+version = '0.1.0'
+description = 'Read-only public web page scraping MCP server (fast HTTP + browser rendering, SSRF-safe).'
+readme = 'README.md'
+requires-python = '>=3.12'
+license = { text = 'MIT' }
+dependencies = [
+    "mcp>=1.0,<2",
+    "httpx>=0.27,<1",
+    "trafilatura>=1.8,<2",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+scrape-mcp = 'scrape_mcp.__main__:main'
+
+[tool.hatch.build.targets.wheel]
+packages = ['src/scrape_mcp']
+
+[tool.pytest.ini_options]
+testpaths = ['tests']

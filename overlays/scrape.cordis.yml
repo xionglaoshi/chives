@@ -1,0 +1,13 @@
+# scrape: public web page fetch (fast HTTP + local Chrome render), SSRF-guarded, robots-obeying.
+- insert:
+    - id: fin-scrape
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: scrape
+        transport: stdio
+        command: /Users/xiong/.chives/packages/scrape-mcp/.venv/bin/python
+        args:
+          - -m
+          - scrape_mcp
+        cwd: /Users/xiong/.chives/packages/scrape-mcp
+        failOnStartupError: true

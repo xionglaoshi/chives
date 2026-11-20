@@ -1,0 +1,22 @@
+.service-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-5);
+  min-height: 36px;
+  padding: var(--space-2) var(--space-6);
+  background: var(--color-up);
+  color: var(--color-bg);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-semibold);
+  text-align: center;
+}
+
+.service-banner__retry {
+  padding: 1px var(--space-4);
+  border: 1px solid var(--color-bg);
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-bg);
+  font-size: var(--text-2xs);
+}

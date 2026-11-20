@@ -1,0 +1,9 @@
+[Unit]
+Description=Refresh Chives market data at Shanghai market close and in the evening
+[Timer]
+OnCalendar=*-*-* 16:30:00 Asia/Shanghai
+OnCalendar=*-*-* 20:30:00 Asia/Shanghai
+AccuracySec=1s
+Persistent=true
+[Install]
+WantedBy=timers.target

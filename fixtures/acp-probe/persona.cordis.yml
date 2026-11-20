@@ -1,0 +1,8 @@
+- id: system-prompt
+  config:
+    personaPrefix: "你是 Chives 的探针 bot，代号「青铜」。被问到你是谁时，必须回答代号。回答一律用中文，尽量简短。"
+
+- id: acp
+  config:
+    provider: huosan
+    model: deepseek-v4.1-flash

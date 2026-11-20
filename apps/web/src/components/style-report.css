@@ -1,0 +1,56 @@
+.investor-report { margin-block:32px; max-width:62rem; }
+.investor-report>header {padding:0 0 12px;border-bottom:2px solid currentColor;}
+.investor-report>header small,.investor-report small {color:var(--text-muted,currentColor);font-size:.82rem;}
+.investor-report h3,.investor-report h4,.investor-report h5 {margin:6px 0;line-height:1.45;}
+.investor-report h3 {font-size:1.55rem;}
+.investor-report h4 {font-size:1.16rem;}
+.investor-report h5 {font-size:1rem;}
+.investor-report section {margin-block:22px;}
+.investor-report p {line-height:1.8;margin:.55rem 0;}
+.ir-overview {border-bottom:1px solid var(--border,#bbb);padding-bottom:18px;}
+.investor-report details {margin-top:10px;font-size:.86rem;}
+.investor-report summary {cursor:pointer;}
+.ir-person,.ir-dimension {background:color-mix(in srgb,currentColor 3%,transparent);border:1px solid color-mix(in srgb,currentColor 16%,transparent);border-radius:12px;padding:16px;margin:10px 0;}
+.ir-person {display:flex;gap:16px;align-items:flex-start;}
+.ir-person img {width:88px;height:88px;aspect-ratio:1;object-fit:contain;border-radius:8px;flex-shrink:0;}
+.ir-portrait {flex:none;line-height:0;}
+.ir-person-name {font:inherit;color:inherit;text-decoration:underline;text-decoration-color:color-mix(in srgb,currentColor 35%,transparent);text-underline-offset:.22em;}
+.ir-person-name:hover,.ir-person-name:focus-visible {text-decoration-color:currentColor;}
+.ir-grid {display:grid;grid-template-columns:repeat(auto-fit,minmax(min(235px,100%),1fr));gap:12px;}
+.ir-dimension {margin:0;min-width:0;}
+.ir-dimension p {font-size:.9rem;}
+.ir-track {margin:18px 6px 8px;height:5px;border-radius:9px;background:linear-gradient(90deg,#abbbc9,#52866e);position:relative;}
+.ir-track i {position:absolute;top:50%;transform:translate(-50%,-50%);background:#346b53;border:2px solid white;box-shadow:0 0 0 1px #658777;border-radius:50%;width:12px;height:12px;}
+.ir-ends {display:flex;justify-content:space-between;gap:8px;font-size:.75rem;}
+@media(max-width:550px){.ir-person {display:block;}.ir-portrait {float:left;margin:0 12px 6px 0;}}
+.ir-risk-map {margin:16px 0 18px;padding:18px;border:1px solid color-mix(in srgb,currentColor 16%,transparent);border-radius:12px;display:grid;grid-template-columns: minmax(0,1fr) minmax(140px,.8fr);gap:18px;align-items:center;}
+.ir-risk-map p {font-size:.93rem;}
+.ir-plane {margin:8px 6px;height:100px;position:relative;background:linear-gradient(90deg,transparent 49.6%,#a9b8af 50%,transparent 50.4%),linear-gradient(0deg,transparent 49%,#a9b8af 50%,transparent 51%),linear-gradient(135deg,#799c8c33,#c5ab7926);border:1px solid #98a99e;border-radius:4px;}
+.ir-plane i {position:absolute;transform:translate(-50%,50%);width:13px;height:13px;border:2px solid white;background:#38654e;border-radius:50%;box-shadow:0 0 0 3px #7eaa964d;}
+@media(max-width:550px){.ir-risk-map{grid-template-columns:1fr;}}
+
+.survey100 fieldset {border:0;padding:0;min-width:0}
+.survey-controls,.survey100 .style-actions {display:flex;flex-wrap:wrap;gap:.75rem;margin:1rem 0}
+.survey100 progress {width:100%;height:.35rem;accent-color:#477661}
+.survey100 h3 {margin:1.5rem 0 1rem;line-height:1.55}
+.survey-options {display:grid;gap:.45rem}
+.survey100 .survey-options label {display:flex;align-items:center;gap:.7rem;padding:.7rem .9rem;border:1px solid var(--border,#aaa6);border-radius:.55rem;cursor:pointer}
+.survey-options input[type=radio],.survey-options input[type=checkbox]{width:1rem;height:1rem;flex:none;accent-color:#477661}
+.survey-options input[type=number]{width:5rem;margin-left:auto}
+.survey-why {font-size:.9em;line-height:1.65;color:var(--text-secondary,inherit)}
+.ir-card-position{margin-top:auto;padding-top:12px;font-size:.88em}
+.ir-dimension:has(.ir-card-position){display:flex;flex-direction:column}
+.ir-card-position .ir-track{margin-top:12px}
+
+.ir-conclusions {margin:.8rem 0 1.15rem;display:grid;gap:.45rem;font-weight:600;}
+.ir-conclusions details {margin:0;font-size:inherit;}
+.ir-conclusions summary {list-style:none;width:fit-content;}
+.ir-conclusions summary::-webkit-details-marker {display:none;}
+.ir-conclusions summary::after {content:'▸';display:inline-block;margin-inline-start:.5em;color:var(--text-muted);font-size:.8em;}
+.ir-conclusions details[open] summary::after {transform:rotate(90deg);}
+.ir-conclusions details p,.ir-conclusions details a {font-size:.9rem;font-weight:400;}
+.ir-overview>p+p {margin-top:1em;}
+.ir-section-heading{display:flex;align-items:center;gap:12px}
+.ir-section-heading button{font:inherit;font-size:.8rem;font-weight:550;color:inherit;border:0;border-radius:5px;padding:4px 9px;background:color-mix(in srgb,currentColor 6%,transparent);cursor:pointer}
+.ir-section-heading button:hover{background:color-mix(in srgb,currentColor 12%,transparent)}
+.ir-section-heading button:disabled{opacity:.55;cursor:default}

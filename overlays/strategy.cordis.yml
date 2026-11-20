@@ -1,0 +1,17 @@
+# strategy: unified strategy MCP (strategy-hub). Reads only the local rule-engine/surge output;
+# CHIVES_STRATEGIES is injected per bot by Chives Server (comma-separated strategy ids).
+- insert:
+    - id: fin-strategy
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: strategy
+        transport: stdio
+        command: /Users/xiong/.chives/packages/strategy-hub/.venv/bin/python
+        args:
+          - -m
+          - strategy_hub.mcp_server
+        cwd: /Users/xiong/.chives/packages/strategy-hub
+        env:
+          CHIVES_STRATEGY_URL: http://127.0.0.1:8869
+          CHIVES_STRATEGIES: !!js (process.env.CHIVES_STRATEGIES || '')
+        failOnStartupError: true

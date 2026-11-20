@@ -1,0 +1,15 @@
+# cn-market: the data gateway's MCP forwarder. All A-share data (quotes, bars, market, company,
+# research, news, announcements, convertible bonds) goes through the shared gateway daemon on
+# 127.0.0.1:8868 (started by scripts/chives.sh), which owns rate limits, breakers and caches.
+- insert:
+    - id: fin-cn-market
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: cn_market
+        transport: stdio
+        command: /Users/xiong/.chives/packages/cn-market-gateway/.venv/bin/cn-market-mcp
+        args:
+          - --port
+          - "8868"
+        cwd: /Users/xiong/.chives/packages/cn-market-gateway
+        failOnStartupError: true

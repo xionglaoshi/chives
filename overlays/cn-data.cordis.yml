@@ -1,0 +1,17 @@
+# cn-data A-share gateway: 12 read-only tools behind mcp-filter-proxy.
+- insert:
+    - id: fin-cn-data
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: cn_data
+        transport: stdio
+        command: /Users/xiong/.chives/packages/mcp-filter-proxy/.venv/bin/python
+        args:
+          - -m
+          - mcp_filter_proxy
+          - --config
+          - /Users/xiong/.chives/gateways/cn-data/config.yaml
+        cwd: /Users/xiong/.chives
+        env:
+          GILDATA_TOKEN: !!js process.env.GILDATA_TOKEN ?? ''
+        failOnStartupError: true

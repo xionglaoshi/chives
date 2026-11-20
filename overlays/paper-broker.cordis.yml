@@ -1,0 +1,16 @@
+# T65 simulated paper broker: the only broker-like MCP server in this workspace.
+# Every order-like tool it exposes is gated by overlays/trading-guard.cordis.yml.
+- insert:
+    - id: fin-paper-broker
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: paper_broker
+        transport: stdio
+        command: /Users/xiong/.chives/packages/paper-broker-mcp/.venv/bin/python
+        args:
+          - -m
+          - paper_broker_mcp
+          - --state-dir
+          - /Users/xiong/.chives/runtime/paper
+        cwd: /Users/xiong/.chives/packages/paper-broker-mcp
+        failOnStartupError: true

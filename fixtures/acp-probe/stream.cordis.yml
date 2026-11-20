@@ -1,0 +1,5 @@
+- insert:
+    - id: chives-stream
+      name: <abs path to>/chives-stream.plugin.mjs
+      config:
+        verbose: true

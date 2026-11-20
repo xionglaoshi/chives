@@ -1,0 +1,22 @@
+.exam-page{max-width:760px;margin:0 auto;padding:clamp(18px,5vw,54px) clamp(18px,4vw,40px) 60px;color:var(--color-text);line-height:1.6}
+.exam-head,.exam-progress,.exam-body footer{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.exam-head{padding-bottom:18px;border-bottom:1px solid var(--color-line);font-weight:600}
+.exam-page button,.exam-page input,.exam-page textarea{font:inherit}
+.exam-page button{color:inherit;background:var(--color-card);border:1px solid var(--color-line-strong);border-radius:9px;padding:7px 16px;cursor:pointer}
+.exam-page button:disabled{opacity:.45;cursor:default}
+.exam-body,.exam-scope{border:0;padding:0;margin:24px 0;min-width:0}
+.exam-progress,.exam-status{font-size:.85em;color:var(--color-text-secondary)}
+.exam-body progress{width:100%;height:6px;accent-color:#497964;display:block;margin:8px 0 26px}
+.exam-page h1{font-size:clamp(1.35rem,3vw,1.8rem);line-height:1.45;margin:18px 0 8px;outline:none}
+.exam-why{color:var(--color-text-secondary);font-size:.93em;margin:0 0 18px}
+.exam-why em{font-style:italic}
+.exam-scope label{display:inline-flex;gap:6px;align-items:center;margin-right:18px}
+.exam-scope legend,.exam-text{font-weight:600;margin-bottom:6px}
+.exam-options{display:grid;gap:8px}
+.exam-options label{display:flex;align-items:center;gap:12px;padding:11px 14px;border:1px solid var(--color-line);border-radius:9px;cursor:pointer}
+.exam-options label:has(:checked){border-color:#5f8b77;background:color-mix(in srgb,#5f8b77 9%,var(--color-card))}
+.exam-page input{accent-color:#487761}.exam-options input[type=number]{width:5em}.exam-options label span{margin-left:auto}
+.exam-text{display:grid;gap:7px;margin:18px 0 10px}
+.exam-text textarea{width:100%;min-height:85px;padding:10px;border:1px solid var(--color-line-strong);border-radius:8px;color:inherit;background:var(--color-bg)}
+.exam-body footer{border-top:1px solid var(--color-line);padding-top:18px;margin-top:24px}
+.exam-page .exam-primary{color:#fff;background:#37664f;border-color:#37664f}

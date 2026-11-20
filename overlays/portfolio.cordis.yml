@@ -1,0 +1,16 @@
+# portfolio: local A-share holdings book (manual import, confirmed writes, valuation). Private data: read only when the user asks.
+# DSH_HOME is passed explicitly so each instance (owner/guest) keeps its own book.
+- insert:
+    - id: fin-portfolio
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: portfolio
+        transport: stdio
+        command: /Users/xiong/.chives/packages/portfolio-mcp/.venv/bin/python
+        args:
+          - -m
+          - portfolio_mcp
+        cwd: /Users/xiong/.chives/packages/portfolio-mcp
+        env:
+          DSH_HOME: !!js (process.env.DSH_HOME || (process.env.HOME + '/.dsh'))
+        failOnStartupError: true

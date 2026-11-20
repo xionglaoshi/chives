@@ -1,0 +1,24 @@
+# 盯盘引擎的实际配置（你自己的文件，改完执行 scripts/watch-engine.sh restart 生效）。
+# 2026-11-17 起自选与通用规则清空：盯盘由 bot 设置的提醒驱动（提醒会自动加入监控代码）。旧值见 git 历史。校验：scripts/watch-engine.sh check
+watchlist: []
+polling:
+  base_seconds: 3.0
+  fast_seconds: 1.0
+  hot_band_pct: 0.3
+  fast_hold_seconds: 30
+  idle_seconds: 30
+  jitter_pct: 10
+  timeout_seconds: 3
+  backoff_seconds: [3, 6, 12, 30]
+  stale_after_seconds: 15
+  # 数据落后墙钟超过该秒数即视为陈旧（可选，默认 20）
+  max_lag_seconds: 20
+alerts:
+  cooldown_seconds: 300
+  rearm_pct: 0.5
+calendar: {source: file, file: trade_calendar.json}   # 由 scripts/refresh-trade-calendar.py 生成
+active_windows: ["09:30:00-11:30:00", "13:00:00-14:57:00"]
+rules: []
+api: {host: 127.0.0.1, port: 8865}
+# 盯盘最多 25 条（Chives 上限），可能各盯一只票，所以自选上限放到 30（默认 10）
+limits: {max_watchlist: 30, max_rules: 30}

@@ -1,0 +1,18 @@
+.holdings{padding:clamp(18px,4vw,48px);width:100%;min-width:0;box-sizing:border-box;overflow:auto}
+.holdings header,.holdings-totals,.holdings-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.holdings h1{margin:0;font-size:1.7rem}.holdings h2{font-size:1.05rem;margin:24px 0 12px}
+.holdings button,.holdings input{border:1px solid var(--border,#a5a5a566);border-radius:7px;padding:7px 12px;color:inherit;background:transparent;font:inherit}
+.holdings button{cursor:pointer}.holdings button:disabled{opacity:.5;cursor:default}.holdings header button+button{margin-left:8px}
+.holdings .holdings-primary{color:white;background:#306551}.holdings-totals,.holdings form{margin:24px 0;padding:20px;background:color-mix(in srgb,currentColor 4%,transparent);border-radius:12px}
+.holdings-totals strong,.holdings small{display:block}.holdings-totals strong{margin-top:5px;font-size:1.25rem}.holdings-totals span,.holdings small{opacity:.75}
+.holdings fieldset{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr));gap:12px;border:0;margin:0;padding:0}.holdings label{display:grid;gap:5px}.holdings input{min-width:0}.holdings-actions{justify-content:flex-end;margin-top:15px}
+.holdings-table{overflow:auto}.holdings table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.holdings th,.holdings td{text-align:right;padding:12px 6px;border-bottom:1px solid #8884;white-space:nowrap}.holdings th:first-child,.holdings td:first-child{text-align:left}.holdings th{font-size:.85rem;font-weight:500}.holdings [role=alert]{color:var(--color-danger,#b14646)}
+
+.holdings form fieldset{display:grid;grid-template-columns:1fr;gap:16px}
+.holding-form-row,.holding-valuation{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+.holding-form-row label,.holding-form-row>div{display:grid;gap:5px}
+.holding-form-row input,.holding-form-row output{box-sizing:border-box;width:100%;min-height:39px}
+.holding-form-row output{padding:7px 0;font-weight:600}
+.holding-valuation{grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--border,#8884);padding-top:16px}
+.holding-valuation output{display:block;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.holding-gain{color:#c54240}.holding-loss{color:#297753}

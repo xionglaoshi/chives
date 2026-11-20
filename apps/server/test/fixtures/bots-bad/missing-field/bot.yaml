@@ -1,0 +1,21 @@
+id: bad-missing-field
+name: 坏清单
+persona: persona.md
+avatar:
+  emblem: crown
+  tone: gold
+skills:
+  - earnings-analysis
+mcp:
+  - cn_data
+tools:
+  code: sandboxed
+  write: workspace-only
+model: default
+can_delegate_to: []
+routines: []
+memory:
+  user: read
+  bot: read-write
+background: false
+trading_guard: false

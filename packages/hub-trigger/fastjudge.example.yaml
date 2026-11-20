@@ -1,0 +1,18 @@
+# hub-trigger 示例配置：只读快速判断，不含 hub/模拟盘/交易守卫/持仓 overlay。
+hub: http://127.0.0.1:8867
+state_dir: ../../runtime/fastjudge/state
+poll_seconds: 2.0
+prompt_template: ../../presets/finance/fast-judge.md
+
+limits:
+  max_runs_per_day: 20
+  cooldown_seconds: 600
+  max_trigger_age_seconds: 120
+  run_timeout_seconds: 120
+  max_queue: 3
+
+runner:
+  command: ["/Users/xiong/.chives/scripts/run-dsh.sh", "--profile", "headless", "--json", "{prompt}"]
+  env:
+    DSH_HOME: /path/to/isolated-home
+  cwd: ../..

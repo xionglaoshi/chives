@@ -1,0 +1,22 @@
+id: bad-unknown-skill
+name: 坏清单
+role: 用于测试校验错误的 bot。
+persona: persona.md
+avatar:
+  emblem: crown
+  tone: gold
+skills:
+  - not-a-skill
+mcp:
+  - cn_data
+tools:
+  code: sandboxed
+  write: workspace-only
+model: default
+can_delegate_to: []
+routines: []
+memory:
+  user: read
+  bot: read-write
+background: false
+trading_guard: false

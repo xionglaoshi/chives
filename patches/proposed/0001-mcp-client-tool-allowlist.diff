@@ -1,0 +1,325 @@
+diff --git a/packages/mcp/mcp-client/README.md b/packages/mcp/mcp-client/README.md
+index be3f250ebf..bd4a2e23bb 100644
+--- a/packages/mcp/mcp-client/README.md
++++ b/packages/mcp/mcp-client/README.md
+@@ -61,6 +61,8 @@ Add one entry per server; nothing else is required. After the harness starts, th
+ | `toolCallTimeoutMs` | `60,000` | Timeout per `tools/call` or resource request |
+ | `maxInstructionBytes` | `32,768` | Maximum UTF-8 bytes of server instructions including attribution; an oversized value rejects the connection |
+ | `failOnStartupError` | `false` | Reject plugin activation when the initial connection or tool synchronization fails |
++| `allowTools` | all tools | Register only these upstream tool names, written without the `mcp__<serverName>__` prefix; exact match, no wildcards; an unmatched name logs a warning |
++| `denyTools` | none | Never register these upstream tool names, written without the prefix; applied after `allowTools` |
+ | `reconnect.enabled` | `true` | Reconnect automatically after a lost connection |
+ | `reconnect.initialDelayMs` | `500` | First reconnect delay; doubles per consecutive failed attempt |
+ | `reconnect.maxDelayMs` | `30,000` | Backoff ceiling; also the uptime after which the attempt budget resets |
+diff --git a/packages/mcp/mcp-client/src/connection.ts b/packages/mcp/mcp-client/src/connection.ts
+index 310925f184..a19543b102 100644
+--- a/packages/mcp/mcp-client/src/connection.ts
++++ b/packages/mcp/mcp-client/src/connection.ts
+@@ -131,6 +131,8 @@ export function startConnection(ctx: Context, config: Config, policy: ResolvedRe
+     registrationFailure: 'contain',
+     serverName: config.serverName,
+     toolCallTimeoutMs: config.toolCallTimeoutMs,
++    allowTools: config.allowTools,
++    denyTools: config.denyTools,
+   }
+   // The initial sync uses 'throw' when failOnStartupError is configured, so
+   // a registration conflict propagates to the startup-await path. Re-syncs
+diff --git a/packages/mcp/mcp-client/src/index.ts b/packages/mcp/mcp-client/src/index.ts
+index 3f89532b91..defbd31278 100644
+--- a/packages/mcp/mcp-client/src/index.ts
++++ b/packages/mcp/mcp-client/src/index.ts
+@@ -72,6 +72,10 @@ export interface StdioConfig {
+   failOnStartupError: boolean
+   /** Maximum UTF-8 bytes of attributed server instructions (default 32768). */
+   maxInstructionBytes?: number
++  /** Register only upstream tools whose exact raw names appear here; omission registers every tool. */
++  allowTools?: string[]
++  /** Never register upstream tools whose exact raw names appear here; applied after {@link allowTools}. */
++  denyTools?: string[]
+   /** Automatic reconnect policy after a lost connection; omission uses the defaults. */
+   reconnect?: ReconnectConfig
+ }
+@@ -96,6 +100,10 @@ export interface StreamableHttpConfig {
+   failOnStartupError: boolean
+   /** Maximum UTF-8 bytes of attributed server instructions (default 32768). */
+   maxInstructionBytes?: number
++  /** Register only upstream tools whose exact raw names appear here; omission registers every tool. */
++  allowTools?: string[]
++  /** Never register upstream tools whose exact raw names appear here; applied after {@link allowTools}. */
++  denyTools?: string[]
+   /** Automatic reconnect policy after a lost connection; omission uses the defaults. */
+   reconnect?: ReconnectConfig
+ }
+@@ -127,6 +135,8 @@ export const Config = z.union([
+     toolCallTimeoutMs: z.number().default(DEFAULT_TOOL_CALL_TIMEOUT_MS),
+     failOnStartupError: z.boolean().default(false),
+     maxInstructionBytes: z.number().step(1).min(1).default(DEFAULT_MAX_INSTRUCTION_BYTES),
++    allowTools: z.array(String),
++    denyTools: z.array(String),
+     reconnect: Reconnect,
+   }),
+   z.object({
+@@ -137,6 +147,8 @@ export const Config = z.union([
+     toolCallTimeoutMs: z.number().default(DEFAULT_TOOL_CALL_TIMEOUT_MS),
+     failOnStartupError: z.boolean().default(false),
+     maxInstructionBytes: z.number().step(1).min(1).default(DEFAULT_MAX_INSTRUCTION_BYTES),
++    allowTools: z.array(String),
++    denyTools: z.array(String),
+     reconnect: Reconnect,
+   }),
+ ]) as z<ConfigInput, Config>
+diff --git a/packages/mcp/mcp-client/src/tools.ts b/packages/mcp/mcp-client/src/tools.ts
+index 9e7b5c0ab5..bd08ed615d 100644
+--- a/packages/mcp/mcp-client/src/tools.ts
++++ b/packages/mcp/mcp-client/src/tools.ts
+@@ -30,6 +30,10 @@ export interface ToolBridgeOptions {
+   registrationFailure: 'contain' | 'throw'
+   serverName: string
+   toolCallTimeoutMs: number
++  /** Upstream raw tool names to register; omission registers every discovered tool. */
++  allowTools?: readonly string[]
++  /** Upstream raw tool names never to register; applied after {@link allowTools}. */
++  denyTools?: readonly string[]
+ }
+ 
+ /** State for one sync generation: the current set of disposers keyed by public name. */
+@@ -92,9 +96,11 @@ export function publicToolName(serverName: string, rawName: string): string {
+  * Two phases keep the swap safe:
+  *
+  * 1. Fetch: let the SDK aggregate `tools/list` and build the full next
+- *    generation of `ToolDefinition`s under public names. Any failure here
+- *    (network error or duplicate raw name) rejects
+- *    and leaves the previous generation registered untouched.
++ *    generation of `ToolDefinition`s under public names. The exact-name
++ *    `allowTools` list selects tools first, then `denyTools` removes from that
++ *    selection; both match the upstream raw name. Any failure here (network
++ *    error or duplicate raw name) rejects and leaves the previous generation
++ *    registered untouched.
+  * 2. Swap: dispose the previous generation, register the new one. A registry
+  *    conflict here can only mean a foreign registration squats on this
+  *    server's `mcp__<serverName>__` namespace — the partial generation is
+@@ -121,7 +127,13 @@ export async function syncTools(
+   const response = client.getServerCapabilities()?.tools === undefined
+     ? { tools: [] }
+     : await client.listTools(undefined, { cacheMode: 'refresh' })
++  const allow = opts.allowTools === undefined ? undefined : new Set(opts.allowTools)
++  const deny = new Set<string>(opts.denyTools)
++  const seen = new Set<string>()
+   for (const tool of response.tools) {
++    seen.add(tool.name)
++    if (allow !== undefined && !allow.has(tool.name)) continue
++    if (deny.has(tool.name)) continue
+     const publicName = publicToolName(opts.serverName, tool.name)
+     if (definitions.has(publicName)) {
+       throw new Error(
+@@ -141,6 +153,13 @@ export async function syncTools(
+       ),
+     }))
+   }
++  if (allow !== undefined) {
++    for (const rawName of allow) {
++      if (!seen.has(rawName)) {
++        ctx.logger.warn(`mcp-client(${opts.serverName}): allowTools entry "${rawName}" matches no tool listed by the server`)
++      }
++    }
++  }
+ 
+   // Phase 2: swap generations.
+   for (const dispose of previous.values()) dispose()
+diff --git a/packages/mcp/mcp-client/tests/tool-filter.spec.ts b/packages/mcp/mcp-client/tests/tool-filter.spec.ts
+new file mode 100644
+index 0000000000..9a0fb99e0c
+--- /dev/null
++++ b/packages/mcp/mcp-client/tests/tool-filter.spec.ts
+@@ -0,0 +1,191 @@
++/**
++ * Tests for the mcp-client tool filter: `allowTools` and `denyTools` select
++ * tools by their upstream raw name before registration, and every re-sync
++ * (including the one after a reconnect) applies the same selection.
++ * Isolated file so vi.mock of the MCP SDK doesn't pollute other test suites.
++ */
++import * as NativeToolExecutor from '@deepseek-ai/dsh-tool-executor-native'
++import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
++import { Context } from '@deepseek-ai/cordis'
++import SystemPrompt from '@deepseek-ai/dsh-system-prompt'
++import ToolRuntime from '@deepseek-ai/dsh-tools'
++import type { Config, StdioConfig } from '@deepseek-ai/dsh-mcp-client'
++
++// ---- Mock MCP SDK ----
++
++// vi.mock factories are hoisted above every import/const, so the mock fns and
++// class must be created inside vi.hoisted to exist when the factories run.
++const { mockConnect, mockClose, mockListTools, mockCallTool, mockSetNotificationHandler, MockClient, instances } = vi.hoisted(() => {
++  const mockConnect = vi.fn<() => Promise<void>>()
++  const mockClose = vi.fn<() => Promise<void>>()
++  const mockListTools = vi.fn<(_params?: Record<string, unknown>) => Promise<unknown>>()
++  const mockCallTool = vi.fn<(
++    _params?: Record<string, unknown>, _options?: unknown,
++  ) => Promise<unknown>>()
++  const mockSetNotificationHandler = vi.fn()
++  class MockClient {
++    transport: object | undefined = {}
++    onclose: (() => void) | undefined
++    connect = mockConnect
++    close = mockClose
++    getServerCapabilities = () => ({ tools: {} })
++    getInstructions(): string | undefined { return undefined }
++    listTools = mockListTools
++    callTool = mockCallTool
++    constructor(_info: unknown, options: { listChanged: { tools: { onChanged: () => void } } }) {
++      instances.push(this)
++      mockSetNotificationHandler('notifications/tools/list_changed', options.listChanged.tools.onChanged)
++    }
++  }
++  const instances: MockClient[] = []
++  return { mockConnect, mockClose, mockListTools, mockCallTool, mockSetNotificationHandler, MockClient, instances }
++})
++
++vi.mock('@modelcontextprotocol/client', () => ({
++  Client: MockClient,
++  StreamableHTTPClientTransport: vi.fn(),
++}))
++
++vi.mock('@modelcontextprotocol/client/stdio', () => ({
++  StdioClientTransport: vi.fn(),
++}))
++
++// vi.mock is hoisted above static imports, so the module under test sees the
++// mocked SDK even through a static import.
++import { apply } from '@deepseek-ai/dsh-mcp-client/src/index.ts'
++
++// ---- Helpers ----
++
++async function mountRegistry(): Promise<Context> {
++  const ctx = new Context()
++  await ctx.plugin(SystemPrompt)
++  await ctx.plugin(ToolRuntime)
++  await ctx.plugin(NativeToolExecutor)
++  return ctx
++}
++
++function stdioConfig(overrides: Partial<StdioConfig> = {}): Config {
++  return {
++    transport: 'stdio',
++    serverName: 'srv',
++    command: 'echo',
++    args: [],
++    env: {},
++    cwd: '',
++    toolCallTimeoutMs: 60_000,
++    failOnStartupError: false,
++    ...overrides,
++  }
++}
++
++/** The tool list the mock server advertises. */
++function listing(...names: string[]): { tools: { name: string; inputSchema: { type: string } }[]; nextCursor: undefined } {
++  return {
++    tools: names.map(name => ({ name, inputSchema: { type: 'object' } })),
++    nextCursor: undefined,
++  }
++}
++
++/** Capture the bridge's logger lines by level on one context. */
++function captureLogs(ctx: Context): { warns: string[] } {
++  const warns: string[] = []
++  ctx.logger.warn = ((message: unknown) => { warns.push(String(message)) }) as typeof ctx.logger.warn
++  return { warns }
++}
++
++// ---- Tests ----
++
++describe('mcp-client tool filter', () => {
++  let ctx: Context
++
++  beforeEach(async () => {
++    vi.clearAllMocks()
++    instances.length = 0
++    mockConnect.mockResolvedValue(undefined)
++    mockClose.mockImplementation(function (this: { onclose?: () => void }) {
++      this.onclose?.()
++      return Promise.resolve()
++    })
++    mockListTools.mockResolvedValue(listing('alpha', 'beta'))
++    mockCallTool.mockResolvedValue({ content: [{ type: 'text', text: 'ok' }] })
++    ctx = await mountRegistry()
++  })
++
++  afterEach(async () => {
++    await ctx.fiber.dispose()
++  })
++
++  it('registers every discovered tool when neither list is configured', async () => {
++    await apply(ctx, stdioConfig())
++
++    expect(ctx.tools.get('mcp__srv__alpha')).toBeDefined()
++    expect(ctx.tools.get('mcp__srv__beta')).toBeDefined()
++  })
++
++  it('registers only the tools named in allowTools', async () => {
++    await apply(ctx, stdioConfig({ allowTools: ['beta'] }))
++
++    expect(ctx.tools.get('mcp__srv__alpha')).toBeUndefined()
++    expect(ctx.tools.get('mcp__srv__beta')).toBeDefined()
++  })
++
++  it('does not register the tools named in denyTools', async () => {
++    await apply(ctx, stdioConfig({ denyTools: ['alpha'] }))
++
++    expect(ctx.tools.get('mcp__srv__alpha')).toBeUndefined()
++    expect(ctx.tools.get('mcp__srv__beta')).toBeDefined()
++  })
++
++  it('applies allowTools first and then removes the denyTools names', async () => {
++    await apply(ctx, stdioConfig({ allowTools: ['alpha', 'beta'], denyTools: ['beta'] }))
++
++    expect(ctx.tools.get('mcp__srv__alpha')).toBeDefined()
++    expect(ctx.tools.get('mcp__srv__beta')).toBeUndefined()
++  })
++
++  it('matches names exactly, without wildcards', async () => {
++    await apply(ctx, stdioConfig({ allowTools: ['alp*'] }))
++
++    expect(ctx.tools.get('mcp__srv__alpha')).toBeUndefined()
++    expect(ctx.tools.get('mcp__srv__beta')).toBeUndefined()
++  })
++
++  it('warns about an allowTools name the server does not list and keeps activation successful', async () => {
++    const { warns } = captureLogs(ctx)
++    await apply(ctx, stdioConfig({ allowTools: ['alpha', 'missing'], failOnStartupError: true }))
++
++    expect(ctx.tools.get('mcp__srv__alpha')).toBeDefined()
++    expect(warns.some(line => line.includes('allowTools entry "missing" matches no tool listed'))).toBe(true)
++  })
++
++  it('applies the filter when a ToolListChanged notification re-syncs the list', async () => {
++    mockListTools.mockResolvedValue(listing('alpha'))
++    await apply(ctx, stdioConfig({ allowTools: ['alpha', 'gamma'] }))
++    expect(ctx.tools.get('mcp__srv__alpha')).toBeDefined()
++
++    mockListTools.mockResolvedValue(listing('alpha', 'beta', 'gamma'))
++    const handler = mockSetNotificationHandler.mock.calls[0]![1] as () => void
++    handler()
++
++    await vi.waitFor(() => { expect(ctx.tools.get('mcp__srv__gamma')).toBeDefined() })
++    expect(ctx.tools.get('mcp__srv__alpha')).toBeDefined()
++    expect(ctx.tools.get('mcp__srv__beta')).toBeUndefined()
++  })
++
++  it('applies the filter when a reconnect re-syncs the list', async () => {
++    await apply(ctx, stdioConfig({
++      allowTools: ['alpha', 'gamma'],
++      reconnect: { initialDelayMs: 5, maxDelayMs: 40, maxAttempts: 3 },
++    }))
++    expect(ctx.tools.get('mcp__srv__alpha')).toBeDefined()
++    expect(ctx.tools.get('mcp__srv__beta')).toBeUndefined()
++
++    mockListTools.mockResolvedValue(listing('alpha', 'beta', 'gamma'))
++    instances[0]!.onclose?.()
++
++    await vi.waitFor(() => { expect(instances).toHaveLength(2) })
++    await vi.waitFor(() => { expect(ctx.tools.get('mcp__srv__gamma')).toBeDefined() })
++    expect(ctx.tools.get('mcp__srv__alpha')).toBeDefined()
++    expect(ctx.tools.get('mcp__srv__beta')).toBeUndefined()
++  })
++})

@@ -1,0 +1,255 @@
+.markdown {
+  min-width: 0;
+  max-width: 100%;
+  color: var(--color-text);
+  font-size: var(--text-md);
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+/* Prose uses the same width as tables and figures in the message column. */
+.markdown > * {
+  max-width: 100%;
+  margin: 0;
+}
+
+.markdown > * + * {
+  margin-top: 0.9em;
+}
+
+.markdown > :first-child {
+  margin-top: 0;
+}
+
+.markdown > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown > .md-table-wrap,
+.markdown > .md-pre,
+.markdown > .md-figure {
+  max-width: 100%;
+}
+
+.markdown h1,
+.markdown h2,
+.markdown h3,
+.markdown h4 {
+  margin: 1.6em 0 0;
+  font-weight: var(--weight-semibold);
+  line-height: var(--leading-tight);
+}
+
+.markdown h1 {
+  font-size: var(--text-3xl);
+}
+
+.markdown h2 {
+  padding-bottom: 0.35em;
+  border-bottom: 1px solid color-mix(in srgb, var(--color-gold) 38%, var(--color-line));
+  font-size: var(--text-2xl);
+}
+
+.markdown h3 {
+  font-size: var(--text-lg);
+}
+
+.markdown h4 {
+  color: var(--color-text-secondary);
+  font-size: var(--text-md);
+}
+
+.markdown p {
+  margin: 0;
+}
+
+.markdown p + p {
+  margin-top: 0.9em;
+}
+
+.markdown strong {
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+}
+
+/* A paragraph that is only bold acts as a small section heading. */
+.markdown .md-pseudo-heading {
+  margin-top: 1.6em;
+  font-size: var(--text-lg);
+  line-height: var(--leading-tight);
+}
+
+.markdown .md-pseudo-heading strong {
+  font-weight: var(--weight-semibold);
+}
+
+/* `**结论：**…` keeps paragraph flow but starts a new block. */
+.markdown .md-pseudo-lead {
+  margin-top: 1.3em;
+}
+
+.markdown ul,
+.markdown ol {
+  padding-left: 1.35em;
+}
+
+.markdown li + li {
+  margin-top: 0.4em;
+}
+
+.markdown li > ul,
+.markdown li > ol {
+  margin-top: 0.4em;
+  padding-left: 1.1em;
+}
+
+.markdown li::marker {
+  color: var(--color-text-muted);
+}
+
+.markdown blockquote {
+  padding: var(--space-5) var(--space-7);
+  border-left: 3px solid var(--color-gold);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--color-gold) 7%, var(--color-bg));
+  color: var(--color-text-secondary);
+}
+
+.markdown blockquote p {
+  margin: 0;
+}
+
+.markdown hr {
+  width: 100%;
+  border: 0;
+  border-top: 1px solid var(--color-line);
+}
+
+.md-inline-code {
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  background: var(--color-raised);
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}
+
+.md-pre {
+  margin: 0.9em 0 0;
+  padding: var(--space-6);
+  overflow-x: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+}
+
+.md-pre code {
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text);
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  line-height: 1.55;
+}
+
+.md-table-wrap {
+  width: 100%;
+  margin: 0.9em 0 0;
+  overflow-x: auto;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-md);
+}
+
+.markdown table {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+  font-size: var(--text-sm);
+  line-height: 1.55;
+}
+
+.markdown th,
+.markdown td {
+  padding: var(--space-5) var(--space-7);
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown th {
+  background: color-mix(in srgb, var(--color-raised) 70%, transparent);
+  color: var(--color-text-secondary);
+  font-weight: var(--weight-semibold);
+  white-space: nowrap;
+}
+
+.markdown th:first-child,
+.markdown td:first-child {
+  white-space: nowrap;
+}
+
+.markdown tbody tr {
+  border-top: 1px solid var(--color-line);
+}
+
+.markdown tbody tr:hover {
+  background: color-mix(in srgb, var(--color-raised) 55%, transparent);
+}
+
+.md-num {
+  /* Left-aligned like the rest of the column: tables from bots mix numbers and words in one column. */
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* A-share convention: red up, green down, flat secondary. */
+.md-up {
+  color: var(--color-price-up);
+  font-variant-numeric: tabular-nums;
+}
+
+.md-down {
+  color: var(--color-price-down);
+  font-variant-numeric: tabular-nums;
+}
+
+.md-flat {
+  color: var(--color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.md-deliverable-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 8px 1px 6px;
+  border: 1px solid color-mix(in srgb, var(--color-gold) 35%, var(--color-line));
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-gold) 8%, transparent);
+  color: var(--color-gold);
+  font: inherit;
+  font-size: 0.94em;
+  line-height: 1.6;
+  text-align: left;
+  text-decoration: none;
+  vertical-align: baseline;
+}
+
+.md-deliverable-link:hover {
+  border-color: var(--color-gold);
+  background: color-mix(in srgb, var(--color-gold) 12%, transparent);
+  color: var(--color-gold-highlight);
+}
+
+.md-deliverable-link svg {
+  flex: none;
+}
+
+.md-link-literal {
+  padding: 1px 5px;
+  border-radius: var(--radius-xs);
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.92em;
+}

@@ -1,0 +1,32 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "mcp-filter-proxy"
+version = "0.1.0"
+description = "A small stdio MCP proxy that exposes only an allowlisted subset of an upstream MCP server."
+readme = "README.md"
+requires-python = ">=3.12"
+license = { text = "MIT" }
+dependencies = [
+    "mcp>=1.0,<2",
+    "pyyaml>=6.0",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[project.scripts]
+mcp-filter-proxy = "mcp_filter_proxy.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/mcp_filter_proxy"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]

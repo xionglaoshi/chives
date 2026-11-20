@@ -1,0 +1,852 @@
+{
+  "version": "2026-11-20.2",
+  "people": [
+    {
+      "id": "buffett",
+      "name": "沃伦·巴菲特",
+      "style": "好生意与长期复利",
+      "bio": "巴菲特长期主持伯克希尔·哈撒韦的资本配置，把一张股票看作企业的一份所有权。他会问，企业靠什么留住顾客，提价后客户会不会离开，以及每增加一元利润要再投入多少资本。早年他重视相对资产价值的折价，后来受芒格影响，愿意为优质企业支付合理价格。若你会核对利润与现金流，能说明竞争优势何时失效，也愿意在日常价格波动中长期持有，这些习惯与他相近。仅凭喜欢消费龙头或长期持有亏损股，还不足以作出这一类比。",
+      "baike": "https://baike.baidu.com/item/%E6%B2%83%E4%BC%A6%C2%B7%E5%B7%B4%E8%8F%B2%E7%89%B9/472378",
+      "portrait": "portraits/a-buffett.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Warren_Buffett_at_the_2015_SelectUSA_Investment_Summit_(cropped).jpg",
+      "sources": [
+        "https://www.berkshirehathaway.com/letters/1989.html"
+      ],
+      "weights": {
+        "value": 0.72,
+        "growth": 0.28
+      },
+      "signals": [
+        "quality",
+        "compound",
+        "discount",
+        "concentrate"
+      ],
+      "portraitCredit": "USA International Trade Administration",
+      "portraitLicense": "Public domain",
+      "portraitLicenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "af42d4c021cc4ec8cedce77d2bd8e50be14de795b493ff29d6497a6bc17bc831",
+      "englishName": "Warren Buffett",
+      "webReleaseEligible": true,
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "munger",
+      "name": "查理·芒格",
+      "style": "经营质量与逆向检验",
+      "bio": "芒格曾任伯克希尔·哈撒韦副董事长，也是巴菲特长期的投资伙伴。他推动伯克希尔从寻找便宜的普通公司，转向购买能够持续创造价值的好公司。他尤其关心，一家企业为什么能把赚来的钱继续投出好回报，以及激励制度会让管理者怎样行动。映射到你的决策中，一个有意义的特征是会主动提出反例，例如管理层收入与短期营收挂钩时，增长是否来自放宽赊销。单凭仓位集中很难类比，还要看集中前是否理解经营机制和失败条件。",
+      "baike": "https://baike.baidu.com/item/%E6%9F%A5%E7%90%86%C2%B7%E8%8A%92%E6%A0%BC/4325934",
+      "portrait": "portraits/a-munger.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Charlie_Munger_(cropped).jpg",
+      "sources": [
+        "https://www.berkshirehathaway.com/letters/2023ltr.pdf"
+      ],
+      "weights": {
+        "value": 0.6,
+        "growth": 0.4
+      },
+      "signals": [
+        "quality",
+        "compound",
+        "concentrate",
+        "discretion"
+      ],
+      "portraitCredit": "Nick",
+      "portraitLicense": "CC BY 2.0",
+      "portraitLicenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "cfe135f208bcc14fa973736439af135de8264f9ab31f75e4de2225943139dc07",
+      "englishName": "Charlie Munger",
+      "webReleaseEligible": true,
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "graham",
+      "name": "本杰明·格雷厄姆",
+      "style": "有安全边际的深度价值",
+      "bio": "格雷厄姆在哥伦比亚大学讲授证券分析，与多德合著《证券分析》，把企业资产、盈利能力与证券价格摆在一起衡量。他强调安全边际，估算难免出错，买价与保守价值之间要留有余地。遇到一家跌破净资产的公司，这种风格会先查应收款能收回多少、存货是否积压、债务清偿后还剩什么，再考虑把机会放进一组分散的持仓里。若你的答案包括保守折价、反复核实资产和分散判断错误，就比单纯偏爱低价或下跌的股票更有辨识度。",
+      "baike": "https://baike.baidu.com/item/%E6%9C%AC%E6%9D%B0%E6%98%8E%C2%B7%E6%A0%BC%E9%9B%B7%E5%8E%84%E5%A7%86/3481029",
+      "portrait": "portraits/a-graham.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Benjamin_Graham_(1894-1976)_portrait_on_23_March_1950.jpg",
+      "sources": [
+        "https://business.columbia.edu/heilbrunn/about/valueinvestinghistory"
+      ],
+      "weights": {
+        "value": 1.0
+      },
+      "signals": [
+        "discount",
+        "portfolio",
+        "discretion"
+      ],
+      "portraitCredit": "Anonymous Unknown author",
+      "portraitLicense": "Public domain",
+      "portraitLicenseUrl": "https://commons.wikimedia.org/wiki/File:Benjamin_Graham_(1894-1976)_portrait_on_23_March_1950.jpg",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "709b67cd2317011df7be3cd78a08e35aa7d26f04bd7791974bef74558142e1bb",
+      "englishName": "Benjamin Graham",
+      "webReleaseEligible": true,
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "bogle",
+      "name": "约翰·博格尔",
+      "style": "低成本宽基指数",
+      "bio": "博格尔创办先锋领航，将低成本指数基金带给个人投资者。他把问题从“下一个赢家是谁”换成“整个市场创造的回报，有多少能留在我的账户里”。费用、频繁交易和临时改变配置，都会影响长期结果。用这种方法研究股票，主要精力会放在指数覆盖什么公司、行业是否过度集中、费率和跟踪效果怎样。如果你愿意分散持有、按计划再平衡，即使热门股票轮番领涨仍能坚持原定配置，这与他的思路相近。该类比专指指数化配置，与选股因子模型分开。",
+      "baike": "https://baike.baidu.com/item/%E7%BA%A6%E7%BF%B0%C2%B7%E5%8D%9A%E6%A0%BC%E5%B0%94/10173048",
+      "portrait": "portraits/a-bogle.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Photo_of_a_John_C._Bogle_By_Bill_Cramer.jpg",
+      "sources": [
+        "https://knowledge.wharton.upenn.edu/article/john-c-bogles-advice-live-long-and-prosper-on-index-funds/"
+      ],
+      "weights": {
+        "passive": 1.0
+      },
+      "signals": [
+        "portfolio",
+        "system",
+        "compound"
+      ],
+      "portraitCredit": "BillCramer",
+      "portraitLicense": "CC BY-SA 4.0",
+      "portraitLicenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "9b724f388e5aab0e5ee95d80cab400faf36b7303ddf8f4553273f31f9dfa9c32",
+      "englishName": "John C. Bogle",
+      "webReleaseEligible": true,
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "marks",
+      "name": "霍华德·马克斯",
+      "style": "周期位置与下行保护",
+      "bio": "马克斯是橡树资本联合创始人，长期研究信用、困境资产和市场周期。他所说的第二层思考，关心的不只是企业会变好还是变坏，还包括这个判断有多少已反映在价格中。例如，一家公司盈利回升，若市场原先押注的是更快增长，兑现好消息仍可能令持有人失望。若你会比较自己的预期与市场隐含预期，在融资容易、风险溢价很薄时更审慎，同时把可能永久损失的金额写清，便与这套分析接近。这一类比不能推定你有预测市场拐点的能力。",
+      "baike": "https://baike.baidu.com/item/%E9%9C%8D%E5%8D%8E%E5%BE%B7%C2%B7%E9%A9%AC%E5%85%8B%E6%96%AF/23492777",
+      "portrait": "portraits/a-marks.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Howard_Marks_2.17.12_(cropped).jpg",
+      "sources": [
+        "https://www.oaktreecapital.com/docs/default-source/memos/2015-09-09-its-not-easy.pdf"
+      ],
+      "weights": {
+        "value": 0.65,
+        "macro": 0.35
+      },
+      "signals": [
+        "cycle",
+        "discount",
+        "discretion"
+      ],
+      "portraitCredit": "kellywritershouse",
+      "portraitLicense": "CC BY 2.0",
+      "portraitLicenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "3307f200dd0aa71cd93a9dee32bcc6387c9846d2392c34d54a5f5547c6a4c197",
+      "englishName": "Howard Marks",
+      "webReleaseEligible": true,
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "ackman",
+      "name": "比尔·阿克曼",
+      "style": "集中投资与股东行动",
+      "bio": "阿克曼创办潘兴广场，投资方法中一个醒目的部分，是在少数看得懂的公司建立较大头寸，并在合适条件下以股东身份推动经营或治理变化。他研究的不只是公司值多少钱，还包括董事会、资本配置或业务结构改变后，价值怎样释放。对于个人投资者，相似之处可以表现为阅读表决事项、追踪回购和分红承诺、核查重组条件。大型机构能与管理层交涉，普通股东可行的路径通常是观察兑现过程，不能因为同样看好改革就假设催化剂必然发生。",
+      "baike": "https://baike.baidu.com/item/%E6%AF%94%E5%B0%94%C2%B7%E9%98%BF%E5%85%8B%E6%9B%BC/18545736",
+      "portrait": "portraits/a-ackman.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Valeant_Pharmaceuticals%27_Business_Model_(headshot).jpg",
+      "sources": [
+        "https://pershingsquareholdings.com/about-us/"
+      ],
+      "weights": {
+        "value": 0.8,
+        "growth": 0.2
+      },
+      "signals": [
+        "activist",
+        "catalyst",
+        "concentrate",
+        "quality"
+      ],
+      "portraitCredit": "Senate Democrats",
+      "portraitLicense": "CC BY 2.0",
+      "portraitLicenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "d668d17fa65a21b799323a43f04cf81452cec0064f86c47eb75fc5c441f9aebd",
+      "englishName": "Bill Ackman",
+      "webReleaseEligible": true,
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "klarman",
+      "name": "塞思·卡拉曼",
+      "style": "保留现金与特殊机会",
+      "bio": "卡拉曼长期负责鲍波斯特集团的投资，强调把控制潜在损失放在研究起点。机会不够吸引人时，他愿意保留现金，并在复杂或被忽略的资产中寻找价格相对于价值的折扣。对应到一只重组股，投资者可以先算最坏情境下权益还能值多少，再考虑事件延期、债权顺位和资金占用多久。如果你的答案常常是写出失败情境、要求更厚的安全边际、找不到合适价格便耐心等待，这种判断有卡拉曼的影子。单纯怕跌不敢入场，还不足以成立。",
+      "baike": "https://baike.baidu.com/item/%E5%A1%9E%E6%96%AF%C2%B7%E5%8D%A1%E6%8B%89%E6%9B%BC/10340423",
+      "portrait": "portraits/a-klarman.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Seth_Klarman_at_147th_Preakness_Stakes.jpg",
+      "sources": [
+        "https://www.baupost.com/investment_philosophy"
+      ],
+      "weights": {
+        "value": 1.0
+      },
+      "signals": [
+        "discount",
+        "catalyst",
+        "discretion"
+      ],
+      "portraitCredit": "Maryland GovPics",
+      "portraitLicense": "CC BY 2.0",
+      "portraitLicenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "d9f09250aaec2f21178e78a1418f362d503f71ed01c606b22320bf288f7b3318",
+      "englishName": "Seth Klarman",
+      "webReleaseEligible": true,
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "wood",
+      "name": "凯茜·伍德",
+      "style": "技术创新与长期成长",
+      "bio": "伍德创办方舟投资，团队从有望改变产业成本结构的技术出发，再自下而上寻找能够把技术转成收入的企业。这一路径常会同时考察成本下降、采用率和潜在市场，而进入壁垒、融资需求与竞争会决定企业能捕获多少价值。例如，预测技术渗透率很高，还需要说明市场份额、单位经济效益和估值之间如何衔接。若你会列出乐观与落空两套情境，愿意随数据修改假设，你在研究创新公司的方法上与她有相似处。仅仅喜欢高波动题材并不能建立这种相似性。",
+      "baike": "https://baike.baidu.com/item/%E5%87%AF%E8%8C%9C%C2%B7%E4%BC%8D%E5%BE%B7/61946469",
+      "portrait": "portraits/a-wood.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Cathie_Wood_ARK_Invest_Photo.jpg",
+      "sources": [
+        "https://www.ark-invest.com/investment-process"
+      ],
+      "weights": {
+        "growth": 1.0
+      },
+      "signals": [
+        "quality",
+        "field",
+        "discretion"
+      ],
+      "portraitCredit": "Caroline Wood",
+      "portraitLicense": "CC BY-SA 4.0",
+      "portraitLicenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "060c748f212a3221ba40ce2d2cd8bcedf8e786fb95fd969d07fc16d94d89775e",
+      "englishName": "Cathie Wood",
+      "webReleaseEligible": true,
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "dodd",
+      "name": "戴维·多德",
+      "style": "逐项核实报表与证券权利",
+      "bio": "多德在哥伦比亚大学从事证券分析教学，与格雷厄姆合著《证券分析》。他们把公司披露、证券条款和长期盈利记录纳入可以复查的估值工作。用这种方法看一家利润大增的公司，值得逐项核对利润是否经常发生、现金是否到账、利息与优先债权要先取走多少，以及普通股股东最后能分享什么。若你愿意读年报附注，把分析调整前后的数字并列，并追问同业为何采用不同会计口径，这种习惯比“我喜欢便宜的公司”更接近多德代表的研究传统。",
+      "baike": "https://baike.baidu.com/item/%E6%88%B4%E7%BB%B4%C2%B7%E5%A4%9A%E5%BE%B7/68167009",
+      "portrait": "portraits/a-dodd.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:David_LeFevre_Dodd.jpg",
+      "sources": [
+        "https://business.columbia.edu/heilbrunn/about/valueinvestinghistory"
+      ],
+      "weights": {
+        "value": 1.0
+      },
+      "signals": [
+        "discount",
+        "quality",
+        "discretion"
+      ],
+      "portraitCredit": "(i) Manny Warman or optionally, Emanuel \"Manny\" Warman (1915-1983),Columbia University's official photographer for 37 years. (ii) Courtesy Columbia University Archives.",
+      "portraitLicense": "Attribution",
+      "portraitLicenseUrl": "https://commons.wikimedia.org/wiki/File:David_LeFevre_Dodd.jpg",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "c8ef31f128ef15a812c4437288e33b00847f4111ab7cc40624e7da33ed5be10e",
+      "englishName": "David Dodd",
+      "webReleaseEligible": true,
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "mobius",
+      "name": "马克·墨比尔斯",
+      "style": "跨市场实地调研",
+      "bio": "墨比尔斯长期从事新兴市场投资，曾领导邓普顿的新兴市场投资团队。这种研究特别重视到当地观察企业，理解行业所受的制度、基础设施和公司治理约束。同样一家连锁企业，财报上的门店增长很快，实地却可能看到客流不足、经销商压货或竞争者正在降价。把走访发现与公开数字互相核对，比单听管理层介绍更能体现这一风格。如果你在熟悉的行业有可验证的一手观察，也会为样本偏差和小股东权利留下疑问，可以据此建立类比。",
+      "baike": "https://baike.baidu.com/item/%E9%A9%AC%E5%85%8B%C2%B7%E5%A2%A8%E6%AF%94%E5%B0%94%E6%96%AF/8162816",
+      "portrait": "portraits/a-mobius.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Mark_Mobius_(rectangle_portrait_crop).jpg",
+      "sources": [
+        "https://www.franklintempleton.com/press-releases/news-room/2018/dr.-mark-mobius-announces-plans-to-retire-from-franklin-templeton-investments"
+      ],
+      "weights": {
+        "value": 0.55,
+        "growth": 0.45
+      },
+      "signals": [
+        "field",
+        "quality",
+        "discretion"
+      ],
+      "portraitCredit": "www.marcinmizerski.com",
+      "portraitLicense": "CC0",
+      "portraitLicenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "0ddf20869ff6d482f1de3faf9156dd41f6b4c2b2077cf299bf459a976819df4d",
+      "englishName": "Mark Mobius",
+      "webReleaseEligible": true,
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "siegel",
+      "name": "杰里米·西格尔",
+      "style": "股息再投资与长期总回报",
+      "bio": "西格尔在沃顿商学院研究股票长期回报，尤其关注估值和股息再投资。他曾比较高增长科技企业与传统石油企业的长期表现，说明企业业绩增长更快，股东回报却可能因为买价过高而落后。持续分红能让长期投资者在股价较低时积累更多股份。对应到你的选择，若你看的是含分红再投资的总回报，并会查经营现金能否维持派息，这比只按当年股息率排名更接近他的框架。长期样本是理解机制的依据，不能把过去的市场回报率直接填进个人未来收益假设。",
+      "baike": "https://baike.baidu.com/item/%E6%9D%B0%E9%87%8C%E7%B1%B3J.%E8%A5%BF%E6%A0%BC%E5%B0%94/3051562",
+      "portrait": "portraits/a-siegel.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Jeremy_Siegel_Port.jpg",
+      "sources": [
+        "https://knowledge.wharton.upenn.edu/podcast/knowledge-at-wharton-podcast/jeremy-siegels-latest-book-lays-out-the-future-for-investors/"
+      ],
+      "weights": {
+        "income": 0.75,
+        "value": 0.25
+      },
+      "signals": [
+        "dividend",
+        "compound",
+        "portfolio",
+        "discount"
+      ],
+      "portraitCredit": "Treplap",
+      "portraitLicense": "CC0",
+      "portraitLicenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "3d43c4d0a30771bacfd4c8edbc596d6018c4901d8cc46fc619f84eef74bd5538",
+      "englishName": "Jeremy Siegel",
+      "webReleaseEligible": true,
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。",
+      "analogyScope": "研究方法或理论视角，匹配文案不得替其虚构个人交易记录。"
+    },
+    {
+      "id": "neuberger",
+      "name": "罗伊·纽伯格",
+      "style": "逆向选股与组合保护",
+      "bio": "纽伯格参与创办资产管理公司路博迈，个人投资生涯跨过多个市场周期。他的经验包含两层决策：个别企业可能有投资价值，整组持仓仍可能同时受到市场下跌的冲击。他在一九二九年前后利用卖空对冲持仓风险，是理解这一区别的例子。若你习惯分别记录个股投资理由和组合的共同风险，并在同类风险过度集中时主动缩小暴露，这一点与他相似。个人账户可以通过现金和持仓规模表达谨慎，这张人物卡也不意味着需要复制当年的卖空做法。",
+      "baike": "https://baike.baidu.com/item/%E7%BD%97%E4%BC%8A%C2%B7%E7%BA%BD%E4%BC%AF%E6%A0%BC/8160028",
+      "portrait": "portraits/a-neuberger.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Roy_Neuberger-George_W_Bush.jpg",
+      "sources": [
+        "https://www.nb.com/who-we-are/faq",
+        "https://www.arts.gov/honors/medals/roy-r-neuberger"
+      ],
+      "weights": {
+        "value": 0.75,
+        "macro": 0.25
+      },
+      "signals": [
+        "discount",
+        "hedge",
+        "discretion"
+      ],
+      "portraitCredit": "NEA photographer Michael Stewart",
+      "portraitLicense": "Public domain",
+      "portraitLicenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "7b8e6644ca09cf758e898175c62449e7263fd1d8e8c876dad3aaca4875c6667c",
+      "portraitDownloadSource": "https://www.arts.gov/sites/default/files/Neuberger1.jpg",
+      "englishName": "Roy R. Neuberger",
+      "webReleaseEligible": true,
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "simons",
+      "name": "詹姆斯·西蒙斯",
+      "style": "统计规律与系统化交易",
+      "bio": "詹姆斯·西蒙斯先研究数学，后来创办文艺复兴科技，把科学家、数据和计算机带进投资决策。他的团队寻找大量观测中反复出现的统计规律，一条规律能否在实际交易中继续有效，比关于单家公司的故事更重要。如果你愿意先定义信号，用未参加建模的数据复核，再扣除手续费、冲击成本去看结果，这一部分很像西蒙斯。遇到连续失效，值得查数据口径和市场结构是否变化。具体基金模型并未公开，普通投资者也很难照搬其数据和执行条件。",
+      "baike": "https://baike.baidu.com/item/%E8%A9%B9%E5%A7%86%E6%96%AF%C2%B7%E8%A5%BF%E8%92%99%E6%96%AF/1607814",
+      "baikeTitle": "詹姆斯·西蒙斯_百度百科",
+      "baikeCheck": "移动版正文与词条数字 ID 已核对",
+      "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E8%A9%B9%E5%A7%86%E6%96%AF%C2%B7%E8%A5%BF%E8%92%99%E6%96%AF",
+      "portrait": "portraits/b-simons.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Jim_Simons_at_MSRI.jpg",
+      "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Jim_Simons_at_MSRI.jpg/330px-Jim_Simons_at_MSRI.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "portraitLicense": "CC BY-SA 3.0",
+      "portraitLicenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "e4429d2c213149a7fd1132ee3611e5564f6d85bc630f9a602037578ff13a8ff3",
+      "webReleaseEligible": true,
+      "sources": [
+        "https://www.simonsfoundation.org/news/simons-foundation-co-founder-mathematician-and-investor-jim-simons-dies-at-86/"
+      ],
+      "weights": {
+        "quant": 1
+      },
+      "signals": [
+        "system",
+        "portfolio"
+      ],
+      "englishName": "Jim Simons",
+      "portraitCredit": "Gleuschk",
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "dalio",
+      "name": "瑞·达利欧",
+      "style": "宏观环境与风险平衡",
+      "bio": "瑞·达利欧创办桥水，团队用经济增长和通胀相对于预期的变化，解释股票、债券等资产为何在不同环境中有不同表现。桥水的全天候思路尤其重视每类资产对整体波动的贡献。手里有十只股票，也可能都在押注同一个经济情景。如果你习惯先画出利率、需求、物价的几种路径，再检查持仓在各情景下有多脆弱，这一点接近达利欧。对只有股票的账户，这项类比主要帮助你发现共同暴露，单靠增加股票只数很难复制跨资产分散。",
+      "baike": "https://baike.baidu.com/item/%E7%91%9E%C2%B7%E8%BE%BE%E5%88%A9%E6%AC%A7/49925839",
+      "baikeTitle": "瑞·达利欧_百度百科",
+      "baikeCheck": "移动版正文与词条数字 ID 已核对",
+      "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E7%91%9E%C2%B7%E8%BE%BE%E5%88%A9%E6%AC%A7",
+      "portrait": "portraits/b-dalio.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Web_Summit_2018_-_Forum_-_Day_2,_November_7_HM1_7481_(44858045925).jpg",
+      "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1f/Web_Summit_2018_-_Forum_-_Day_2%2C_November_7_HM1_7481_%2844858045925%29.jpg/330px-Web_Summit_2018_-_Forum_-_Day_2%2C_November_7_HM1_7481_%2844858045925%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "portraitLicense": "CC BY 2.0",
+      "portraitLicenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "320ba63763665fe56390d73352c9af67b01e424eda9770f810f149bde3e05d80",
+      "webReleaseEligible": true,
+      "sources": [
+        "https://www.bridgewater.com/research-and-insights/the-all-weather-story"
+      ],
+      "weights": {
+        "macro": 0.8,
+        "quant": 0.2
+      },
+      "signals": [
+        "cycle",
+        "portfolio",
+        "system"
+      ],
+      "englishName": "Ray Dalio",
+      "portraitCredit": "Web Summit",
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "taleb",
+      "name": "纳西姆·尼古拉斯·塔勒布",
+      "style": "尾部风险与非对称损益",
+      "bio": "纳西姆·尼古拉斯·塔勒布有衍生品交易背景，著有《黑天鹅》和《反脆弱》。他关注一个常被平均值掩盖的问题：在很少出现却冲击巨大的行情里，账面上的小概率会变成多大的真实损失？如果你比较两种方案时，先看会不会彻底出局、损失有没有上界，再看正常年份可以赚多少，这种思路与他相近。愿意付出有限而持续的保护成本，也与这种偏好一致。单纯害怕价格回落，或者喜欢赌小概率暴利，均不足以支持这项类比。",
+      "baike": "https://baike.baidu.com/item/%E7%BA%B3%E8%A5%BF%E5%A7%86%C2%B7%E5%B0%BC%E5%8F%A4%E6%8B%89%E6%96%AF%C2%B7%E5%A1%94%E5%8B%92%E5%B8%83/9957897",
+      "baikeTitle": "纳西姆·尼古拉斯·塔勒布_百度百科",
+      "baikeCheck": "移动版正文与词条数字 ID 已核对",
+      "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E7%BA%B3%E8%A5%BF%E5%A7%86%C2%B7%E5%B0%BC%E5%8F%A4%E6%8B%89%E6%96%AF%C2%B7%E5%A1%94%E5%8B%92%E5%B8%83",
+      "portrait": "portraits/b-taleb.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Taleb_mug.JPG",
+      "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9b/Taleb_mug.JPG/330px-Taleb_mug.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "portraitLicense": "Attribution",
+      "portraitLicenseUrl": "",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "97e404f4a36cba3893b2d79fbf0dc175cc5c0528be8ea6c37c11bb5bb249f16f",
+      "webReleaseEligible": true,
+      "sources": [
+        "https://www.fooledbyrandomness.com/"
+      ],
+      "weights": {
+        "macro": 0.45,
+        "quant": 0.55
+      },
+      "signals": [
+        "hedge",
+        "portfolio"
+      ],
+      "englishName": "Nassim Nicholas Taleb",
+      "portraitCredit": "Sarah Josephine Taleb",
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "jones",
+      "name": "保罗·都铎·琼斯",
+      "style": "主观宏观交易与风险控制",
+      "bio": "保罗·都铎·琼斯创办都铎投资，以跨市场的宏观交易著称。他把市场价格的实际表现也当作检验判断的材料。即便看好一个经济方向，持仓仍可能在正确的宏观看法兑现前遭遇无法承受的亏损。如果你做交易前会区分经济判断和入场时机，提前写明什么变化会让自己撤退，并愿意在连续受挫时缩小风险，这段决策习惯可与他比较。单次猜中顶部或一次果断止损尚不足为据，最好回看几次不同市场环境下的真实离场记录。",
+      "baike": "https://baike.baidu.com/item/%E4%BF%9D%E7%BD%97%C2%B7%E9%83%BD%E9%93%8E%C2%B7%E7%90%BC%E6%96%AF/8540496",
+      "baikeTitle": "保罗·都铎·琼斯_百度百科",
+      "baikeCheck": "移动版正文与词条数字 ID 已核对",
+      "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E4%BF%9D%E7%BD%97%C2%B7%E9%83%BD%E9%93%8E%C2%B7%E7%90%BC%E6%96%AF",
+      "portrait": "portraits/b-jones.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Paul_Tudor_Jones_2006.jpg",
+      "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1d/Paul_Tudor_Jones_2006.jpg/330px-Paul_Tudor_Jones_2006.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "portraitLicense": "Public domain",
+      "portraitLicenseUrl": "",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "5fa40536fa98dc70a85ccf45740164eb4439dfea727a9678507d9902168bc3c3",
+      "webReleaseEligible": true,
+      "sources": [
+        "https://www.tudor.com/"
+      ],
+      "weights": {
+        "macro": 0.55,
+        "momentum": 0.45
+      },
+      "signals": [
+        "discretion",
+        "cycle",
+        "breakout"
+      ],
+      "englishName": "Paul Tudor Jones",
+      "portraitCredit": "Department of the Interior. National Business Center. Administrative Operations Directorate. Division of Employee and Public Services. Creative Communications Branch. Photographic Services. 2000",
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "livermore",
+      "name": "杰西·利弗莫尔",
+      "style": "价格突破与趋势投机",
+      "bio": "杰西·利弗莫尔是二十世纪上半叶美国市场的投机者。在《股票大作手操盘术》中，他记录关键价位、主要趋势和进场后的价格反应，主张等待市场行为印证想法。如果你常把候选股放在观察名单，等价格突破预先记录的区间才试仓，并在行情没有按预期展开时退出，这部分很像他。追逐盘中突然拉升和按计划等待突破，是两套不同的行为。利弗莫尔也经历过严重破产，历史上的大起大落提示了杠杆、集中和失去执行纪律的代价。",
+      "baike": "https://baike.baidu.com/item/%E6%9D%B0%E8%A5%BF%C2%B7%E5%8A%B3%E4%BC%A6%E6%96%AF%E9%A1%BF%C2%B7%E5%88%A9%E5%BC%97%E8%8E%AB%E5%B0%94/65213966",
+      "baikeTitle": "杰西·劳伦斯顿·利弗莫尔_百度百科",
+      "baikeCheck": "移动版正文与词条数字 ID 已核对",
+      "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E6%9D%B0%E8%A5%BF%C2%B7%E5%8A%B3%E4%BC%A6%E6%96%AF%E9%A1%BF%C2%B7%E5%88%A9%E5%BC%97%E8%8E%AB%E5%B0%94/65213966?fromtitle=%E6%9D%B0%E8%A5%BF%C2%B7%E5%88%A9%E5%BC%97%E8%8E%AB%E5%B0%94&fromid=9705511",
+      "portrait": "portraits/b-livermore.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Press_photo_of_Jesse_Livermore_in_1940_(cropped).jpg",
+      "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/Press_photo_of_Jesse_Livermore_in_1940_%28cropped%29.jpg/330px-Press_photo_of_Jesse_Livermore_in_1940_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "portraitLicense": "Public domain",
+      "portraitLicenseUrl": "",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "3f793e129b0a955a537b306d5da3c470d343aadf64778d1ed2e22990338f0fce",
+      "webReleaseEligible": true,
+      "sources": [
+        "https://www.r-5.org/files/books/trading/speculation/Jesse_Livermore-How_To_Trade_In_Stocks_%281940_original%29-EN.pdf"
+      ],
+      "weights": {
+        "momentum": 1
+      },
+      "signals": [
+        "breakout",
+        "discretion",
+        "concentrate"
+      ],
+      "englishName": "Jesse Livermore",
+      "portraitCredit": "Acme Photo",
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "asness",
+      "name": "克里夫·阿斯内斯",
+      "style": "多因子与跨市场检验",
+      "bio": "克里夫·阿斯内斯是 AQR 的共同创办人，参与研究价值与动量在不同市场的表现。低估值和较强的历史价格趋势可以是不同信号；研究者需要观察它们在各类样本中如何同时起作用，以及组合会承担哪些共同风险。如果你更愿意定义一篮子股票的排序、再定期再平衡，允许单只股票出错，却持续复核整套规则，风格与他有相似处。最有区分度的证据是事前写好的规则、成本假设和失效标准，一张挑出近期赢家的回测图说明不了这些。",
+      "baike": "https://baike.baidu.com/item/%E5%85%8B%E9%87%8C%E5%A4%AB%C2%B7%E9%98%BF%E6%96%AF%E5%86%85%E6%96%AF/68746822",
+      "baikeTitle": "克里夫·阿斯内斯_百度百科",
+      "baikeCheck": "移动版正文与词条数字 ID 已核对",
+      "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E5%85%8B%E9%87%8C%E5%A4%AB%C2%B7%E9%98%BF%E6%96%AF%E5%86%85%E6%96%AF",
+      "portrait": "portraits/b-asness.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Cliff-asness-by-bill-cramer.jpg",
+      "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8b/Cliff-asness-by-bill-cramer.jpg/330px-Cliff-asness-by-bill-cramer.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "portraitLicense": "CC BY-SA 4.0",
+      "portraitLicenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "4f5621c6799683880e6890e05f65f8bd804851e4fa64ec64fb69019b750513bf",
+      "webReleaseEligible": true,
+      "sources": [
+        "https://pages.stern.nyu.edu/~lpederse/papers/ValMomEverywhere.pdf"
+      ],
+      "weights": {
+        "quant": 0.7,
+        "value": 0.15,
+        "momentum": 0.15
+      },
+      "signals": [
+        "system",
+        "portfolio",
+        "discount"
+      ],
+      "englishName": "Cliff Asness",
+      "portraitCredit": "BillCramer",
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "rogers",
+      "name": "吉姆·罗杰斯",
+      "style": "供需周期与实地观察",
+      "bio": "吉姆·罗杰斯曾与乔治·索罗斯共同创办量子基金，后来通过旅行、写作和商品市场研究为人熟知。他常从长期缺乏投资、供给受限或需求改变的地方寻找机会，再追问价格是否已反映这一变化。如果你研究周期股时会去核对扩产进度、库存变化、客户订单和替代供给，而非仅凭行业景气的热度下判断，这部分接近他的思路。即使商品供需判断成立，股东最终能拿到多少，还取决于成本、资本开支和负债，Bot 应把两层证据分别列出。",
+      "baike": "https://baike.baidu.com/item/%E5%90%89%E5%A7%86%C2%B7%E7%BD%97%E6%9D%B0%E6%96%AF/1332573",
+      "baikeTitle": "吉姆·罗杰斯_百度百科",
+      "baikeCheck": "移动版正文与词条数字 ID 已核对",
+      "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E5%90%89%E5%A7%86%C2%B7%E7%BD%97%E6%9D%B0%E6%96%AF",
+      "portrait": "portraits/b-rogers.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Jim-rogers-madrid-160610.jpg",
+      "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b5/Jim-rogers-madrid-160610.jpg/330px-Jim-rogers-madrid-160610.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "portraitLicense": "CC BY-SA 3.0",
+      "portraitLicenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "1b829a752615b06d846b5ea16865cda2240b0b75188ce1a1d10c56b0d1b4c6a3",
+      "webReleaseEligible": true,
+      "sources": [
+        "https://time.com/archive/6904827/qa-with-investing-legend-jim-rogers/"
+      ],
+      "weights": {
+        "macro": 0.8,
+        "value": 0.2
+      },
+      "signals": [
+        "field",
+        "cycle",
+        "discretion"
+      ],
+      "englishName": "Jim Rogers",
+      "portraitCredit": "FDV",
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "fama",
+      "name": "尤金·法马",
+      "style": "市场效率与组合因子",
+      "bio": "尤金·法马长期研究资产价格、市场效率以及股票组合之间的收益差异，也是法马—弗伦奇因子研究的重要作者。他的代表性贡献来自实证研究，因此这里比较的是处理证据的方法。假如你看到荐股纪录时先要求完整样本、可投资基准和交易成本，再问表现是否可由市场、规模或价值等暴露解释，这种习惯与法马的研究视角相近。它也能提醒 Bot 把市场上涨带来的收益和独特的选择能力分开，避免只凭一次跑赢指数便认定策略有效。",
+      "baike": "https://baike.baidu.com/item/%E5%B0%A4%E9%87%91%C2%B7%E6%B3%95%E9%A9%AC/1462319",
+      "baikeTitle": "尤金·法马_百度百科",
+      "baikeCheck": "移动版正文与词条数字 ID 已核对",
+      "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E5%B0%A4%E9%87%91%C2%B7%E6%B3%95%E9%A9%AC/1462319?fromtitle=%E5%B0%A4%E9%87%91%C2%B7%E6%B3%95%E7%8E%9B&fromid=1461980",
+      "portrait": "portraits/b-fama.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Eugene_Fama_at_Nobel_Prize,_2013.jpg",
+      "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Eugene_Fama_at_Nobel_Prize%2C_2013.jpg/330px-Eugene_Fama_at_Nobel_Prize%2C_2013.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "portraitLicense": "CC BY 2.0",
+      "portraitLicenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "383bab6281d2cc04af80d8a2293de5891ee98028ecbcac96718e2ef36f132422",
+      "webReleaseEligible": true,
+      "sources": [
+        "https://www.nobelprize.org/prizes/economic-sciences/2013/fama/facts/"
+      ],
+      "weights": {
+        "quant": 0.8,
+        "value": 0.2
+      },
+      "signals": [
+        "system",
+        "portfolio",
+        "compound"
+      ],
+      "englishName": "Eugene Fama",
+      "portraitCredit": "Bengt Nyman",
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。",
+      "analogyScope": "研究方法或理论视角，匹配文案不得替其虚构个人交易记录。"
+    },
+    {
+      "id": "shiller",
+      "name": "罗伯特·席勒",
+      "style": "周期调整估值与群体预期",
+      "bio": "罗伯特·席勒研究资产价格的长期变化，长期维护美国股市的历史数据，并研究投资者的集体预期和流行叙事。他使用跨多年、经通胀调整的盈利衡量市场估值，关心牛市和衰退会怎样扭曲某一年的价格与利润。如果你听见“这一次不一样”时会查过去两轮周期的价格与盈利，比较乐观预期兑现所需的条件，这种习惯接近他的研究视角。长期估值信号对短线择时的解释有限，Bot 更适合借它讨论未来若干年的情景，而非直接推断明天的涨跌。",
+      "baike": "https://baike.baidu.com/item/%E7%BD%97%E4%BC%AF%E7%89%B9%C2%B7%E5%B8%AD%E5%8B%92/5616324",
+      "baikeTitle": "罗伯特·席勒_百度百科",
+      "baikeCheck": "移动版正文与词条数字 ID 已核对",
+      "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E7%BD%97%E4%BC%AF%E7%89%B9%C2%B7%E5%B8%AD%E5%8B%92",
+      "portrait": "portraits/b-shiller.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Robert_J._Shiller_2017.jpg",
+      "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/55/Robert_J._Shiller_2017.jpg/330px-Robert_J._Shiller_2017.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "portraitLicense": "CC BY 2.0",
+      "portraitLicenseUrl": "https://creativecommons.org/licenses/by/2.0",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "1faf284f6ed53605eb5a8f8a994105e629eb393280b90c054aa4aceb7da3eaf7",
+      "webReleaseEligible": true,
+      "sources": [
+        "https://www.econ.yale.edu/~shiller/data.htm"
+      ],
+      "weights": {
+        "value": 0.42,
+        "macro": 0.48,
+        "quant": 0.1
+      },
+      "signals": [
+        "cycle",
+        "discount",
+        "discretion"
+      ],
+      "englishName": "Robert J. Shiller",
+      "portraitCredit": "w:en:Presidential Office Building, Taiwan",
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。",
+      "analogyScope": "研究方法或理论视角，匹配文案不得替其虚构个人交易记录。"
+    },
+    {
+      "id": "baruch",
+      "name": "伯纳德·巴鲁克",
+      "style": "独立判断的主观投机",
+      "bio": "伯纳德·巴鲁克早年在华尔街从事证券交易，后来承担经济和公共事务工作，也写下自己的市场经历。把他放在人物库中，主要是为了描述独立判断的主观投机者：可以对某些行业或行情形成强烈看法，同时愿意检验自己有没有被人群的情绪带走。若你听到市场热议时会退一步查供需、辨认消息来源，再决定是否值得下注，这部分可以作为类比。只有敢买敢卖的自我评价还太模糊，至少还应找出一次在众人兴奋时选择放弃的真实案例。",
+      "baike": "https://baike.baidu.com/item/%E4%BC%AF%E7%BA%B3%E5%BE%B7%C2%B7%E5%B7%B4%E9%B2%81%E5%85%8B/8160289",
+      "baikeTitle": "伯纳德·巴鲁克_百度百科",
+      "baikeCheck": "移动版正文与词条数字 ID 已核对",
+      "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E4%BC%AF%E7%BA%B3%E5%BE%B7%C2%B7%E5%B7%B4%E9%B2%81%E5%85%8B",
+      "portrait": "portraits/b-baruch.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:BARUCH,_BERNARD_2.jpg",
+      "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c8/BARUCH%2C_BERNARD_2.jpg/330px-BARUCH%2C_BERNARD_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "portraitLicense": "Public domain",
+      "portraitLicenseUrl": "",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "d3f64d2d1c920ee16f5a7e832a08973d79297ead0e0647d8f9a2cf042c8dad52",
+      "webReleaseEligible": true,
+      "sources": [
+        "https://blogs.baruch.cuny.edu/bernardbaruch/"
+      ],
+      "weights": {
+        "macro": 0.5,
+        "momentum": 0.5
+      },
+      "signals": [
+        "discretion",
+        "cycle",
+        "concentrate"
+      ],
+      "englishName": "Bernard Baruch",
+      "portraitCredit": "Harris & Ewing, photographer",
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+    },
+    {
+      "id": "black",
+      "name": "费希尔·布莱克",
+      "style": "定价模型与动态对冲",
+      "bio": "费希尔·布莱克是布莱克—斯科尔斯期权定价模型的共同提出者，后来在高盛从事金融研究。他代表的风格是先拆开风险，再尝试定价或对冲。比如同样看涨一家公司，直接持股与持有期权的损益会受到价格变化、时间流逝和波动率的不同影响。若你遇到新工具时先画出到期损益、追问模型假设和对冲成本，思维方式与他接近。模型给出的理论价格仍要对照流动性、跳空和实际成交成本；能代入公式与能安全执行策略之间还有距离。",
+      "baike": "https://baike.baidu.com/item/%E8%B4%B9%E5%B8%8C%E5%B0%94%C2%B7%E5%B8%83%E8%8E%B1%E5%85%8B/10410669",
+      "baikeTitle": "费希尔·布莱克_百度百科",
+      "baikeCheck": "移动版正文与词条数字 ID 已核对",
+      "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E8%B4%B9%E5%B8%8C%E5%B0%94%C2%B7%E5%B8%83%E8%8E%B1%E5%85%8B",
+      "portrait": "portraits/b-black.jpg",
+      "portraitSource": "https://commons.wikimedia.org/wiki/File:Fischer_Black.JPG",
+      "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6d/Fischer_Black.JPG/330px-Fischer_Black.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
+      "portraitLicense": "Public domain",
+      "portraitLicenseUrl": "",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "c4de5be37e727c9e847b4679bbad02235bd08f3b8869d182ca9ec9455f0f4ecc",
+      "webReleaseEligible": true,
+      "sources": [
+        "https://doi.org/10.1086/260062",
+        "https://www.goldmansachs.com/our-firm/history/moments/1973-black-scholes.html"
+      ],
+      "weights": {
+        "quant": 1
+      },
+      "signals": [
+        "system",
+        "hedge"
+      ],
+      "englishName": "Fischer Black",
+      "portraitCredit": "Dalmatine at English Wikipedia",
+      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。",
+      "analogyScope": "研究方法或理论视角，匹配文案不得替其虚构个人交易记录。"
+    },
+    {
+      "id": "xu",
+      "name": "徐翔",
+      "style": "A股民间游资／涨停板短线观察",
+      "bio": "徐翔早年活跃于宁波证券营业部，是媒体报道“宁波涨停板敢死队”时提到的代表人物，后来经营泽熙投资。这张卡片只比较一种可观察的偏好：研究当日热点、板块联动、成交活跃度，重视短线退出条件。如果你的交易依据主要来自公开盘口，并能给出事前的放弃条件，才具备这项类比的证据。徐翔后因操纵证券市场罪被判刑，中基协也作出纪律处分。听到疑似内幕消息应停止据此交易、转查公开公告，不能把违法行为当作短线研究能力或收益来源。",
+      "baike": "https://baike.baidu.com/item/%E5%BE%90%E7%BF%94/6229557",
+      "baikeTitle": "徐翔（上海泽熙投资管理有限公司原总经理）_百度百科",
+      "baikeCheck": "移动版正文与词条数字 ID 已核对",
+      "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E5%BE%90%E7%BF%94/6229557",
+      "portrait": "portraits/b-xu.jpg",
+      "portraitSource": "https://www.infzm.com/contents/112712",
+      "portraitOriginal": "https://images.infzm.com/medias/2015/1103/96232.jpeg@660x440",
+      "portraitLicense": "本机资料研究用，未核得对外再发布授权",
+      "portraitLicenseUrl": "",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "36f0bcaa2d0c19d657833abac3b938a05051c29dff6c90f9b877da378263b776",
+      "webReleaseEligible": false,
+      "sources": [
+        "https://www.amac.org.cn/zlgl/jlcf/scfjg/201706/P020231126392983549337.pdf",
+        "https://www.gsm.pku.edu.cn/__local/C/B1/53/91BBAAF16B83CE0EAD73A769A32_3F94AB25_1A8189.pdf",
+        "https://www.infzm.com/contents/112712"
+      ],
+      "weights": {
+        "momentum": 1
+      },
+      "signals": [
+        "flow",
+        "breakout",
+        "discretion"
+      ],
+      "comparisonBoundary": "仅类比公开信息下的短线观察方法；传闻、内幕与操纵行为不得用作正向匹配证据。",
+      "englishName": "Xu Xiang",
+      "portraitCredit": "新华视点微博截图，南方周末2015-11-03报道标注",
+      "releaseNote": "限本地研究；上线前取得授权或更换肖像。"
+    },
+    {
+      "id": "qiu-guolu",
+      "name": "邱国鹭",
+      "style": "竞争格局与逆向价值",
+      "bio": "邱国鹭在海外从事过资产管理，回国后曾在南方基金任职，后参与创办高毅资产，著有《投资中最简单的事》。他谈价值投资时会追问，一门看似热门的生意里，到底是股东、客户，还是同行分到了利润。产业空间很大，并不保证企业有定价权。如果你研究一家被抛售的公司时，先比较它与竞争对手的成本、渠道和行业集中度，再判断眼前的挫折是否已经计入股价，这部分风格与他接近。若只能说出股价比高点便宜，却解释不了公司赚谁的钱，仍不足以支持这项类比。",
+      "baike": "https://baike.baidu.com/item/%E9%82%B1%E5%9B%BD%E9%B9%AD/56330137",
+      "baikeTitle": "邱国鹭_百度百科",
+      "baikeCheck": "移动版正文、团队身份与词条数字 ID 已核对",
+      "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E9%82%B1%E5%9B%BD%E9%B9%AD/56330137",
+      "portrait": "portraits/b-qiu-guolu.jpg",
+      "portraitSource": "https://www.gyasset.com/p/site/investTeam?type=5",
+      "portraitOriginal": "https://www.gyasset.com/static/img/investTeam/qgl.jpg",
+      "portraitLicense": "机构官网人物像，本机研究用；未核得对外再发布授权",
+      "portraitLicenseUrl": "",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "6e5e2dd06f080d136ee8561026d926484c66c264691693135cc9c5af98556fe6",
+      "webReleaseEligible": false,
+      "sources": [
+        "https://www.gyasset.com/p/site/investTeam?type=5",
+        "https://www.gyasset.com/p/site/investTeamNewsArticle?id=172&type=5"
+      ],
+      "weights": {
+        "value": 0.85,
+        "growth": 0.15
+      },
+      "signals": [
+        "quality",
+        "discount",
+        "discretion"
+      ],
+      "englishName": "Qiu Guolu",
+      "portraitCredit": "高毅资产团队介绍页，未列摄影师",
+      "releaseNote": "限本地研究；上线前取得授权或更换肖像。"
+    },
+    {
+      "id": "feng-liu",
+      "name": "冯柳",
+      "style": "弱者体系与逆向预期",
+      "bio": "冯柳早年以个人投资者身份参与市场，后来在高毅资产管理资金。他提出“弱者体系”，把自己放在信息、研究能力和执行条件都可能落后的位置，追问市场已经知道什么，以及在这种前提下还有什么机会。若你面对下跌的公司，会先认真复述悲观一方的证据，区分哪些属于共识、哪些还有分歧，再推演普通投资者能否等到关键变化，这一点与他接近。仅凭跌幅大就买入，或者把管理层的私下暗示当作优势，均缺少他强调的出发点：接受认知限制，借公开信息检验假设。",
+      "baike": "https://baike.baidu.com/item/%E5%86%AF%E6%9F%B3/68452024",
+      "baikeTitle": "冯柳（中国私募基金经理）_百度百科",
+      "baikeCheck": "移动版正文、团队身份与词条数字 ID 已核对",
+      "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E5%86%AF%E6%9F%B3/68452024",
+      "portrait": "portraits/b-feng-liu.jpg",
+      "portraitSource": "https://www.gyasset.com/p/site/investTeam?type=9",
+      "portraitOriginal": "https://www.gyasset.com/static/img/investTeam/fl.jpg",
+      "portraitLicense": "机构官网人物像，本机研究用；未核得对外再发布授权",
+      "portraitLicenseUrl": "",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "614231b930103d17885658b769a9343667c6a4cc38812b66fa0cf15ddfe7c204",
+      "webReleaseEligible": false,
+      "sources": [
+        "https://www.gyasset.com/p/site/investTeam?type=9",
+        "https://www.gyasset.com/p/site/investTeamNewsArticle?id=220&type=9"
+      ],
+      "weights": {
+        "value": 0.8,
+        "growth": 0.2
+      },
+      "signals": [
+        "turnaround",
+        "discretion",
+        "discount"
+      ],
+      "englishName": "Feng Liu",
+      "portraitCredit": "高毅资产团队介绍页，未列摄影师",
+      "releaseNote": "限本地研究；上线前取得授权或更换肖像。"
+    },
+    {
+      "id": "duan-yongping",
+      "name": "段永平",
+      "englishName": "Duan Yongping",
+      "baike": "https://baike.baidu.com/item/%E6%AE%B5%E6%B0%B8%E5%B9%B3/6041736",
+      "sources": [
+        "https://zdpx.zju.edu.cn/news1.aspx?fl=301&id=52618",
+        "https://www.zju.edu.cn/2023/0317/c75052a2730004/page.htm"
+      ],
+      "portraitSource": "https://zdpx.zju.edu.cn/news1.aspx?fl=301&id=9489",
+      "portraitCredit": "浙江大学微信公众号供图（浙江大学继续教育学院转载），摄影者未署名",
+      "portraitLicense": "校方报道配图；未核得对外再发布授权，仅限本机研究",
+      "portraitLicenseUrl": "https://zdpx.zju.edu.cn/news1.aspx?fl=301&id=9489",
+      "webReleaseEligible": false,
+      "style": "从产品、生意模式与企业文化判断价值",
+      "bio": "段永平曾经营小霸王、创办步步高。他看股票时，习惯把自己放到企业经营者和顾客的位置上：顾客为什么愿意反复买这个产品？如果对手把价格降下来，顾客还会留下吗？在浙大与学生交流时，他用产品差异和企业文化解释，为什么有的生意值得长期跟踪。他也看重一家公司愿意放弃哪些眼前的利益。若你习惯从真实的产品体验追问利润能否持久，看不懂生意时宁愿等待，即便股价已经上涨也能坚持自己的判断，这些做法与他相近。",
+      "portrait": "portraits/duan-yongping.jpg",
+      "weights": {
+        "value": 0.83,
+        "growth": 0.17
+      },
+      "signals": [
+        "quality",
+        "field",
+        "concentrate"
+      ],
+      "releaseNote": "头像供本机研究使用，网页公开展示需另获授权。",
+      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
+      "portraitSha256": "613d97c8c18892e3bb9a321f2be8b79f79d204158913d188999673361f83cf0c"
+    }
+  ],
+  "name": "投资人物卡"
+}

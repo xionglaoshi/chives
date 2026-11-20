@@ -1,0 +1,4 @@
+packages:
+  - apps/*
+  - packages/acp-client
+  - packages/chives-mcp

@@ -1,24 +1,56 @@
-# 老韭菜 · chives
+# 老韭菜 · Chives
 
-chives 是老韭菜的 Agent 版，面向 A 股投研。第一阶段开发单用户本地 Agent，让个股研究员、基金持仓研究员和其他专家 Bot 结合可溯源的数据与可复算的分析工具，为同一个投资问题提供不同角度的判断。
+打开[投资专家](http://127.0.0.1:8888/#/bot/expert)即可讨论投资问题、诊断持仓，或把专项研究委派给对应 Bot。各岗位的职责见[Bot 名册](bots/README.md)。
 
-当前仓库已初始化，Agent 功能待开发。轻量版提供本地服务和 Skill，独立维护于 [xiong-sisyphus](https://github.com/xionglaoshi/xiong-sisyphus)。
+Chives 是老韭菜的 Agent 版，面向 A 股投研。第一阶段开发单用户本地 Agent，让个股研究员、基金持仓研究员和其他Bot 结合可溯源的数据与可复算的分析工具，为同一个投资问题提供不同角度的判断。
+
+Chives 按研究任务为 Bot 配置技能、数据和工具。点将台的五位 Bot 共用工作台。可在侧栏按关键词检索各 Bot 的历史消息，点击结果会定位到原文。Bot 可拖动排序。工作台的「策略市场」已预留入口，页面显示「功能开发中」。Bot 回复直接呈现给用户。内核和模型记录在任务运行信息中，不写入会话消息；旧会话中的同类提示也不显示。
+
+[公网测试入口](https://150.158.11.154/chives/)由腾讯云提供登录验证和行情。Mac 在线时进入工作台，离线时可以继续看图并在恢复后重新连接，运行和重建步骤见[公网入口说明](deploy/public/README.md)。
+
+工作台主题默认跟随系统。在「设置 → 通用设置 → 外观设置 → 主题」中可选择浅色、深色或跟随系统。浅色使用白色主区和浅灰侧栏。
+
+服务使用 `data/chives.sqlite` 保存对话与研究记录，Bot 通过 `@chives/chives-mcp` 接入内部工具。当前安装从该文件读取已有对话与研究记录，模型密钥使用 `CHIVES_MODEL_API_KEY`，盯盘计划 ID 使用 `chives-` 前缀。若需恢复改名前的整机快照，请使用同一快照中的程序和数据。
+
+## Bot 能力如何打磨
+
+Chives 把技能、工具、MCP、预设提示词、本地数据库、本地记忆系统和用户数据库看作 Bot 可以按需取用的“武器库”。同一问题可以保留几种方法。比如两套估值工具给出不同价位，可以分别保留盈利假设、估值口径和适用场景，供不同研究员选用。
+
+技能统一存放在 `skills/<技能名>/SKILL.md`。每个技能的脚本、模板和参考资料跟随该技能保存。目录名使用小写英文字母、数字和连字符。有效技能会自动出现在每个 Bot 的档案。选择「使用全部技能」后，以后新增的也能调用；按项勾选可为 Bot 只配指定的方法。启用「读取技能」工具后可用 `read_skill()` 列出获配技能，传入技能名读取完整正文。[技能来源与许可](THIRD_PARTY_NOTICES.md)随技能一并更新。
+
+下一步先逐项调优这些资产。熊翔设计投研考题并给出标准答案，用同一份材料测试不同资产组合。每次作答后对照预期，查明差距出在取数、计算、提示词还是记忆使用，改进后再跑，直到熊翔认可研究能力达到“120 分”。
+
+能力验收后，再根据用户的高频需求创建 Bot。每位 Bot 有明确的研究任务、独立记忆和相应的资产权限。例如研究公司回款的 Bot 可以读取公告和财务数据库，提供个人仓位分析的 Bot 还需要获准读取用户持仓。验收入口见[开发状态](STATUS.md)。
+
+## 启动与试用
+
+在本目录运行 `./start start`，打开[本地工作台](http://127.0.0.1:8888/)。`./start status` 查看服务状态，`./start stop` 关闭。Mac 登录会话中的 launchd 托管本次启动。新环境先准备 Node 26、pnpm 10.33 和 uv，然后执行 `scripts/install-chives.sh`，在网页设置里配置模型地址、协议、模型 ID 和密钥。本机已配置 DeepSeek。Python 依赖位于公共区的 chives 专用环境，运行数据位于本机的 data 和 runtime。
+
+创建新 Bot 后，在[Bot 档案](http://127.0.0.1:8888/#/bots)选择模型。默认跟随全局，也可以绑定单独的模型连接。全体 Bot 使用 dsh，本机「设置 → Agent 设置 → 内核设置」可查看版本、检查更新并手动决定是否升级。
+
+dsh 提供工作目录、工具调用、审批和模拟盘执行流程。Bot 按权限调用行情、策略、盯盘和报告工具，模型连接由工作台统一管理。
 
 ## 本机开发与同步
 
-开发目录为 `/Users/xiong/.chives`。登录 macOS 后每分钟检查一次，自动提交当前分支新增、修改和删除的非忽略文件，并推送到 GitHub 私有仓库的同名分支。离线期间仍会生成本地提交，恢复连接后补推。遇到远端分叉时，Git 会拒绝覆盖已有提交，手动合并后自动同步继续。合并、变基和 detached HEAD 期间暂停。
+老韭菜 Agent 版在 `/Users/xiong/.chives` 开发。日常改动保存在本机，只有熊翔明确要求“同步到 GitHub”时才由 Codex 核对改动、提交、推送到 [chives 私有仓库](https://github.com/xionglaoshi/chives)并核对远端提交。
 
-个人档案放 `user/`，数据库和运行数据放 `data/`、`runtime/`，模型密钥放 `.env` 或 `secrets/`。同步规则见 [.gitignore](.gitignore)。
+个人档案放 `user/`，运行数据放 `data/` 或 `runtime/`，凭据放 `.env` 或 `secrets/`。见 [.gitignore](.gitignore)。
 
-### 在熊翔的 Mac 上恢复同步
+[技术方案](chives技术方案.md)记录 Bot、执行器与模型选择规则。
 
-将 [同步脚本](ops/git-sync.sh) 复制到 `~/.agents/scripts/chives-autosync.sh`，将 [启动项](ops/local.chives.git-sync.plist) 复制到 `~/Library/LaunchAgents/`。确保 `~/.agents/state/chives-autosync/` 已创建，GitHub CLI 登录账号对私有仓库有写权限，本机 7897 代理可用。执行以下命令加载启动项或查看状态。
 
-```sh
-launchctl bootstrap "gui/$(id -u)" ~/Library/LaunchAgents/local.chives.git-sync.plist
-launchctl print "gui/$(id -u)/local.chives.git-sync"
-```
+## Bot 调试
 
-最近推送结果与错误可在 `~/.agents/state/chives-autosync/stderr.log` 查看。修改同步脚本后，将新副本复制到上述共享脚本路径。
+Bot 可以分别配置模型、技能、工具、MCP、本地资料库、指令、任务提示词和记忆。[Bot 配置与重建](docs/专家内核与配置.md)
 
-如需临时暂停自动提交，执行 `launchctl bootout "gui/$(id -u)/local.chives.git-sync"`。重新加载启动项后，期间积累的开发改动会在下一次检查时同步。
+## Bot 投研工具
+
+个股分析师可查因子、估值、公告账龄和期后回款，研究员可查机构原文与基金增减仓。Bot 档案支持逐项授权。[投研工具、实测与恢复](docs/投研工具与验收.md)
+
+用户资料、投资画像、消息平台、内核与模型、个性化备份和分项升级集中在[本机设置](http://127.0.0.1:8888/#/settings)。具体操作见[设置中心使用与验收](docs/设置中心.md)。
+
+## Bot 浏览器自动化
+
+在 Bot 档案的「可用工具」勾选「浏览器自动化（Playwright · Chromium）」并保存。Bot 可在一次调用内打开投研网页、填写查询、切换选项、点击、等待动态内容、读取结果，并可将截图保存到该 Bot 工作区。开启工作区写入后才能保存截图。[Bot 工具入口](apps/web/src/components/BotAssets.tsx)
+
+Chives 专属浏览器位于 `runtime/ms-playwright/`。其中 `python/` 保存 Playwright 绑定和官方 Node 驱动，`browsers/` 保存匹配版本的 Chromium。常规安装会一并安装这些组件。需要重装时，在 Chives 根目录执行 `bash scripts/install-browser.sh`，查看版本用 `runtime/ms-playwright/bin/playwright --version`。通用 Python 解释器继续由公共环境提供。[安装脚本](scripts/install-browser.sh) · [抓取层与连接机制](packages/scrape-mcp/README.md)

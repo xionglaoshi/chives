@@ -1,0 +1,15 @@
+# market-watch: read-only market/sector/limit-pool engine over stdio MCP (overview, sectors, themes, movers, flows, pools, alerts).
+- insert:
+    - id: fin-market-watch
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: market_watch
+        transport: stdio
+        command: /Users/xiong/.chives/packages/market-watch-mcp/.venv/bin/python
+        args:
+          - -m
+          - market_watch_mcp
+        cwd: /Users/xiong/.chives/packages/market-watch-mcp
+        env:
+          MARKET_WATCH_URL: http://127.0.0.1:8866
+        failOnStartupError: true

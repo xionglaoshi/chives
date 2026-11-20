@@ -1,0 +1,13 @@
+# cn-research: read-only A-share consensus, ratings, research reports, valuation, earnings events and disclosure calendar.
+- insert:
+    - id: fin-cn-research
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: cn_research
+        transport: stdio
+        command: /Users/xiong/.chives/packages/cn-research-mcp/.venv/bin/python
+        args:
+          - -m
+          - cn_research_mcp
+        cwd: /Users/xiong/.chives/packages/cn-research-mcp
+        failOnStartupError: true

@@ -1,0 +1,118 @@
+.approval-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  padding: var(--space-8) var(--space-9);
+  border: 1px solid var(--color-gold);
+  border-radius: var(--radius-xl);
+  background: var(--color-panel);
+}
+
+.approval-card__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  color: var(--color-text);
+  font-weight: var(--weight-semibold);
+}
+
+.approval-card__head svg {
+  flex: none;
+  color: var(--color-gold);
+}
+
+.approval-card__source {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.approval-card__params {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--space-5);
+  margin: 0;
+}
+
+.approval-card__param dt {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.approval-card__param dd {
+  margin: var(--space-1) 0 0;
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  overflow-wrap: anywhere;
+}
+
+.approval-card__empty {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.approval-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-5);
+}
+
+.approval-card__allow,
+.approval-card__reject {
+  min-height: var(--size-touch);
+  padding: 0 var(--space-10);
+  border-radius: var(--radius-md);
+  font: inherit;
+  font-weight: var(--weight-semibold);
+  cursor: pointer;
+}
+
+.approval-card__allow {
+  border: 0;
+  background: var(--color-gold);
+  color: var(--color-bg);
+}
+
+.approval-card__allow:hover:not(:disabled) {
+  background: var(--color-gold-highlight);
+}
+
+.approval-card__reject {
+  border: 1px solid var(--color-line-strong);
+  background: transparent;
+  color: var(--color-text);
+}
+
+.approval-card__reject:hover:not(:disabled) {
+  border-color: var(--color-text-muted);
+}
+
+.approval-card__allow:disabled,
+.approval-card__reject:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.approval-card__allow:focus-visible,
+.approval-card__reject:focus-visible {
+  outline: none;
+  box-shadow: var(--shadow-focus);
+}
+
+.approval-card__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-4);
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.approval-card__status span:last-child {
+  color: var(--color-text-muted);
+  font-size: var(--text-xs);
+}
+
+.approval-card__error {
+  color: var(--color-up);
+  font-size: var(--text-xs);
+}

@@ -1,0 +1,16 @@
+[Unit]
+Description=Publish the Chives CSI 300 daily close series
+After=network-online.target
+Wants=network-online.target
+[Service]
+Type=oneshot
+User=chives-market
+Group=chives-market
+StateDirectory=chives-market
+StateDirectoryMode=0755
+ExecStart=/usr/bin/python3 /opt/chives-market/scripts/update-csi300.py
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+TimeoutStartSec=100

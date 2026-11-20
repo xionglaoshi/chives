@@ -1,0 +1,43 @@
+# 海外产业链龙头 -> A 股板块的通俗映射。只写关联逻辑，不写预测。
+# 板块名用通俗称呼；东财板块代码的映射留给后续任务。
+leaders:
+  - symbol: usNVDA
+    name: 英伟达
+    a_share_sectors: [算力, 光模块, PCB]
+    note: "AI 加速卡龙头，国内算力链订单与情绪的外部锚"
+  - symbol: usTSLA
+    name: 特斯拉
+    a_share_sectors: [新能源车, 锂电池, 汽车零部件]
+    note: "整车销量与自动驾驶进展，影响特斯拉链零部件"
+  - symbol: usAAPL
+    name: 苹果
+    a_share_sectors: [消费电子, 果链]
+    note: "新品周期与出货变化，传导到果链组装与元件"
+  - symbol: usMU
+    name: 美光科技
+    a_share_sectors: [存储芯片, 半导体]
+    note: "存储价格周期的外部参照"
+  - symbol: usTSM
+    name: 台积电ADR
+    a_share_sectors: [半导体设备, 晶圆制造, 半导体]
+    note: "先进制程资本开支，关联设备与材料"
+  - symbol: usAVGO
+    name: 博通
+    a_share_sectors: [光模块, 算力, 交换芯片]
+    note: "AI 网络与定制芯片需求，关联光通信链"
+  - symbol: usAMD
+    name: 超威半导体
+    a_share_sectors: [算力, 半导体]
+    note: "数据中心 GPU 与 CPU 竞争格局，关联算力链"
+  - symbol: usSMCI
+    name: 超微电脑
+    a_share_sectors: [服务器, 液冷, 算力]
+    note: "AI 服务器出货，关联服务器与散热配套"
+  - symbol: usANET
+    name: 阿里斯塔网络
+    a_share_sectors: [光模块, 数据中心交换机]
+    note: "数据中心网络设备需求，关联高速光模块"
+  - symbol: usFSLR
+    name: 第一太阳能
+    a_share_sectors: [光伏]
+    note: "美国光伏政策与装机，关联国内组件出口"

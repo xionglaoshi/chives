@@ -1,0 +1,31 @@
+[build-system]
+requires = ['hatchling']
+build-backend = 'hatchling.build'
+
+[project]
+name = 'portfolio-mcp'
+version = '0.1.0'
+description = 'Local A-share portfolio MCP server: manual import, confirmed writes, valuation and concentration.'
+readme = 'README.md'
+requires-python = '>=3.12'
+license = { text = 'MIT' }
+dependencies = [
+    "mcp>=1.0,<2",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[project.scripts]
+portfolio-mcp = 'portfolio_mcp.__main__:main'
+
+[tool.hatch.build.targets.wheel]
+packages = ['src/portfolio_mcp']
+
+[tool.pytest.ini_options]
+asyncio_mode = 'auto'
+asyncio_default_fixture_loop_scope = 'function'
+testpaths = ['tests']

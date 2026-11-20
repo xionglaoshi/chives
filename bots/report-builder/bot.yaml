@@ -1,0 +1,23 @@
+id: report-builder
+name: 报告员
+role: 把已完成的分析组装成可交付的报告、图表与文档，不改数字、不生产新结论。
+headline: 交付物组装
+persona: bots/report-builder/persona.md
+avatar:
+  emblem: page
+  tone: bronze
+skills:
+  - report-generate
+  - ui-design
+mcp: []
+tools:
+  code: sandboxed
+  write: workspace-only
+model: default
+can_delegate_to: []
+routines: []
+memory:
+  user: read
+  bot: read-write
+background: true
+trading_guard: false

@@ -1,0 +1,15 @@
+{
+  "name": "finance-bundle",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Chives: A-share/US gateways, watch engine access, paper broker and trading guard (patch-only bundle)",
+  "files": [
+    "cordis.patch.yml"
+  ],
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "manifestVersion": 1
+  }
+}

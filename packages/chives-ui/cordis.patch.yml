@@ -1,0 +1,31 @@
+# Chives shell bundle layer: brand marks, tokens/theme, quick-start cards and the
+# workbench sidebar row (the main panel itself comes from watch-panel). Applied
+# after dsh-base/dsh-web-app; rows here either insert chives-ui or disable a
+# shipped surface the finance product does not use.
+#
+# Every disabled row was checked in core/dsh first: none of them declares a slot
+# another package registers into, so disabling removes a consumer, not a seat.
+#   ui-plugin-manager   -> main key + sidebar Plugins row + its overlay (consumer)
+#   entry-customization -> the three "More" action cells it fills (consumer)
+#   ui-agent-preset     -> hero preset chip, header label, plugins.add action and
+#                          the `agent-presets` settings section; with only the
+#                          finance preset left the section has nothing to choose.
+#   ui-brand-official   -> occupants of the two single brand cells. The Chives
+#                          entry registers below rank 0 to shadow them, and this
+#                          row additionally yields the cells on official builds
+#                          (no other package registers into them).
+- insert:
+    - id: chives-ui
+      name: chives-ui
+
+- id: ui-brand-official
+  disabled: true
+
+- id: ui-plugin-manager
+  disabled: true
+
+- id: entry-customization
+  disabled: true
+
+- id: ui-agent-preset
+  disabled: true

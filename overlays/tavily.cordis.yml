@@ -1,0 +1,13 @@
+# tavily: read-only web search and page extraction through the Tavily API.
+- insert:
+    - id: fin-tavily
+      name: '@deepseek-ai/dsh-mcp-client'
+      config:
+        serverName: tavily
+        transport: stdio
+        command: /Users/xiong/.chives/packages/tavily-mcp/.venv/bin/python
+        args:
+          - -m
+          - tavily_mcp
+        cwd: /Users/xiong/.chives/packages/tavily-mcp
+        failOnStartupError: true

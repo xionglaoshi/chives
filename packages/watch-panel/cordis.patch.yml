@@ -1,0 +1,5 @@
+# watch-panel bundle layer: Host proxy (authenticated /api/watch/* -> 127.0.0.1:8865 and
+# /api/market/* -> 127.0.0.1:8866) + the single-page workbench main panel (key chives-workbench).
+- insert:
+    - id: watch-panel
+      name: watch-panel

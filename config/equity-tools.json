@@ -1,0 +1,152 @@
+{
+  "factor_catalog": {
+    "label": "因子目录",
+    "bots": [
+      "expert",
+      "equity-analyst",
+      "research",
+      "zhushenglang"
+    ]
+  },
+  "factor_values": {
+    "label": "计算个股因子",
+    "bots": [
+      "expert",
+      "equity-analyst",
+      "research",
+      "zhushenglang"
+    ]
+  },
+  "filing_evidence": {
+    "label": "公告原件与披露范围",
+    "bots": [
+      "equity-analyst",
+      "research"
+    ]
+  },
+  "cash_quality": {
+    "label": "利润兑现与期后回款",
+    "bots": [
+      "equity-analyst",
+      "research"
+    ]
+  },
+  "evidence_page": {
+    "label": "查阅证据原页",
+    "bots": [
+      "expert",
+      "equity-analyst",
+      "research",
+      "report-builder",
+      "zhushenglang"
+    ]
+  },
+  "research_snapshot": {
+    "label": "复核研究快照",
+    "bots": [
+      "expert",
+      "equity-analyst",
+      "research",
+      "report-builder",
+      "zhushenglang"
+    ]
+  },
+  "financial_ratio": {
+    "label": "财务比率计算",
+    "bots": [
+      "equity-analyst",
+      "research",
+      "expert"
+    ]
+  },
+  "valuation_scenarios": {
+    "label": "EPS × PE 情景估值",
+    "bots": [
+      "equity-analyst",
+      "research",
+      "expert"
+    ]
+  },
+  "discounted_cashflow": {
+    "label": "现金流折现估值",
+    "bots": [
+      "equity-analyst",
+      "research",
+      "expert"
+    ]
+  },
+  "price_history": {
+    "label": "复权日线与来源",
+    "bots": [
+      "equity-analyst",
+      "research",
+      "zhushenglang"
+    ]
+  },
+  "screen_stocks": {
+    "label": "条件选股",
+    "bots": [
+      "equity-analyst",
+      "research",
+      "expert",
+      "zhushenglang"
+    ]
+  },
+  "equity_review": {
+    "label": "个股评价与输入快照",
+    "bots": [
+      "equity-analyst",
+      "research",
+      "expert"
+    ]
+  },
+  "ma_backtest": {
+    "label": "双均线回测",
+    "bots": [
+      "equity-analyst",
+      "research",
+      "zhushenglang"
+    ]
+  },
+  "research_report_lookup": {
+    "label": "机构研报与原文",
+    "bots": [
+      "equity-analyst",
+      "research"
+    ]
+  },
+  "special_financials": {
+    "label": "特殊财务字段",
+    "bots": [
+      "equity-analyst",
+      "research"
+    ]
+  },
+  "fund_ranking": {
+    "label": "基金业绩排名",
+    "bots": [
+      "research",
+      "expert"
+    ]
+  },
+  "fund_holdings": {
+    "label": "基金披露持仓",
+    "bots": [
+      "research",
+      "expert"
+    ]
+  },
+  "fund_holdings_changes": {
+    "label": "基金持仓变动",
+    "bots": [
+      "research",
+      "expert"
+    ]
+  },
+  "fund_study_job": {
+    "label": "基金持仓批量研究",
+    "bots": [
+      "research"
+    ]
+  }
+}

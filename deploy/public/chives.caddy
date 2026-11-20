@@ -1,0 +1,14 @@
+handle /chives/entry/csi300.json {
+    root * /var/lib/chives-market
+    rewrite * /csi300.json
+    header Cache-Control "no-store"
+    header X-Content-Type-Options "nosniff"
+    file_server
+}
+@chives path /chives /chives/*
+handle @chives {
+    reverse_proxy 127.0.0.1:25829 {
+        header_up X-Chives-Client {remote_host}
+        flush_interval -1
+    }
+}

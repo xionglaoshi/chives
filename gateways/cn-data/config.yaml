@@ -1,0 +1,122 @@
+# cn-data: A-share data gateway exposing exactly 10 upstream tools (get_cn_announcements was removed: it needs GILDATA_TOKEN
+# and is replaced by cn_extra's cn_get_announcements; the Stock-Connect net-flow tool was removed: upstream has no data since 2024-08-30) from
+# Vibe-Trading's MCP server. Run through packages/mcp-filter-proxy.
+name: cn_data
+upstream:
+  command: /Users/xiong/.agents/venvs/chives/bin/python
+  args: [/Users/xiong/.chives/gateways/cn-data/provider.py]
+  cwd: null
+  inherit_env: true
+  env:
+    # Do not let the Vibe MCP server call PyPI at startup (a version check that crashed it under some proxy environments).
+    FASTMCP_CHECK_FOR_UPDATES: "off"
+allow:
+  - search_symbol
+  - get_market_data
+  - get_financial_statements
+  - get_fund_flow
+  - get_dragon_tiger
+  - get_margin_trading
+  - get_block_trades
+  - get_shareholder_count
+  - get_lockup_expiry
+  - get_sector_info
+rename_prefix: "cn_"
+cache:
+  max_entries: 500
+  ttl_seconds:
+    default: 300
+    get_market_data: 30
+    get_fund_flow: 120
+    get_financial_statements: 3600
+rate_limit:
+  max_calls_per_minute: 40
+checks:
+  - tool: get_market_data
+    type: bars_within_requested_dates
+    start_arg: start_date
+    end_arg: end_date
+    hint: "本接口 1m 只返回当天数据，无法回溯历史；请改用 cn_extra 的 cn_get_minute_bars 或 cn_intraday_summary 获取分钟级数据。"
+    date_field: trade_date
+annotations:
+  get_market_data:
+    units:
+      open: "CNY per share"
+      high: "CNY per share"
+      low: "CNY per share"
+      close: "CNY per share"
+      volume: "lots (1 lot = 100 shares)"
+  get_dragon_tiger:
+    units:
+      close: "CNY per share"
+      change_pct: "percent (10.0057 = 10.0057%)"
+      net_buy: "CNY"
+      buy_amount: "CNY"
+      sell_amount: "CNY"
+      turnover: "CNY (that stock's market-wide turnover)"
+      "seats[].buy": "CNY"
+      "seats[].sell": "CNY"
+      "seats[].net": "CNY"
+      "data.count": "number of rows in appearances; a code filter narrows it to one stock"
+  get_fund_flow:
+    units:
+      main: "CNY net inflow (positive = inflow)"
+      super_large: "CNY net inflow"
+      large: "CNY net inflow"
+      medium: "CNY net inflow"
+      small: "CNY net inflow"
+      timestamp: "YYYY-MM-DD for daily; YYYY-MM-DD HH:MM for period=min"
+  get_margin_trading:
+    units:
+      financing_balance: "CNY"
+      financing_buy: "CNY"
+      financing_repay: "CNY"
+      short_balance: "CNY (securities-lending balance)"
+      short_volume: "shares"
+      margin_total_balance: "CNY"
+  get_block_trades:
+    units:
+      close_price: "CNY per share"
+      deal_price: "CNY per share"
+      premium_ratio: "fraction of close (-0.2955 = -29.55%)"
+      deal_volume: "shares"
+      deal_amount: "CNY"
+      "data.count": "0 with an empty records list is a valid no-trade result, not an error"
+  get_shareholder_count:
+    units:
+      holder_count: "accounts (number of shareholders)"
+      holder_count_change: "accounts"
+      holder_count_change_pct: "percent (12.304 = 12.304%)"
+      avg_hold_shares: "shares per account (newest row only; null on older rows)"
+      avg_hold_amount: "CNY per account (newest row only; null on older rows)"
+      total_market_cap: "CNY (newest row only; null on older rows)"
+  get_lockup_expiry:
+    units:
+      free_shares: "10k shares (万股)"
+      able_free_shares: "10k shares (万股)"
+      float_shares: "10k shares (万股)"
+      lift_market_cap: "10k CNY (万元)"
+      free_ratio: "fraction of float shares (0.0211 = 2.11%)"
+      total_ratio: "fraction of total shares (0.0153 = 1.53%)"
+  get_sector_info:
+    units:
+      change_pct: "percent (1.84 = 1.84%)"
+      price: "board index points in membership mode (not a stock price)"
+      index: "board index points in ranking mode"
+      up_count: "number of constituents up"
+      down_count: "number of constituents down"
+      leader: "stock code (not name)"
+  get_financial_statements:
+    units:
+      EPSJB: "CNY per share"
+      BPS: "CNY per share"
+      TOTALOPERATEREVE: "CNY"
+      PARENTNETPROFIT: "CNY"
+      KCFJCXSYJLR: "CNY"
+      TOTAL_ASSETS_PK: "CNY"
+      ROEJQ: "percent"
+      XSMLL: "percent"
+      XSJLL: "percent"
+      ZCFZL: "percent"
+      TOTALOPERATEREVETZ: "percent (year-on-year)"
+      "paging.returned": "periods in this response, not the total; paging.total is the full count"

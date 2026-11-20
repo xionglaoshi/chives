@@ -1,0 +1,36 @@
+[build-system]
+requires = ['hatchling']
+build-backend = 'hatchling.build'
+
+[project]
+name = 'fmp-mcp'
+version = '0.1.0'
+description = 'Read-only MCP server for Financial Modeling Prep US fundamentals, analyst estimates, insider trades and calendars.'
+readme = 'README.md'
+requires-python = '>=3.12'
+license = { text = 'MIT' }
+dependencies = [
+    "mcp>=1.0,<2",
+    "requests>=2.31,<3",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=8.0",
+    "pytest-asyncio>=0.23",
+]
+
+[project.scripts]
+fmp-mcp = 'fmp_mcp.__main__:main'
+
+[tool.hatch.build.targets.wheel]
+packages = ['src/fmp_mcp']
+
+[tool.pytest.ini_options]
+asyncio_mode = 'auto'
+asyncio_default_fixture_loop_scope = 'function'
+testpaths = ['tests']
+markers = [
+    'network: hits the real FMP API (requires FMP_API_KEY); not run by default',
+]
+addopts = "-m 'not network'"

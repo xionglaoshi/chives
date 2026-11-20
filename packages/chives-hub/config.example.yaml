@@ -1,0 +1,28 @@
+# chives-hub 配置示例（相对路径以本文件所在目录为基准）
+api:
+  host: 127.0.0.1
+  port: 8867
+runtime:
+  db_path: ../../runtime/hub/hub.db
+  out_dir: ../../runtime/hub
+upstreams:
+  cn_watch: http://127.0.0.1:8865
+  market_watch: http://127.0.0.1:8866
+analyses_dir: ../../runtime/watch/analyses
+watchlist_file: ../../config/watch.yaml
+calendar_file: ../../config/trade_calendar.json
+portfolio:
+  # 留空时按 DSH_FINANCE_PROFILE_DIR → DSH_HOME → ~/.dsh 解析（与 portfolio-mcp 相同）
+  profile_dir: null
+snapshots:
+  close_time: "15:05"
+  enabled: true
+polling:
+  alerts_seconds: 3
+  plans_seconds: 3
+  timeout_seconds: 3
+limits:
+  max_active_plans: 30
+  max_plan_days: 30
+  max_body_bytes: 65536
+  max_tencent_codes: 80
