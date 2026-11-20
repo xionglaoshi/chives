@@ -107,6 +107,27 @@
   display: inline;
 }
 
+.bot-row__status-label--idle {
+  color: light-dark(#48765d, #a2c9ae);
+}
+
+.bot-row--working .bot-row__status-label {
+  color: light-dark(#dc2028, #ff575f);
+  font-weight: 700;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .bot-row--working .bot-row__status-label {
+    animation: bot-working-blink 0.35s ease-in-out infinite;
+  }
+}
+
+@keyframes bot-working-blink {
+  50% {
+    opacity: 0.48;
+  }
+}
+
 .bot-row__status--muted {
   color: var(--color-text-muted);
 }

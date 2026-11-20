@@ -2,13 +2,17 @@ import http from 'node:http';
 import {promises as fs, createReadStream} from 'node:fs';
 import {fileURLToPath} from 'node:url';
 import {join} from 'node:path';
+import {homedir} from 'node:os';
 import {randomBytes, scrypt, timingSafeEqual} from 'node:crypto';
 import {promisify} from 'node:util';
+import {createGzip} from 'node:zlib';
+import {pipeline} from 'node:stream';
 const root=fileURLToPath(new URL('../',import.meta.url));
 const assets=join(root,'deploy/public');
-const socketPath='/run/chives-workbench/api.sock';
+const workbench={hostname:'127.0.0.1',port:8888};
+const port=Number(process.env.CHIVES_PUBLIC_PORT ?? 25829);
 const build=join(root,'runtime/public-dist');
-const credentials=JSON.parse(await fs.readFile(join(process.env.CREDENTIALS_DIRECTORY,'entry.json'),'utf8'));
+const credentials=JSON.parse(await fs.readFile(process.env.CHIVES_ENTRY_CREDENTIALS ?? join(homedir(),'.agents/credentials/chives-public-entry.json'),'utf8'));
 const salt=Buffer.from(credentials.salt,'hex'), digest=Buffer.from(credentials.digest,'hex');
 if(salt.length!==16 || digest.length!==32) throw Error('Invalid gateway credentials');
 const derive=promisify(scrypt);
@@ -16,8 +20,9 @@ const origin='https://150.158.11.154';
 const sessionCookie='__Secure-chives';
 const scope='; Path=/chives/; HttpOnly; Secure; SameSite=Strict';
 const sessions=new Map(), attempts=new Map();
-const types={html:'text/html; charset=utf-8',css:'text/css; charset=utf-8',js:'text/javascript; charset=utf-8',svg:'image/svg+xml',json:'application/json'};
+const types={html:'text/html; charset=utf-8',css:'text/css; charset=utf-8',js:'text/javascript; charset=utf-8',svg:'image/svg+xml',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',woff2:'font/woff2',json:'application/json'};
 const publicFiles=new Map(['login.css','chart.js','offline-reconnect.js'].map(name=>['/chives/entry/'+name,join(assets,name)]));
+publicFiles.set('/chives/entry/csi300.json',join(root,'data/market/login-chart/csi300.json'));
 publicFiles.set('/chives/entry/logo.svg',join(root,'apps/web/public/chives.svg'));
 const login=await fs.readFile(join(assets,'login.html'),'utf8');
 const offlinePanel=await fs.readFile(join(assets,'offline-panel.html'),'utf8');
@@ -34,19 +39,23 @@ function showLogin(res,status=200,message='',panel=loginPanel){
   res.setHeader('Content-Security-Policy',loginPolicy);
   finish(res,status,login.replace('{{PANEL}}',panel).replace('{{ERROR}}',message));
 }
-async function streamFile(req,res,path){
+async function streamFile(req,res,path,{compress=false}={}){
   let stat;
   try {stat=await fs.stat(path);} catch {return finish(res,404);}
   if(!stat.isFile())return finish(res,404);
   res.setHeader('Content-Type',types[path.split('.').pop()] ?? 'application/octet-stream');
-  res.setHeader('Content-Length',stat.size);
+  if(compress)res.setHeader('Vary','Accept-Encoding');
+  const gzip=compress && /(?:^|,)\s*gzip\s*(?:;\s*q=(?:1(?:\.0+)?|0\.\d*[1-9]\d*))?\s*(?:,|$)/i.test(req.headers['accept-encoding']??'');
+  if(gzip)res.setHeader('Content-Encoding','gzip');
+  else res.setHeader('Content-Length',stat.size);
   if(req.method==='HEAD')return res.end();
+  if(gzip)return pipeline(createReadStream(path),createGzip(),res,()=>{});
   const stream=createReadStream(path);
   stream.on('error',()=>res.destroy());res.on('close',()=>stream.destroy());stream.pipe(res);
 }
 async function workbenchOnline() {
   return new Promise(resolve => {
-    const req=http.get({socketPath, path:'/api/health', headers:{host:'127.0.0.1:8888'}, signal:AbortSignal.timeout(3000)}, up => {
+    const req=http.get({...workbench, path:'/api/health', headers:{host:'127.0.0.1:8888'}, signal:AbortSignal.timeout(3000)}, up => {
       let body='';
       up.setEncoding('utf8');
       up.on('data', chunk => {
@@ -64,10 +73,13 @@ async function workbenchOnline() {
 }
 function api(req,res,path){
   const headers={host:'127.0.0.1:8888'};
-  for(const name of ['accept','content-type','content-length','last-event-id','range','if-none-match']) {
+  for(const name of ['accept','content-type','content-length','last-event-id','range','if-none-match',
+    'x-chives-kernel-manager','sec-fetch-site','x-file-name']) {
     if(req.headers[name]) headers[name]=req.headers[name];
   }
-  const remote=http.request({socketPath,method:req.method,path,headers},up=>{
+  // The gateway authenticates the public session and validates the origin before proxying.
+  if(req.headers.origin) headers.origin=req.headers.origin===origin?'http://127.0.0.1:8888':req.headers.origin;
+  const remote=http.request({...workbench,method:req.method,path,headers},up=>{
     for(const key of ['content-type','content-disposition','content-length','content-range','etag']) {
       if(up.headers[key])res.setHeader(key,up.headers[key]);
     }
@@ -109,7 +121,8 @@ async function handle(req,res){
   }
   if(!(sessions.get(token)>Date.now()))return p==='/chives/' && read?showLogin(res):finish(res,401);
   if(p.startsWith('/chives/api/')){
-    if(p.startsWith('/chives/api/internal/'))return finish(res,403);
+    const portrait=read && /^\/chives\/api\/internal\/style-portraits\/[a-z0-9-]+\.jpg$/.test(p);
+    if(p.startsWith('/chives/api/internal/') && !portrait)return finish(res,403);
     return api(req,res,p.slice('/chives'.length)+search);
   }
   if(!read)return finish(res,405);
@@ -121,8 +134,10 @@ async function handle(req,res){
     }
     return streamFile(req,res,join(build,'index.html'));
   }
+  if(p==='/chives/holdings-securities.json')
+    return streamFile(req,res,join(root,'apps/web/public/holdings-securities.json'),{compress:true});
   if(p==='/chives/chives.svg')return streamFile(req,res,join(build,'chives.svg'));
-  if(/^\/chives\/assets\/[\w.-]+\.(?:js|css|svg|woff2)$/.test(p))return streamFile(req,res,join(build,p.slice('/chives/'.length)));
+  if(/^\/chives\/assets\/[\w.-]+\.(?:js|css|svg|png|jpe?g|webp|woff2)$/.test(p))return streamFile(req,res,join(build,p.slice('/chives/'.length)));
   return finish(res,404);
 }
-http.createServer((req,res)=>handle(req,res).catch(()=>res.headersSent?res.destroy():finish(res,500))).listen(25829,'127.0.0.1');
+http.createServer((req,res)=>handle(req,res).catch(()=>res.headersSent?res.destroy():finish(res,500))).listen(port,'127.0.0.1');

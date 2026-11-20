@@ -1,13 +1,13 @@
 [Unit]
-Description=Chives workbench API through the Mac SSH relay
+Description=Chives authenticated web entry through the Mac SSH relay
 After=network-online.target
 Wants=network-online.target
 [Service]
 Type=simple
-Group=chives-entry
+Group=caddy
 RuntimeDirectory=chives-workbench
 RuntimeDirectoryMode=0750
-ExecStart=/usr/bin/ssh -N -T -o BatchMode=yes -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -i /root/.ssh/codex_mac_relay -p 22022 -o StreamLocalBindUnlink=yes -o StreamLocalBindMask=0117 -L /run/chives-workbench/api.sock:127.0.0.1:8888 xiong@127.0.0.1
+ExecStart=/usr/bin/ssh -N -T -o BatchMode=yes -o ExitOnForwardFailure=yes -o StrictHostKeyChecking=yes -o ServerAliveInterval=20 -o ServerAliveCountMax=3 -i /root/.ssh/codex_mac_relay -p 22022 -o StreamLocalBindUnlink=yes -o StreamLocalBindMask=0117 -L /run/chives-workbench/entry.sock:127.0.0.1:25829 xiong@127.0.0.1
 Restart=always
 RestartSec=10
 [Install]

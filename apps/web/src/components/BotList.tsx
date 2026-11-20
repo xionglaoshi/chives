@@ -10,6 +10,10 @@ import './BotList.css';
 
 const STATUS_TONES = BOT_STATUS_TONES;
 
+function sidebarStatusLabel(bot: BotSummary): string {
+  return bot.status === 'working' ? '思考' : botStatusLabel(bot);
+}
+
 export function approvalCount(bot: Pick<BotSummary, 'status' | 'pendingApprovals'>): number {
   if (typeof bot.pendingApprovals === 'number') return bot.pendingApprovals;
   return bot.status === 'awaiting_approval' ? 1 : 0;
@@ -26,7 +30,8 @@ export interface BotRowProps {
 }
 
 export function BotRow({ bot, selected, onSelect, onKeyDown, buttonRef, onMove, onPin }: BotRowProps): ReactElement {
-  const statusLabel = botStatusLabel(bot);
+  const statusLabel = sidebarStatusLabel(bot);
+  const idle = bot.status === 'idle' && !(bot.waitingDelegations ?? 0);
   const count = approvalCount(bot);
   const watchCount = bot.watchCount ?? 0;
   const unread = bot.unreadNotifications ?? 0;
@@ -62,7 +67,7 @@ export function BotRow({ bot, selected, onSelect, onKeyDown, buttonRef, onMove, 
             <span className="bot-row__name">{bot.name}</span>
             <span className={`bot-row__status bot-row__status--${STATUS_TONES[bot.status]}`}>
               <span className="bot-row__dot" aria-hidden="true" />
-              <span className="bot-row__status-label">{statusLabel}</span>
+              <span className={idle ? "bot-row__status-label bot-row__status-label--idle" : "bot-row__status-label"}>{statusLabel}</span>
             </span>
           </span>
           <span className="bot-row__role">
@@ -169,7 +174,7 @@ export function BotRail({ bots, selectedId, onSelect }: BotRailProps): ReactElem
               }`}
               onClick={() => onSelect(bot.id)}
               aria-current={selected ? 'page' : undefined}
-              aria-label={`${bot.name}，${botStatusLabel(bot)}${
+              aria-label={`${bot.name}，${sidebarStatusLabel(bot)}${
                 count > 0 ? `，${count} 项待你批准` : ''
               }`}
               title={bot.name}

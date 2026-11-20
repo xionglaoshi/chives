@@ -15,7 +15,6 @@ function PositionBar({position}:{position:CardPosition|null|undefined}){
  {compare&&<p>在{compare.peerGroup}中约处于第 {compare.percentile} 百分位。<a href={compare.source} target="_blank" rel="noreferrer">{compare.period} · {compare.n} 人</a></p>}</div>;
 }
 export type Report={investmentStyle?:string;styleCards?:{featured:string[];items:{id:string;title:string;reading:string;position?:CardPosition|null}[];clarify:string[]};answered:number;risk:{grade:number|null;flags:string[]};dimensions:Dimension[];match:{kind:string;reason:string;people:Person[]}};
-const portraitVisible = (p:Person) => p.portrait && (p.webReleaseEligible || ['127.0.0.1','localhost','[::1]'].includes(window.location.hostname));
 const official='https://www.amac.org.cn/xwfb/hydt/202005/t20200513_18820.html';
 function RiskMap({dimensions}:{dimensions:Dimension[]}) {
   const will=dimensions.find(d=>d.id==='riskAppetite')?.value;
@@ -96,7 +95,7 @@ export function StyleReport({report,overview,example=false,updated,onAskExpert}:
     </details><div>投资风格：{report.investmentStyle??'无明确风格'}</div></div>
     {overviewParagraphs(overview).map((p,i)=><p key={i}>{p}</p>)}</section>
     <section>{heading('您像谁')}<p>{match.reason}</p>{match.people.filter(p=>p.reason).map(p=><p key={p.id}><strong>{p.name}</strong>　{p.reason}</p>)}{match.people.map(p=><div key={p.id} className="ir-person">
-      {portraitVisible(p)&&<a className="ir-portrait" href={p.portraitSource} target="_blank" rel="noreferrer"
+      {p.portrait&&<a className="ir-portrait" href={p.portraitSource} target="_blank" rel="noreferrer"
         aria-label={p.name+'头像来源：'+p.portraitCredit+' · '+p.portraitLicense}
         title={[p.portraitCredit,p.portraitLicense,p.portraitModification].join(' · ')}>
         <img src={appPath(p.portrait)} alt={p.name} width="88" height="88" loading="lazy"/></a>}

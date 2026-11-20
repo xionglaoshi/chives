@@ -1,0 +1,14 @@
+#!/bin/sh
+set -eu
+flag=/var/lib/chives-install/enabled
+case "${1:-status}" in
+    enable) install -m 600 -o chives-install -g chives-install /dev/null "$flag" ;;
+    disable) if test -e "$flag"; then unlink "$flag"; fi ;;
+    status) ;;
+    *) echo "用法: chives-installctl enable|disable|status" >&2; exit 2 ;;
+esac
+if test -e "$flag"; then
+    echo "Chives 便捷安装已启用"
+else
+    echo "熊翔已停用便捷安装Chives的功能，请与熊翔本人联系"
+fi

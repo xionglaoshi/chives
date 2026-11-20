@@ -1,0 +1,22 @@
+[Unit]
+Description=Chives authorized installer distribution
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=chives-install
+Group=chives-install
+StateDirectory=chives-install
+StateDirectoryMode=0700
+UMask=0077
+Environment="GIT_SSH_COMMAND=/usr/bin/ssh -i /var/lib/chives-install/deploy-key -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/var/lib/chives-install/known_hosts -o ConnectTimeout=12"
+ExecStart=/usr/bin/python3 /opt/chives-install/server.py
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target

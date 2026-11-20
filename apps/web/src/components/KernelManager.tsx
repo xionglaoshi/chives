@@ -8,7 +8,6 @@ export function KernelManager(){
   const [info,setInfo]=useState<Version|null>(null);
   const [pending,setPending]=useState('');
   const [message,setMessage]=useState('');
-  const local=['localhost','127.0.0.1','[::1]'].includes(window.location.hostname);
   useEffect(()=>{
     const controller=new AbortController();
     fetch(url,{signal:controller.signal}).then(async r=>{
@@ -32,7 +31,7 @@ export function KernelManager(){
     <img src={dshIcon} alt=""/><div><h3>DeepSeek Harness</h3>
     <p>当前版本 {info?.current??'读取中…'}{info?.latest && ' · 最新版本 '+info.latest}</p></div></div>
     <p className="settings__row-hint">所有 Bot 共用 dsh。检查后由你选择是否升级，进行中的研究会先完成。</p>
-    {local?<div className="desk-actions"><button disabled={!!pending} onClick={()=>void change('check')}>{pending==='check'?'检查中…':'检查更新'}</button>
-    {info?.available && <button disabled={!!pending||info.busy} onClick={()=>void change('upgrade')}>{pending==='upgrade'?'正在安装并验证…':'升级到 '+info.latest}</button>}</div>:<p>可在本机设置中检查并升级。</p>}
+    <div className="desk-actions"><button disabled={!!pending} onClick={()=>void change('check')}>{pending==='check'?'检查中…':'检查更新'}</button>
+    {info?.available && <button disabled={!!pending||info.busy} onClick={()=>void change('upgrade')}>{pending==='upgrade'?'正在安装并验证…':'升级到 '+info.latest}</button>}</div>
     <p role="status">{message}</p></section>;
 }
