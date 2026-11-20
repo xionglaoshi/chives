@@ -15,6 +15,7 @@ jobs = {
     "local.chives.public-entry": ([node, str(root / "scripts/public-gateway.mjs")], dict(KeepAlive=True)),
     "local.chives.workbench-watchdog": ([python, str(root / "scripts/watch-public-workbench.py")], dict(StartInterval=30)),
     "local.chives.public-build": ([python, str(root / "scripts/refresh-public-build.py")], dict(StartInterval=30)),
+    "local.chives.market-news": ([python, str(root / "scripts/update-market-news.py")], dict(StartInterval=1800)),
     "local.chives.public-market": ([python, str(root / "scripts/update-csi300.py")], dict(
         StartCalendarInterval=[dict(Hour=16, Minute=30), dict(Hour=20, Minute=30)])),
 }

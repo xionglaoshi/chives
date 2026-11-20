@@ -134,6 +134,8 @@ async function handle(req,res){
     }
     return streamFile(req,res,join(build,'index.html'));
   }
+  if(p==='/chives/market-news.json')
+    return streamFile(req,res,join(root,'apps/web/public/market-news.json'),{compress:true});
   if(p==='/chives/holdings-securities.json')
     return streamFile(req,res,join(root,'apps/web/public/holdings-securities.json'),{compress:true});
   if(p==='/chives/chives.svg')return streamFile(req,res,join(build,'chives.svg'));

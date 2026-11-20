@@ -5,6 +5,7 @@ import {useExpertSidebarData} from './ExpertSidebarData';
 import {ExpertSidebarSparkline} from './ExpertSidebarSparkline';
 import {formatAmount,formatPercent,formatPrice,priceDirection,SESSION_TEXT} from './ExpertSidebarFormat';
 import './market-board.css';
+import {MarketNews} from './MarketNews';
 
 type Row={name:string;code?:string;change_pct:number|null;amount_yuan:number|null;leader?:{name:string;change_pct:number|null}|null};
 type Snapshot={rows:Row[];asOf:string;stale:boolean};
@@ -119,6 +120,7 @@ export function MarketBoard({onAskExpert}:{onAskExpert:AskExpert}){
     ].join('\n\n'))} action={<div className="mb-tabs">{[['gainers','涨幅榜'],['active','成交额榜']].map(([key,label])=><button key={key} aria-pressed={rank===key} onClick={()=>setRank(key!)}>{label}</button>)}</div>}>
       {movers.data?<><table><thead><tr><th>沪深 A 股</th><th>涨跌幅</th><th>成交额</th></tr></thead><tbody>{movers.data.rows.map(r=><tr key={r.code}><td>{r.name}</td><td><Change n={r.change_pct}/></td><td>{formatAmount(r.amount_yuan)}</td></tr>)}</tbody></table><small>快照 {stamp(movers.data.asOf)}{(movers.error||movers.data.stale)&&' · 最近缓存'}</small></>:<small>{status(movers.error)}</small>}
     </Panel>
+    <MarketNews ask={ask}/>
     <Panel title="我的持仓" cls="mb-full" ask={ask('我的持仓',!!p,p?.empty?'我的持仓目前为空。为了以后能分析持仓的盈亏和风险，我需要先录入哪些资料？':hidden?'请根据这份已隐藏金额的持仓快照，比较各标的今日涨跌，指出值得跟踪的共同风险。请仅使用附件可见数据。':'请解释我的持仓今天为什么盈亏，按今日贡献找出影响最大的标的，区分今日波动和累计浮盈亏，并指出组合中值得跟踪的风险。',()=>[
       '数据时间：'+p!.asOf+' · '+(p!.empty?'尚未录入持仓':'按现持股数及较昨收价差估算')+(portfolio.status==='error'?' · 缓存快照':''),
       '证券数量：'+p!.summary.positionCount+' · 缺少报价：'+p!.summary.unpricedCount,
@@ -129,6 +131,7 @@ export function MarketBoard({onAskExpert}:{onAskExpert:AskExpert}){
         <div className="mb-summary">{[['今日估算盈亏',p.summary.todayPnl],['持仓市值',p.summary.totalMarketValue],['累计浮盈亏',p.summary.totalPnl]].map(([label,value])=><div key={label}><small>{label}（元）</small><strong>{amount(typeof value==='number'?value:null)}</strong></div>)}</div>
         <table><thead><tr><th>持仓</th><th>现价</th><th>今日涨跌</th><th>今日贡献（元）</th></tr></thead><tbody>{[...p.positions].sort((a,b)=>Math.abs(b.todayPnl??0)-Math.abs(a.todayPnl??0)).map(r=><tr key={r.code}><td>{r.name}</td><td>{formatPrice(r.price)}</td><td><Change n={r.changePct}/></td><td className={'mb-'+priceDirection(r.todayPnl)}>{amount(r.todayPnl)}</td></tr>)}</tbody></table>
         <small>按现持股数及较昨收价差估算 · {stamp(p.asOf)}{p.summary.unpricedCount>0&&' · 部分持仓缺少报价'}{portfolio.status==='error'&&' · 最近缓存'}</small></>}
-    </Panel></div>
+    </Panel>
+    </div>
   </article>;
 }

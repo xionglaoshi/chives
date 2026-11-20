@@ -64,7 +64,7 @@ export function Hotspots({onAskExpert}:{onAskExpert:AskExpert}){
       setData(v=>v?{...v,status:{state:'running'}}:v);}
     catch{setError('更新任务启动失败，请重试');}finally{setPending(false);}
   }
-  return <article className="market-board hotspots"><header className="mb-title"><div><small>工作台</small><h1>热点追踪</h1></div><div className="hs-actions"><small>{data?.snapshot?'发布于 '+new Date(data.snapshot.publishedAt).toLocaleString('zh-CN',{hour12:false}):''}</small><button disabled={running||!data} onClick={update}>{running?'正在生成…':'重新生成榜单'}</button></div></header>
+  return <article className="market-board hotspots"><header className="mb-title"><div><small>工作台</small><h1>热门榜单</h1></div><div className="hs-actions"><small>{data?.snapshot?'发布于 '+new Date(data.snapshot.publishedAt).toLocaleString('zh-CN',{hour12:false}):''}</small><button disabled={running||!data} onClick={update}>{running?'正在生成…':'重新生成榜单'}</button></div></header>
     <div role="status">{askError||error|| (data?.status.state==='error'?'本次更新未完成，保留最近发布版本。':data?.status.state==='partial'?'部分榜单沿用上次结果。':running?'后台更新中，您可以继续查看榜单。':'')}</div>
     {data?.snapshot?<div className="mb-grid">{Object.entries(data.snapshot.boards).map(([id,b])=><Ranking key={id} id={id} b={b} onAsk={()=>void ask(id,b)} busy={asking}/>)}</div>:<p>{data?'等待首版榜单发布':'正在读取本地榜单…'}</p>}</article>;
 }

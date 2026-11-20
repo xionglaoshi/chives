@@ -99,7 +99,7 @@ export function Sidebar({
   return (
     <nav className={`sidebar${compact ? ' sidebar--compact' : ''}`} aria-label="Bot 列表">
       <div className="sidebar__brand">
-        <a className="sidebar__home" href="#/workspace/trends" aria-label="老韭菜 · Chives，打开热点追踪" title="热点追踪">
+        <a className="sidebar__home" href="#/workspace/trends" aria-label="老韭菜 · Chives，打开热门榜单" title="热门榜单">
           <Logo size={40} title="Chives" />
           <span className="sidebar__wordmark">老韭菜 · Chives</span>
         </a>

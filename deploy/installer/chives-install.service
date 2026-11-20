@@ -9,7 +9,7 @@ Group=chives-install
 StateDirectory=chives-install
 StateDirectoryMode=0700
 UMask=0077
-Environment="GIT_SSH_COMMAND=/usr/bin/ssh -i /var/lib/chives-install/deploy-key -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/var/lib/chives-install/known_hosts -o ConnectTimeout=12"
+Environment="GIT_SSH_COMMAND=/usr/bin/ssh -o 'ProxyCommand=/usr/bin/nc -X connect -x 127.0.0.1:17897 %%h %%p' -i /var/lib/chives-install/deploy-key -o IdentitiesOnly=yes -o BatchMode=yes -o StrictHostKeyChecking=yes -o UserKnownHostsFile=/var/lib/chives-install/known_hosts -o ConnectTimeout=12"
 ExecStart=/usr/bin/python3 /opt/chives-install/server.py
 Restart=on-failure
 RestartSec=5

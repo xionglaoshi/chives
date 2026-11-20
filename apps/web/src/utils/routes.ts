@@ -1,7 +1,7 @@
 export const workbenchTools = { 
   market: '行情看板',
   holdings: '用户持仓',
-  trends: '热点追踪',
+  trends: '热门榜单',
   strategies: '策略市场',
   portrait: '风格评估',
  } as const;
