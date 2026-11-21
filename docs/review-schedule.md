@@ -6,9 +6,9 @@
 
 ## 1. 先确认工具与前提
 
-- `standard`、`cordis`、`ptc` 预设提供 `schedule_create`、`schedule_list`、`schedule_view`、`schedule_edit`；`minimal` 不提供。委派子会话即使能看到工具，调用也会被拒绝。[`docs/watch-schedule.md:7-7` (dsh-finance)]
-- 四个工具管理整台 Host，创建或修改前需要用户明确授权。[`docs/watch-schedule.md:9-9` (dsh-finance)]
-- `schedule_create` 的 `rrule` 必填且只接受 RRULE，不接受 cron；`prompt` 是每次触发投递给智能体的完整指令。[`docs/watch-schedule.md:13-13` (dsh-finance)]
+- `standard`、`cordis`、`ptc` 预设提供 `schedule_create`、`schedule_list`、`schedule_view`、`schedule_edit`；`minimal` 不提供。委派子会话即使能看到工具，调用也会被拒绝。
+- 四个工具管理整台 Host，创建或修改前需要用户明确授权。
+- `schedule_create` 的 `rrule` 必填且只接受 RRULE，不接受 cron；`prompt` 是每次触发投递给智能体的完整指令。
 - ⚠️ **prompt 必须写全文**：从 `presets/finance/review-evening.md` / `presets/finance/review-premarket.md` 复制整段文本，不要只写文件路径——定时投递只发 prompt 字符串，不会替你读文件。
 
 ## 2. 任务一：工作日 20:00 晚间复盘
@@ -23,7 +23,7 @@ schedule_create(
 ```
 
 - `title` ≤120 字符，统一以 `[复盘]` 开头，便于在 Automation 列表里识别。
-- `rrule` 两行：`DTSTART;TZID=Asia/Shanghai` + `RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR`；`DTSTART` 只是锚点，可以早于创建时间，投递从创建后的第一个匹配时刻开始。[`docs/watch-schedule.md:15-22` (dsh-finance)]
+- `rrule` 两行：`DTSTART;TZID=Asia/Shanghai` + `RRULE:FREQ=WEEKLY;BYDAY=MO,TU,WE,TH,FR`；`DTSTART` 只是锚点，可以早于创建时间，投递从创建后的第一个匹配时刻开始。
 - `target:"new"`：每次触发都新建一个会话，避免长期会话上下文膨胀；会话标题由提示词要求以 `[复盘]` 开头。
 - `prompt` 全文见 `presets/finance/review-evening.md`，关键约束：先加载 `daily-review` 技能 → 第一步 `hub_get_review_data` 判断交易日 → `trading_day:false` 只回复"今日休市，不复盘"并结束 → 六步复盘 → 每只候选 `hub_propose_card` → 结束前必须 `hub_save_review`（`kind:"evening"`）→ 不用 sleep 或轮询。
 
@@ -43,15 +43,15 @@ schedule_create(
 
 ## 4. 为什么第一步必须判断交易日
 
-dsh 的日程**没有 A 股交易日历**：RRULE 只按星期几匹配，法定节假日、调休照常触发；这一点在 `docs/watch-schedule.md` 里标为未验证，不能假设会自动跳过。[`docs/watch-schedule.md:71-71` (dsh-finance)] [`docs/watch-schedule.md:77-77` (dsh-finance)]
+dsh 的日程**没有 A 股交易日历**：RRULE 只按星期几匹配，法定节假日、调休照常触发；这一点在[盘中简报的定时说明](watch-schedule.md)里标为未验证，不能假设会自动跳过。
 
 所以两个提示词都把"交易日判断"固定为第一步：`hub_get_review_data` 返回 `trading_day:false` 时，只回复"今日休市，不复盘"并结束，不写复盘、不建卡、不保存。这样节假日最多多跑一次空任务，不会产生假复盘。
 
 ## 5. 运行前提与限制
 
-- **Host 不在线就不触发**；Host 关闭期间不投递，重启后只补**最近一次**错过的 occurrence。[`docs/watch-schedule.md:68-68` (dsh-finance)]
-- 时区必须显式写 IANA 名称（`Asia/Shanghai`）；本地日历规则遇到不存在的墙上时间会跳过。[`docs/watch-schedule.md:69-69` (dsh-finance)]
-- 投递只证明消息进了目标会话 inbox，**不代表模型跑完，也不保存复盘正文**；结构化结果在 hub 里，由 `hub_save_review` 写入，「复盘」页读 hub，不翻会话。[`docs/watch-schedule.md:52-52` (dsh-finance)]
+- **Host 不在线就不触发**；Host 关闭期间不投递，重启后只补**最近一次**错过的 occurrence。
+- 时区必须显式写 IANA 名称（`Asia/Shanghai`）；本地日历规则遇到不存在的墙上时间会跳过。
+- 投递只证明消息进了目标会话 inbox，**不代表模型跑完，也不保存复盘正文**；结构化结果在 hub 里，由 `hub_save_review` 写入，「复盘」页读 hub，不翻会话。
 - 每次触发都消耗一次模型调用；20:00 那次通常较长（多工具、多子智能体），与盯盘分析的日额度分开看。
 
 ## 6. 暂停、恢复、删除
@@ -59,7 +59,7 @@ dsh 的日程**没有 A 股交易日历**：RRULE 只按星期几匹配，法定
 - 暂停：`schedule_edit(id, action="update", active=false)`。
 - 恢复：同一接口传 `active=true`；若旧规则已耗尽，要同时给新的 `rrule`。
 - 删除：`schedule_edit(id, action="delete")`，连同投递记录一起删掉；已经排进会话 inbox 的消息不会撤回。
-- 以上语义见 [`docs/watch-schedule.md:58-62` (dsh-finance)]；也可以在 Automation tasks 页面操作。[`docs/watch-schedule.md:64-64` (dsh-finance)]
+- 也可以在 Automation tasks 页面进行这些操作。
 
 ## 7. 创建前给用户看的清单
 

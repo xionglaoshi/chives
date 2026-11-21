@@ -1,36 +1,10 @@
-# Chives 技能来源与许可
-
-此文件随 Chives 技能分发。下列记录保留各批研究方法、报告模板和配套资料的来源与改动说明。
+# 随附组件许可
 
 ## LangAlpha
 
-本声明列出的技能迁移自 **LangAlpha** 仓库：
-<https://github.com/ginlix-ai/langalpha>，源目录为 `plugins/langalpha_deliverables/skills/`、
-`plugins/langalpha_research/skills/`、`plugins/langalpha_service/skills/`。
+以下技能使用 Apache License 2.0。Chives 已修改其中的研究流程、工具调用和报告模板，以适配 A 股数据与本地工作台。[原项目](https://github.com/ginlix-ai/langalpha)
 
-原项目以 **Apache License 2.0** 许可发布（见源仓库根目录的 `LICENSE`）。原仓库的版权与许可声明归其原作者所有；本目录不改变原许可条款。
-
-**已修改（modified）**：迁移到 dsh 时对正文做了适配，包括按 `docs/tool-alias-map.md` 改写工具名、把 dsh 不存在的平台能力改为 web_search/web_fetch 或删除、把 `run-workflow` 的脚本调用改为 dsh `workflow` 工具的实际参数与语法、删除 LangAlpha 沙箱路径与界面专属描述。逐项改动见 `docs/skill-migration-T20.md`；未改动的原文段落保持原样。
-
-迁移的 skill：`ui-design`、`competitive-analysis`、`research-conventions`、`sector-overview`、`thesis-tracker`、`trade-pitch`、`run-workflow`。
-
-批次 2（T81）新增：`company-profile`、`comps-analysis`、`earnings-analysis`、`earnings-preview`、`morning-note`。逐项改动见 `docs/skill-migration-T81.md`；同样保留 Apache-2.0 许可与原作者版权声明。
-
-批次 3（T82）新增：`dcf-model`、`3-statements`、`initiating-coverage`、`catalyst-calendar`、`idea-generation`。逐项改动见 `docs/skill-migration-T82.md`；同样保留 Apache-2.0 许可与原作者版权声明。
-
-批次 4（T84）新增：`check-deck`、`check-model`、`model-update`、`impact-analysis`。逐项改动见 `docs/skill-migration-T84.md`；同样保留 Apache-2.0 许可与原作者版权声明。
-
-批次 5（T88）新增：`web-scraping`、`x-api`。源目录为 `plugins/alternative_data/skills/`。逐项改动见 `docs/skill-migration-T88.md`；同样保留 Apache-2.0 许可与原作者版权声明。
-
-批次 6（T90）新增：`portfolio-diagnosis`。源目录为 `plugins/langalpha_research/skills/`。逐项改动见 `docs/skill-migration-T90.md`；同样保留 Apache-2.0 许可与原作者版权声明。
-
-批次 7（T92）新增：`subagent-roles`。其 5 个角色提示迁移自 LangAlpha（Apache-2.0）的 `src/ptc_agent/agent/prompts/templates/subagents/roles/` 与 `src/ptc_agent/agent/subagents/builtins.py` 中的角色分工；逐项改动见 `docs/skill-migration-T92.md`；同样保留 Apache-2.0 许可与原作者版权声明。
-
-批次 8（T120，2026-11-16）：`earnings-analysis`、`comps-analysis`、`idea-generation`、`morning-note` 四个 skill 已针对 **A 股**大幅改写。范围包括：删除全部美股取数分支与美股工具引用，按 A 股定期报告、业绩预告/快报、预约披露、交易所公告与互动易重排主线，改接 `cn_data`、`cn_extra`、`cn_research`、`market_watch` 的现有工具，并重写 `references/` 下的美股参考文件。原有 Apache-2.0 许可与原作者版权声明不变；逐项改动见 `docs/skill-migration-T120.md`。
-
-批次 9（T151，2026-11-17）：`trade-pitch`、`thesis-tracker`、`initiating-coverage`、`company-profile`、`competitive-analysis`、`sector-overview`、`catalyst-calendar`、`earnings-preview`、`impact-analysis` 九个 skill 针对 **A 股 + 本机只读数据网关**改写：删除美股/港股工具分支、期权与融券结构、Excel/PPT 模板，工具名改为 `market_*`/`company_*`/`news`/`convertible_bonds`/`watch_plan_*`，交付改为 Markdown + matplotlib。`initiating-coverage` 的 11 个美股/Excel 参考文件合并为 3 个 A 股参考文件。原有 Apache-2.0 许可与原作者版权声明不变；逐项改动见 `docs/skill-migration-T151.md`。
-
-### 许可原文
+`3-statements`、`catalyst-calendar`、`check-deck`、`check-model`、`company-profile`、`competitive-analysis`、`comps-analysis`、`dcf-model`、`earnings-analysis`、`earnings-preview`、`idea-generation`、`impact-analysis`、`initiating-coverage`、`model-update`、`morning-note`、`portfolio-diagnosis`、`research-conventions`、`run-workflow`、`sector-overview`、`subagent-roles`、`thesis-tracker`、`trade-pitch`、`ui-design`、`web-scraping`、`x-api`。
 
 ```text
                                  Apache License
@@ -227,20 +201,11 @@
 
 ## Vibe-Trading
 
-cn_data 的十项只读数据方法使用同一项目提交 `cb99dca528695ffe78429483a90399a89f61d614` 的 Python 实现。Chives 的 MCP 适配器负责列举与调用。构建脚本随运行组件保留上游 LICENSE 和 NOTICE。
+以下技能使用 MIT License。Chives 已按本地工具和市场规则修改相关内容。[原项目](https://github.com/HKUDS/Vibe-Trading)
 
-本声明列出的技能迁移自 **Vibe-Trading** 仓库：
-<https://github.com/HKUDS/Vibe-Trading>，源目录为 `agent/src/skills/`。
+`convertible-bond`、`defi-yield`、`dividend-analysis`、`earnings-forecast`、`financial-statement`、`investor-lenses`、`okx-market`、`perp-funding-basis`、`regulatory-knowledge`、`report-generate`、`research-discipline`、`valuation-model`、`web-reader`。
 
-原项目以 **MIT License** 许可发布（见源仓库根目录的 `LICENSE`）。原仓库的版权与许可声明归其原作者所有；本目录不改变原 MIT 许可条款。
-
-**已修改（modified）**：迁移到 dsh 时对正文做了适配，包括按 `docs/tool-alias-map.md` 改写工具名（如 `read_url` → `web_fetch`）、删除 dsh 不存在的平台能力与界面专属描述、补充 A 股/港股规则与数据日期要求、删除无出处的统计/概率/评级/目标价表述、修正事实与公式错误。逐项改动见 `docs/skill-migration-T61.md`；未改动的原文段落保持原样。
-
-本批迁移的 skill：`investor-lenses`、`dividend-analysis`、`research-discipline`、`web-reader`、`regulatory-knowledge`、`financial-statement`、`valuation-model`、`convertible-bond`、`earnings-forecast`、`report-generate`。
-
-T63 追加迁移（加密类，质量筛选后保留）：`perp-funding-basis`、`defi-yield`、`okx-market`。逐项改动见 `docs/skill-migration-T63.md`。
-
-### 许可原文
+`cn_data` 的十项只读数据方法取自同一项目的 `cb99dca528695ffe78429483a90399a89f61d614` 版本。运行组件附有相应的 LICENSE 和 NOTICE。
 
 ```text
 MIT License
