@@ -1,6 +1,8 @@
 ---
 name: dcf-model
 description: "Build a DCF valuation in Excel: FCF projections, WACC, terminal value, scenarios, sensitivity grids, reverse DCF. Triggers on build a DCF, what is it worth, intrinsic value, fair value, price target from cash flows."
+metadata:
+  maintainer: Chives
 ---
 
 # DCF Model Builder

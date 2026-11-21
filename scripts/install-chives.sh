@@ -2,7 +2,9 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 env_dir="$HOME/.agents/venvs/chives"
-store="$HOME/.agents/state/chives-pnpm"
+store="$PWD/.pnpm-store"
+mkdir -p "$PWD/runtime/tmp"
+export TMPDIR="$PWD/runtime/tmp/"
 [ -x "$env_dir/bin/python" ] || uv venv --python 3.12 "$env_dir"
 packages=()
 for manifest in packages/*/pyproject.toml; do packages+=("${manifest%/pyproject.toml}"); done

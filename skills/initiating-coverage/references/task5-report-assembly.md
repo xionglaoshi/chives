@@ -627,4 +627,4 @@ CAGR 为 XX%。增长由以下因素驱动：
 
 **全部文件放在同一主题目录下，作为最终交付打包。**
 
-<!-- Chives 已适配本文件。来源及许可见项目根目录 THIRD_PARTY_NOTICES.md。 -->
+<!-- Chives 已适配本文件。来源及许可见skills/NOTICE.md。 -->

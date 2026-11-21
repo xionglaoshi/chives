@@ -1,6 +1,6 @@
 # cn-data：A 股数据网关 v0
 
-Chives 通过 `mcp-filter-proxy` 暴露 10 个只读数据工具。[适配器](provider.py)使用本地的 Python 数据组件，入口、缓存策略和限流参数见[网关配置](config.yaml)。恢复时，在 Chives 根目录执行以下命令，从已检出的[数据组件源码](../../skills/NOTICE.md#vibe-trading)重建。将示例路径换成该 Git 仓库在本机的位置。安装器校验固定提交，只提取十项工具及其依赖，日常取数直接使用本地运行目录。
+Chives 通过 `mcp-filter-proxy` 暴露 10 个只读数据工具。[适配器](provider.py)使用本地的 Python 数据组件，入口、缓存策略和限流参数见[网关配置](config.yaml)。恢复时，在 Chives 根目录执行以下命令，从已检出的数据组件源码重建。将示例路径换成该 Git 仓库在本机的位置。[源码与固定版本](../../skills/RESEARCH-LICENSES.md)安装器校验固定提交，只提取十项工具及其依赖，日常取数直接使用本地运行目录。
 
 ```bash
 ~/.agents/venv/bin/python3 gateways/cn-data/install-sdk.py "/实际路径/数据组件源码"

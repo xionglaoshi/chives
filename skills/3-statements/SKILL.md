@@ -1,6 +1,8 @@
 ---
 name: 3-statements
 description: "Build or repair an integrated three-statement model: linked IS, BS and CF, supporting schedules, scenarios and a Checks sheet. Triggers on three-statement model, build me a model, link the statements, populate this template, make my balance sheet balance."
+metadata:
+  maintainer: Chives
 ---
 
 # Three-Statement Model

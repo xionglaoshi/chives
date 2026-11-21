@@ -1,6 +1,8 @@
 ---
 name: initiating-coverage
 description: "首次覆盖（A 股）：对一家公司做完整研究、财务模型、估值、图表与首次覆盖报告，默认一次请求只做一步。触发词：首次覆盖、initiating coverage、完整研究、深度报告、首次评级、重发覆盖。只做研究，不构成投资建议，不下单。"
+metadata:
+  maintainer: Chives
 ---
 
 # 首次覆盖（initiating-coverage）
@@ -161,4 +163,4 @@ data/<主题>/model_*.csv
 charts/<主题>/chart_01..chart_35.png, chart_index.txt
 ```
 
-<!-- Chives 已适配本文件。来源及许可见项目根目录 THIRD_PARTY_NOTICES.md。 -->
+<!-- Chives 已适配本文件。来源及许可见skills/NOTICE.md。 -->

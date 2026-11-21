@@ -1,6 +1,8 @@
 ---
 name: competitive-analysis
 description: "竞争格局与护城河（A 股）：从行业/概念成分与指数成分建立同行集合，统一报告期与口径，比较份额、盈利、效率与估值，逐项评估护城河并给出可观察的反证。触发词：竞争格局、护城河、竞争对手、同行对比、市场份额、谁更强、competitive analysis。只做研究，不构成投资建议。"
+metadata:
+  maintainer: Chives
 ---
 
 # A 股竞争格局与护城河（competitive-analysis）
@@ -127,4 +129,4 @@ Markdown 交付，路径遵守 T149（`reports/<主题>/`）。结构：问题 �
 - [ ] 至少两条反证与可观察的失效条件。
 - [ ] 没有评级、目标价、仓位建议（这些交 `trade-pitch`/`risk-boundary`）。
 
-以上为研究框架，不构成投资建议。<!-- Chives 已适配本文件。来源及许可见项目根目录 THIRD_PARTY_NOTICES.md。 -->
+以上为研究框架，不构成投资建议。<!-- Chives 已适配本文件。来源及许可见skills/NOTICE.md。 -->

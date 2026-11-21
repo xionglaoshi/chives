@@ -1,6 +1,8 @@
 ---
 name: report-generate
 description: 写研究报告：摘要、观点、分析、反方证据的结构与数据日期、证据要求。 Professional financial research report generation — structure (summary / views / analysis / disconfirming evidence / risks / data appendix), Markdown conventions, data-date and source rules, A-share-specific risk sections, and backtest evaluation standards. Ratings, target prices and position ideas are allowed with assumptions and falsifiers.
+metadata:
+  maintainer: Chives
 ---
 
 # Professional Research Report Generation

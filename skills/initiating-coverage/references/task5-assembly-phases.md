@@ -550,4 +550,4 @@ charts/<主题>/
 
 组装完成。回到 `references/task5-report-assembly.md`，从头跑完质量检查再交付。
 
-<!-- Chives 已适配本文件。来源及许可见项目根目录 THIRD_PARTY_NOTICES.md。 -->
+<!-- Chives 已适配本文件。来源及许可见skills/NOTICE.md。 -->

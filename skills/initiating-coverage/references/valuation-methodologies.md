@@ -474,4 +474,4 @@ EV/EBIT（LTM）= 交易价值 / 目标 LTM EBIT
 
 关键是理解每种方法背后的假设，并给出考虑了多情景、多方法的、有理由的估值区间。
 
-<!-- Chives 已适配本文件。来源及许可见项目根目录 THIRD_PARTY_NOTICES.md。 -->
+<!-- Chives 已适配本文件。来源及许可见skills/NOTICE.md。 -->

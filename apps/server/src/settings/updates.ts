@@ -11,7 +11,7 @@ const scopes={
   factors:['packages/equity-evidence/src/equity_evidence/vendor/src/factors'],
   databases:['fixtures','config/trade_calendar.json'],
   tools:['packages','config/equity-tools.json'],
-  skills:['skills','THIRD_PARTY_NOTICES.md'],
+  skills:['skills'],
   app:['apps','start','scripts','pnpm-lock.yaml','pnpm-workspace.yaml','package.json','overlays','bots','config','plugins'],
 };
 type Scope=keyof typeof scopes;

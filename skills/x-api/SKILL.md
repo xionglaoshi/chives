@@ -1,6 +1,8 @@
 ---
 name: x-api
 description: "Search X (Twitter) posts from the last seven days, pull user profiles, hydrate specific posts, read a user's recent timeline, and size a query before spending on it, for sentiment, news and event research. Triggers on X, Twitter, tweets about, sentiment on, what are people saying about, recent posts about, or any request to read public X content."
+metadata:
+  maintainer: Chives
 ---
 
 # X (Twitter) API

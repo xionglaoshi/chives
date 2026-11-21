@@ -1,6 +1,8 @@
 ---
 name: check-deck
 description: "QC an investment deck (a .pptx) before it circulates: number consistency, chart and narrative alignment, source coverage, language, then a circulation verdict. Triggers on check this deck, deck QC, review my presentation, is this ready to send, proofread the pitch book."
+metadata:
+  maintainer: Chives
 ---
 
 # Deck Check

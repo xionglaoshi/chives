@@ -204,7 +204,7 @@ export function writePrivateJson(path:string,profile:unknown){
 export function reportView(p:Profile){
  const persons=p.summary.matches.map(m=>{
   const person=investors.find(i=>i.id===m.id)!;
-  return {...person,portrait:(person.webReleaseEligible?'/api/':'/api/internal/')+'style-portraits/'+basename(person.portrait),evidence:[m.source],difference:'',reason:m.reason};
+  return {...person,portrait:(person.webReleaseEligible?'/api/':'/api/internal/')+'style-portraits/'+encodeURIComponent(basename(person.portrait))+'?v='+person.portraitSha256.slice(0,12),evidence:[m.source],difference:'',reason:m.reason};
  });
  const praise=p.summary.encouragement;
  const names=persons.map(person=>person.name);

@@ -1,4 +1,4 @@
-"""Provider onboarding clients; see THIRD_PARTY_NOTICES.md for source notices."""
+"""Provider onboarding clients; see skills/NOTICE.md for source notices."""
 from __future__ import annotations
 from dataclasses import dataclass
 import base64

@@ -634,4 +634,4 @@ NOPAT                   XX      XX      XX      XX      XX
 - **第 4 步（图表）**：收入趋势、利润率图、情景对比的数据
 - **第 5 步（报告成文）**：报告表格与分析用的财务数据
 
-<!-- Chives 已适配本文件。来源及许可见项目根目录 THIRD_PARTY_NOTICES.md。 -->
+<!-- Chives 已适配本文件。来源及许可见skills/NOTICE.md。 -->

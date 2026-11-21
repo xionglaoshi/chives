@@ -56,7 +56,10 @@ def render(person, path):
 def main():
     catalog = CARDS / "catalog.json"
     data = json.loads(catalog.read_text())
-    for person in data["people"]:
+    marks = [person for person in data["people"] if person.get("portraitSource") == SOURCE]
+    if not marks:
+        return
+    for person in marks:
         path = CARDS / person["portrait"]
         render(person, path)
         person.update(portraitSha256=sha256(path.read_bytes()).hexdigest(),

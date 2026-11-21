@@ -12,7 +12,7 @@ target.parent.mkdir(parents=True,exist_ok=True)
 spec=dict(Label=label,ProgramArguments=[sys.executable,str(root/'scripts/hotspots/generate.py'),'--due','--data',str(root/'data/hotspots')],
           RunAtLoad=True,StartCalendarInterval=dict(Hour=8,Minute=30),StartInterval=900,
           WorkingDirectory=str(root),ProcessType='Background',
-          EnvironmentVariables={'PATH':str(Path.home()/'.local/bin')+':/opt/homebrew/bin:/usr/bin:/bin','TZ':'Asia/Shanghai'},
+          EnvironmentVariables={'TMPDIR':str(root/'runtime/tmp')+'/', 'PATH':str(Path.home()/'.local/bin')+':/opt/homebrew/bin:/usr/bin:/bin','TZ':'Asia/Shanghai'},
           StandardOutPath=str(root/'runtime/hotspots.log'),StandardErrorPath=str(root/'runtime/hotspots.log'))
 tmp=target.with_suffix('.tmp');tmp.write_bytes(plistlib.dumps(spec));os.replace(tmp,target)
 subprocess.run(['launchctl','bootout',domain+'/'+label],capture_output=True)

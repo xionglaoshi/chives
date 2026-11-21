@@ -1,6 +1,8 @@
 ---
 name: investor-lenses
 description: 投资大师视角：用深度价值、质量成长等 12 种命名投资框架审视同一标的。 Named investor reasoning frameworks packaged as reusable analytical lenses — 12 lenses (deep value, quality franchise, inversion, scuttlebutt growth, GARP, cycle positioning, debt cycle, forensic short, cost drag, right-business, weak-system contrarian, three questions) that stack on top of evidence already gathered, each with ordered priority signals, hard disqualifiers, and documented failure modes. Use them to form an explicit view on a stock or a trading plan.
+metadata:
+  maintainer: Chives
 ---
 
 # Investor Lenses

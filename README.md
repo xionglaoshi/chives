@@ -170,8 +170,10 @@ Chives 的原创代码、策略与触发器、因子实现、Bot 设定、提示
 
 ## 致谢
 
-[Midas](https://github.com/shihaoxiong/midas) 是与老韭菜同源的姊妹项目。感谢 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 在 Agent 体验与设计上带来的启发。
+[Midas](https://github.com/shihaoxiong/midas) 是与老韭菜同源的姊妹项目。
 
-也感谢 Chives 在开发过程中使用过的开放项目与资产。
+在 Agent 层，我们基于 [DeepSeek Harness（DSH）](https://github.com/deepseek-ai/deepseek-harness) 的执行内核，为投研 Bot 配置各自的模型、技能和工具。消息渠道的接入与配对，是在 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 的实现基础上改造的。
 
-[LangAlpha](https://github.com/ginlix-ai/langalpha) · [Vibe-Trading](https://github.com/HKUDS/Vibe-Trading) · [Hermes Agent](https://github.com/NousResearch/hermes-agent) · [Microsoft Qlib](https://github.com/microsoft/qlib) · [Apache ECharts](https://echarts.apache.org/) · [Pixelarticons](https://github.com/halfmage/pixelarticons) · [OpenBB](https://github.com/OpenBB-finance/OpenBB) · [DeepSeek Harness](https://www.npmjs.com/package/@deepseek-ai/dsh)
+在投研能力上，[Fincept Terminal](https://github.com/Fincept-Corporation/FinceptTerminal) 的工作台、[LangAlpha](https://github.com/ginlix-ai/LangAlpha) 的研究流程，以及 [Vibe-Trading](https://github.com/HKUDS/Vibe-Trading) 和 [AI-Trader](https://github.com/HKUDS/AI-Trader) 的策略回测与交易复盘，都给了我们启发。Chives 的因子研究借鉴了 [Microsoft Qlib](https://github.com/microsoft/qlib)，金融数据接入参考了 [OpenBB](https://github.com/openbq-org/OpenBB)。研究报告使用 [Apache ECharts](https://github.com/apache/echarts) 绘制图表，早期工作台的图标来自 [Pixelarticons](https://github.com/halfmage/pixelarticons)。
+
+感谢这些项目的作者和贡献者，愿意把自己的工具、方法和经验分享出来。

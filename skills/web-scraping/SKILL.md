@@ -1,6 +1,8 @@
 ---
 name: web-scraping
 description: "Web scraping with the scrape_page / scrape_pages MCP tools: fetch public pages as markdown, text or raw HTML through a fast HTTP layer or a headless-Chrome layer, one page or up to ten per call, with robots compliance, SSRF protection and explicit blocked/error handling. Triggers on scrape this page, fetch the article, extract the table, crawl these URLs, the page is JS-rendered, the site returned 403."
+metadata:
+  maintainer: Chives
 ---
 
 # Web Scraping

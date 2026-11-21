@@ -690,4 +690,4 @@ DCF                     13.8 ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
 
 目标价与评级是最终投资建议的基础。
 
-<!-- Chives 已适配本文件。来源及许可见项目根目录 THIRD_PARTY_NOTICES.md。 -->
+<!-- Chives 已适配本文件。来源及许可见skills/NOTICE.md。 -->

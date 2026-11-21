@@ -95,8 +95,10 @@ export function StyleReport({report,overview,example=false,updated,onAskExpert}:
     </details><div>投资风格：{report.investmentStyle??'无明确风格'}</div></div>
     {overviewParagraphs(overview).map((p,i)=><p key={i}>{p}</p>)}</section>
     <section>{heading('您像谁')}<p>{match.reason}</p>{match.people.filter(p=>p.reason).map(p=><p key={p.id}><strong>{p.name}</strong>　{p.reason}</p>)}{match.people.map(p=><div key={p.id} className="ir-person">
-      {p.portrait&&<span className="ir-portrait">
-        <img src={appPath(p.portrait+(p.portrait.includes('?')?'&':'?')+'art=initials-1')} alt="" width="88" height="88" loading="lazy"/></span>}
+      {p.portrait&&<a className="ir-portrait" href={p.portraitSource} target="_blank" rel="noreferrer"
+        aria-label={p.name+'头像来源：'+p.portraitCredit+' · '+p.portraitLicense}
+        title={[p.portraitCredit,p.portraitLicense,p.portraitModification].join(' · ')}>
+        <img src={appPath(p.portrait)} alt={p.name} width="88" height="88" loading="lazy"/></a>}
       <div><h5><a className="ir-person-name" href={p.baike} target="_blank" rel="noreferrer" title={'在百度百科查看'+p.name}>{p.name}</a></h5>
         <p>{p.bio}</p></div></div>)}</section>
     {report.styleCards?<section>{heading('风格解读')}

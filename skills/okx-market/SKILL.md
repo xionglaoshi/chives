@@ -1,6 +1,8 @@
 ---
 name: okx-market
 description: 用 web_fetch 直接 GET OKX V5 公开行情接口的索引：现货、合约、指数、资金费率、持仓量等端点路径、参数、已核对返回字段与可直接使用的完整 URL。仅作研究与信息整理，不需要也不使用任何密钥。
+metadata:
+  maintainer: Chives
 ---
 
 # OKX 公开行情接口（web_fetch 索引）

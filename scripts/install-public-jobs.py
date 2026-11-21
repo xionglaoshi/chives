@@ -19,14 +19,23 @@ jobs = {
     "local.chives.public-market": ([python, str(root / "scripts/update-csi300.py")], dict(
         StartCalendarInterval=[dict(Hour=16, Minute=30), dict(Hour=20, Minute=30)])),
 }
+(root / "runtime/tmp").mkdir(parents=True, exist_ok=True)
 for label, (command, schedule) in jobs.items():
     file = directory / (label + ".plist")
     log = str(root / "runtime" / (label + ".log"))
     content = plistlib.dumps(dict(Label=label, ProgramArguments=command,
-        WorkingDirectory=str(root), RunAtLoad=True, **schedule,
+        WorkingDirectory=str(root), EnvironmentVariables={"TMPDIR": str(root / "runtime/tmp") + "/"}, RunAtLoad=True, **schedule,
         ThrottleInterval=15, StandardOutPath=log, StandardErrorPath=log))
-    if file.exists() and file.read_bytes() != content:
-        raise SystemExit(f"Review existing job before replacing {file}")
+    if file.exists():
+        existing = plistlib.loads(file.read_bytes())
+        desired = plistlib.loads(content)
+        if existing != desired:
+            legacy = dict(desired)
+            legacy.pop("EnvironmentVariables")
+            if existing != legacy:
+                raise SystemExit(f"Review existing job before replacing {file}")
+            # Earlier installations keep their existing launchd environment.
+
     if not file.exists():
         with tempfile.NamedTemporaryFile(dir=directory, delete=False) as temp:
             temp.write(content)

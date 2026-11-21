@@ -1,6 +1,8 @@
 ---
 name: sector-overview
 description: "行业/板块全景（A 股）：先按生意原型分类，再用该行业自己的指标与估值尺子看规模、格局、份额、估值与政策驱动，给出谁受益、谁受损与可观察的验证点。触发词：行业怎么样、板块格局、行业研究、行业全景、赛道分析、market map、sector overview。只做研究，不构成投资建议。"
+metadata:
+  maintainer: Chives
 ---
 
 # A 股行业/板块全景（sector-overview）
@@ -128,4 +130,4 @@ Markdown，路径遵守 T149（`reports/<主题>/`）。结构：结论 → 范�
 - [ ] 受益/受损有机制，争论双方有证据，验证点可观察。
 - [ ] 没有评级、目标价、仓位建议。
 
-以上为研究框架，不构成投资建议。<!-- Chives 已适配本文件。来源及许可见项目根目录 THIRD_PARTY_NOTICES.md。 -->
+以上为研究框架，不构成投资建议。<!-- Chives 已适配本文件。来源及许可见skills/NOTICE.md。 -->

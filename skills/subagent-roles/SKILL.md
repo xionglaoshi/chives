@@ -1,6 +1,8 @@
 ---
 name: subagent-roles
 description: "把 5 个金融子代理角色（research、general-purpose、data-prep、equity-analyst、report-builder）做成可直接粘贴的委派模板：需要并行研究多只标的或多个独立子问题、批量取数、深度个股分析、成稿 Word/Excel/PPT/PDF 时使用。中文触发词：派子任务、并行研究、委派、多标的对比、批量取数、成稿。"
+metadata:
+  maintainer: Chives
 ---
 
 # 子代理角色模板（Subagent Roles）

@@ -845,4 +845,4 @@ charts/<主题>/
 
 4 张必备图对报告的估值与财务分析章节至关重要。
 
-<!-- Chives 已适配本文件。来源及许可见项目根目录 THIRD_PARTY_NOTICES.md。 -->
+<!-- Chives 已适配本文件。来源及许可见skills/NOTICE.md。 -->

@@ -1,6 +1,8 @@
 ---
 name: research-conventions
 description: "研究规范：所有研究交付都要遵守的证据、判断、提问与行情数据规则，第一次研究前先读。 The evidence, judgement, intake and market-data rules every research deliverable follows. Read before the first deliverable of a research task; when a number has no source; when two sources disagree; when a figure may be stale; when deciding what to ask the user; before any valuation, thesis or recommendation."
+metadata:
+  maintainer: Chives
 ---
 
 # Research Conventions
