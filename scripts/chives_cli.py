@@ -1,4 +1,5 @@
 """Register and run the user-level command for a source or packaged installation."""
+from contextlib import redirect_stdout
 import os
 from pathlib import Path
 import runpy
@@ -11,7 +12,11 @@ import webbrowser
 URL = "http://127.0.0.1:8888/"
 SCRIPT = Path(__file__).resolve()
 PROJECT = SCRIPT.parents[1]
-USAGE = "chives       启动本地服务并打开浏览器\nchives stop  关闭本地服务"
+USAGE = """chives                 启动本地服务并打开浏览器
+chives bot             选择一位 Bot 并开始对话
+chives chat            进入投资专家，连续提问
+chives ask "问题"      向投资专家提问一次，可用 --bot 指定其他 Bot
+chives stop            关闭本地服务"""
 
 
 def add_windows_path(directory):
@@ -89,6 +94,15 @@ def register(mode):
     print(f"已注册 {launcher}。请在新终端输入 chives 或 chives stop。")
 
 
+def control(mode, stop=False):
+    if mode == "source":
+        subprocess.run([PROJECT / "start", "stop" if stop else "start"], stdout=sys.stderr, check=True)
+    else:
+        service = runpy.run_path(str(PROJECT / "install.py"))
+        with redirect_stdout(sys.stderr):
+            service["control"](PROJECT.parent.parent, PROJECT, "stop" if stop else "open")
+
+
 def main(mode, args):
     if args == ["--register"]:
         register(mode)
@@ -96,13 +110,13 @@ def main(mode, args):
     if args in (["--help"], ["-h"]):
         print(USAGE)
         return
+    if args and args[0] in ("bot", "ask", "chat"):
+        from chives_chat import run
+        run(args, lambda: control(mode))
+        return
     if args not in ([], ["stop"]):
         sys.exit(USAGE)
-    if mode == "source":
-        subprocess.run([PROJECT / "start", "stop" if args else "start"], check=True)
-    else:
-        service = runpy.run_path(str(PROJECT / "install.py"))
-        service["control"](PROJECT.parent.parent, PROJECT, "stop" if args else "open")
+    control(mode, stop=bool(args))
     if args:
         print("Chives 本地服务已关闭。")
     elif sys.platform == "darwin":
@@ -114,5 +128,10 @@ def main(mode, args):
 if __name__ == "__main__":
     try:
         main(sys.argv[1], sys.argv[2:])
-    except (OSError, RuntimeError, subprocess.CalledProcessError) as exc:
+    except EOFError:
+        pass
+    except KeyboardInterrupt:
+        print("\n已退出终端，已提交的任务可在工作台查看。", file=sys.stderr)
+        sys.exit(130)
+    except (OSError, RuntimeError, ValueError, subprocess.CalledProcessError) as exc:
         sys.exit(str(exc))
