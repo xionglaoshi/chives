@@ -125,7 +125,7 @@ function readRoute(raw: string | undefined): ChivesModelRoute | undefined {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ChivesConfig {
   const repoRoot = DEFAULT_REPO_ROOT;
   const dataDirRaw = env.CHIVES_DATA_DIR?.trim();
-  const dataDir = resolve(dataDirRaw === undefined || dataDirRaw === '' ? `${repoRoot}/.chives` : dataDirRaw);
+  const dataDir = dataDirRaw ? resolve(dataDirRaw) : resolve(repoRoot, 'data');
   const dshHome = env.DSH_FINANCE_HOME ?? `${env.HOME ?? ''}/.dsh`;
   const route = readRoute(env.CHIVES_DEFAULT_ROUTE);
   const config: ChivesConfig = {

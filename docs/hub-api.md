@@ -102,7 +102,7 @@
 
 ---
 
-# hub v1.1：复盘与作战卡（验收者维护；设计依据 `docs/chives-review-playbook-design.md` §6）
+# hub v1.1：复盘与作战卡
 
 通用约定同上（业务错误 HTTP 200 + `ok:false`；写接口只接受 POST + JSON；**绝不触发任何交易**）。本节分两批实现：**T105**＝设置/纪律/复盘存储与数据包/作战卡与候选统计；**T106**＝触发队列/上下文包/判断回写/盘中指引/应急。新增信号 `kind`：`card_proposal`（待确认作战卡，`decide=true`）、`card_state`（作战卡状态跃迁，`decide=true`）、`guidance`（盘中指引）、`emergency`（应急，L3，`decide=true`）、`review_ready`（复盘已生成，info）、`discipline`（纪律暂停，`decide=true`）。`primary.action` 增加 `open_card`、`open_review`。
 

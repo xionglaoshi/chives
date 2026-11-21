@@ -1,3 +1,4 @@
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { ConfigError, DEFAULT_PORT, loadConfig } from '../src/config.js';
@@ -11,7 +12,8 @@ describe('loadConfig', () => {
     expect(config.idleMs).toBe(600_000);
     expect(config.approvalTimeoutMs).toBe(600_000);
     expect(config.paperStateDir).toBeUndefined();
-    expect(config.dataDir.endsWith('/.chives')).toBe(true);
+    expect(config.dataDir).toBe(join(config.repoRoot, 'data'));
+    expect(loadConfig({ CHIVES_DATA_DIR: '  ' }).dataDir).toBe(config.dataDir);
     expect(config.gatewayUrl).toBe('http://127.0.0.1:8868');
   });
 

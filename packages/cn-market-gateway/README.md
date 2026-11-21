@@ -7,7 +7,7 @@
 T142 增加 `company_search`、`company_financials`、`company_valuation`、`company_consensus`、
 `company_reports`、`company_earnings`、`company_holders`、`company_profile`；T143 增加
 `news`、`company_announcements`、`convertible_bonds`（共 22 个工具）。
-实现对应 `docs/data-gateway-design.md` 的 §3–§7、§12。
+网关实现在本包的 `src/cn_market_gateway/`。
 
 - Python 3.12，包名 `cn_market_gateway`
 - 守护进程只监听回环，默认 `127.0.0.1:8768`

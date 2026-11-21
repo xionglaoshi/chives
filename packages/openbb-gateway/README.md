@@ -131,7 +131,6 @@ and verified here: `yfinance`, `nasdaq`, `sec`, `federal_reserve`,
 
 These are not used by the gateway:
 
-- `probe.py list|schema|schemas|call` — talk to the OpenBB MCP server directly.
 - `call_batch.py` — run `_work/calls.json` through one session and append
   compact results to `_work/results.jsonl`.
 - `verify_via_proxy.py` — call role tools through the proxy; prints row counts

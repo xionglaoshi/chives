@@ -124,7 +124,7 @@ import { NotificationService, normalizeLevel } from './notifications/index.js';
 import { WatchService, WatchValidationError } from './watches/index.js';
 import { buildStatus } from './status.js';
 import type { BotOverrideUpdate } from './store/index.js';
-import { Store } from './store/index.js';
+import { DATABASE_FILE, Store } from './store/index.js';
 
 const MAX_BODY_BYTES = 1024 * 1024;
 const DEFAULT_PAGE_LIMIT = 50;
@@ -410,6 +410,11 @@ function readRawBody(request: IncomingMessage, limit: number): Promise<Buffer> {
 
 export function createApp(options: CreateAppOptions): ChivesApp {
   const { config } = options;
+  if (config.dataDir === joinPath(config.repoRoot, 'data')
+      && !existsSync(joinPath(config.dataDir, DATABASE_FILE))
+      && existsSync(joinPath(config.repoRoot, '.chives', DATABASE_FILE))) {
+    throw new Error('检测到旧版数据库。请先停服，按 INSTALL.md「更新与备份」将旧数据迁至 data/，再启动 Chives。');
+  }
   const hotspots=hotspotService(config.repoRoot,config.dataDir);
   const store = Store.open(config.dataDir);
   const registry =
@@ -1444,7 +1449,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
             else if(body.action==='apply')result=await updates.apply(String(body.id),body.revision);
             else throw new AppError(400,'invalid_action','未知的更新操作');
           }
-          catch(e){if(e instanceof AppError)throw e;throw new AppError(503,'update','读取私有仓库失败，请检查 Git 凭证和网络');}
+          catch(e){if(e instanceof AppError)throw e;throw new AppError(503,'update','读取更新仓库失败，请检查仓库地址和网络');}
         }else throw new AppError(404,'not_found','没有此设置操作');
         sendJson(response,200,result);return;
       }

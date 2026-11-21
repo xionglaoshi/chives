@@ -9,7 +9,7 @@ CHIVES_HARNESS=fake pnpm dev
 
 - `apps/server` 在 `127.0.0.1:8780` 用 `FakeDriver` 跑（无需 dsh、无需任何密钥）。
 - `apps/web` 的 Vite 在 `127.0.0.1:5173`，`/api` 代理到 8780。打开 <http://127.0.0.1:5173/>。
-- 想从空时间线重新开始，先把 `CHIVES_DATA_DIR` 指到一个临时目录再起（默认为仓库的 `runtime/`）：
+- 想从空时间线重新开始，先把 `CHIVES_DATA_DIR` 指到一个临时目录再起（默认为仓库的 `data/`）：
   `CHIVES_HARNESS=fake CHIVES_DATA_DIR=$(mktemp -d) pnpm dev`。
 
 对应关系：

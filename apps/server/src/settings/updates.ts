@@ -24,12 +24,18 @@ function same(a?:BlobEntry,b?:BlobEntry){return a?.hash===b?.hash&&a?.mode===b?.
 export class Updates {
   private busy=false;
   constructor(private readonly root:string){}
-  private async git(args:string[],env:NodeJS.ProcessEnv={}){
-    return (await run('git',['-c','http.proxy=http://127.0.0.1:7897',...args],{
+  private async git(args:string[],env:NodeJS.ProcessEnv={},input?:string){
+    const command=run('git',['-c','http.proxy=http://127.0.0.1:7897',...args],{
       cwd:this.root,timeout:30000,maxBuffer:32*1024*1024,env:{...process.env,GIT_TERMINAL_PROMPT:'0',...env},
-    })).stdout;
+    });
+    if(input!==undefined){
+      // A failed Git command can close stdin before reading all pathnames.
+      command.child.stdin?.on('error',()=>{});
+      command.child.stdin?.end(input);
+    }
+    return (await command).stdout;
   }
-  private async tree(revision:string){
+  private async tree(revision:string,sparse:boolean){
     const output=await this.git(['ls-tree','-rz',revision]);
     const entries=new Map<string,BlobEntry>();
     for(const line of output.split('\0')){
@@ -37,6 +43,11 @@ export class Updates {
       if(tab<0)continue;
       const [mode,,hash]=line.slice(0,tab).split(' '),path=line.slice(tab+1);
       if(scopeFor(path)&&mode&&hash)entries.set(path,{mode,hash});
+    }
+    if(sparse&&entries.size){
+      const paths=[...entries.keys()].join('\0')+'\0';
+      const included=new Set((await this.git(['sparse-checkout','check-rules','-z'],{},paths)).split('\0'));
+      for(const path of entries.keys())if(!included.has(path))entries.delete(path);
     }
     return entries;
   }
@@ -57,11 +68,12 @@ export class Updates {
     const stateFile=resolve(this.root,(await this.git(['rev-parse','--git-path','chives-update-state.json'])).trim());
     const installed:Partial<Record<Scope,string>>=existsSync(stateFile)?JSON.parse(readFileSync(stateFile,'utf8')):{};
     const head=(await this.git(['rev-parse','HEAD'])).trim();
-    const remote=await this.tree(revision),trees=new Map([[revision,remote]]);
+    const sparse=(await this.git(['config','--bool','--default','false','core.sparseCheckout'])).trim()==='true';
+    const remote=await this.tree(revision,sparse),trees=new Map([[revision,remote]]);
     const items=[];
     for(const id of Object.keys(scopes) as Scope[]){
       const base=installed[id]||head;
-      if(!trees.has(base))trees.set(base,await this.tree(base));
+      if(!trees.has(base))trees.set(base,await this.tree(base,sparse));
       const before=trees.get(base)!;
       const files:string[]=[];
       let published=false,conflict=false;

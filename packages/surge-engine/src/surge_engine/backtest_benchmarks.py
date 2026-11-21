@@ -1,7 +1,6 @@
 """Benchmark index closes for the 主升浪 backtest.
 
-Only the data layer may talk to an external source (``docs/architecture.md``
-section 3); this module calls the local gateway's ``market_bars`` over loopback
+Only the data layer may talk to an external source; this module calls the local gateway's ``market_bars`` over loopback
 and caches the result under ``runtime/surge/backtest/benchmarks/`` so a re-run
 does not hit the network again.
 """

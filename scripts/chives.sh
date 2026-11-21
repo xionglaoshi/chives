@@ -2,7 +2,7 @@
 # Chives 2.0 本机启动器：start | stop | restart | status | logs
 # 起数据网关（packages/cn-market-gateway，127.0.0.1:8868）、策略服务（packages/strategy-hub，127.0.0.1:8869）、Chives Server（apps/server，127.0.0.1:8880）与 Web（apps/web，Vite 127.0.0.1:8888）；
 # 加 --engines 时按需起三个引擎（cn-watch 8865、market-watch 8866、chives-hub 8867，各自的脚本负责）。
-# 运行产物（pid、日志）在 runtime/chives/；时间线数据默认在 .chives/（CHIVES_DATA_DIR 可改）。
+# 运行产物（pid、日志）在 runtime/chives/；业务数据默认在 data/（CHIVES_DATA_DIR 可改）。
 # 不读取任何密钥：DSH_FINANCE_HOME / DSH_FINANCE_OVERLAY 只作为路径传给服务端。
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -14,7 +14,7 @@ GATEWAY_PORT="${CN_MARKET_PORT:-8868}"
 GATEWAY_DIR="$ROOT/packages/cn-market-gateway"
 STRATEGY_PORT="${STRATEGY_HUB_PORT:-8869}"
 STRATEGY_DIR="$ROOT/packages/strategy-hub"
-export CHIVES_DATA_DIR="${CHIVES_DATA_DIR:-$ROOT/.chives}"
+export CHIVES_DATA_DIR="${CHIVES_DATA_DIR:-$ROOT/data}"
 export DSH_FINANCE_HOME="${DSH_FINANCE_HOME:-$ROOT/data/dsh}"
 export DSH_FINANCE_OVERLAY="${DSH_FINANCE_OVERLAY:-}"
 export CHIVES_DEFAULT_ROUTE="${CHIVES_DEFAULT_ROUTE:-huosan/deepseek-v4.1-flash}"

@@ -1,5 +1,5 @@
 /**
- * Signal-card presentation (T100), ported from `docs/mockups/signal-cards.html`.
+ * Signal-card presentation for the watch panel.
  *
  * Pure props: the container owns fetching, filtering and the optimistic action
  * state. Colours are referenced only through `--chives-sig-*` / up/down tokens,

@@ -1,6 +1,6 @@
 """Backtest for the 主升浪 strategy (T159).
 
-The rules are frozen in ``docs/zhushenglang-plan.md`` section 2: signals come
+Signals come
 only from events the engine already emitted, entries use the next trading day's
 open after the signal, exits use the open after the main-pool removal, and the
 fees/slippage are applied exactly as written there.  No parameter is chosen

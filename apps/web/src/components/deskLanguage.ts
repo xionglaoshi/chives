@@ -13,6 +13,6 @@ export const settingsEnglish:Record<string,[string,string]>={
   models:['Models','Connect a model, test it and choose the default.'],
   help:['Documentation','Answers to common questions about your workbench.'],
   backup:['Backup & import','Back up your personal settings or restore them on this Mac.'],
-  updates:['Updates','Compare component versions with your private repository.'],
+  updates:['Updates','Compare component versions with the update repository.'],
 };
 export const groupNames:Record<string,string>={'用户信息':'User','通用设置':'General','Agent 设置':'Agent','系统维护':'Maintenance'};

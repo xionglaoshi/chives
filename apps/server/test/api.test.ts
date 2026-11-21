@@ -1,5 +1,5 @@
 import { request as httpRequest } from 'node:http';
-import { mkdtemp, rm } from 'node:fs/promises';
+import { access, mkdir, mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -112,6 +112,18 @@ function rawGet(port: number, path: string, host: string): Promise<{ status: num
     request.end();
   });
 }
+
+it('keeps an old installation from starting with an empty database', async () => {
+  const root = await mkdtemp(join(tmpdir(), 'chives-legacy-data-'));
+  directories.push(root);
+  const legacy = join(root, '.chives');
+  const dataDir = join(root, 'data');
+  await mkdir(legacy);
+  await writeFile(join(legacy, 'chives.sqlite'), '');
+  expect(() => createApp({ config: { ...testConfig(dataDir), repoRoot: root } }))
+    .toThrow('检测到旧版数据库');
+  await expect(access(dataDir)).rejects.toMatchObject({ code: 'ENOENT' });
+});
 
 describe('HTTP API', () => {
   it('serves health, bots, timeline, and task detail', async () => {
