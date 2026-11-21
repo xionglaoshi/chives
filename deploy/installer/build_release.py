@@ -51,7 +51,12 @@ def collect_browser_libs(browsers, output):
     for exe in browsers.rglob("*"):
         if exe.name not in {"headless_shell", "chrome-headless-shell", "chrome", "ffmpeg-linux"} or not exe.is_file():
             continue
-        deps = subprocess.check_output(["ldd", exe], text=True)
+        linked = subprocess.run(["ldd", exe], text=True, capture_output=True)
+        if linked.returncode:
+            if any(msg in linked.stdout+linked.stderr for msg in ("not a dynamic executable", "statically linked")):
+                continue
+            linked.check_returncode()
+        deps = linked.stdout
         if "not found" in deps:
             raise RuntimeError(f"构建机 Chromium 缺少系统库: {exe}")
         for name, path in re.findall(r"^\s*(\S+) => (/\S+)", deps, re.M):
@@ -100,7 +105,9 @@ def build(out, work, code):
     archive(out / f"python-{target}.tar.gz", [("python", prefix)])
     node = Path(shutil.which("node")).resolve()
     npm = shutil.which("npm.cmd" if WINDOWS else "npm")
-    npm_dir = Path(subprocess.check_output([npm, "root", "-g"], text=True).strip()) / "npm"
+    npm_dir = (node.parent if WINDOWS else node.parent.parent / "lib") / "node_modules/npm"
+    if not (npm_dir / "bin/npx-cli.js").is_file():
+        npm_dir = Path(subprocess.check_output([npm, "root", "-g"], text=True).strip()) / "npm"
     from install import NODE_VERSION
     if subprocess.check_output([node, "-v"], text=True).strip() != "v"+NODE_VERSION:
         raise RuntimeError(f"构建机需要 Node.js {NODE_VERSION}")
