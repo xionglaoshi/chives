@@ -1,6 +1,4 @@
-# cn-data: A-share data gateway exposing exactly 10 upstream tools (get_cn_announcements was removed: it needs GILDATA_TOKEN
-# and is replaced by cn_extra's cn_get_announcements; the Stock-Connect net-flow tool was removed: upstream has no data since 2024-08-30) from
-# Vibe-Trading's MCP server. Run through packages/mcp-filter-proxy.
+# A 股只读数据网关。公告原文由 cn_extra 提供。
 name: cn_data
 upstream:
   command: /Users/xiong/.agents/venvs/chives/bin/python
@@ -8,7 +6,7 @@ upstream:
   cwd: null
   inherit_env: true
   env:
-    # Do not let the Vibe MCP server call PyPI at startup (a version check that crashed it under some proxy environments).
+    # 跳过启动时的联网版本检查，避免代理不可用时阻塞取数。
     FASTMCP_CHECK_FOR_UPDATES: "off"
 allow:
   - search_symbol

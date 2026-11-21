@@ -5,20 +5,19 @@ import logging
 import os
 from pathlib import Path
 import sys
+from sdk_spec import REVISION, TOOL_MODULES
 from mcp import types
 from mcp.server.lowlevel import Server
 from mcp.server.stdio import stdio_server
 
 root = Path(__file__).resolve().parents[2]
-sdk = root / 'runtime/cn-data-sdk/cb99dca528695ffe78429483a90399a89f61d614'
+sdk = root / 'runtime/cn-data-sdk' / REVISION
 if not sdk.is_dir():
     raise RuntimeError('请按 cn-data 网关说明安装只读数据组件')
 sys.path.insert(0, str(sdk))
 os.environ['VIBE_TRADING_HOME'] = str(root / 'runtime/cn-data-state')
-modules = ['symbol_search','market_data','financial_statements','fund_flow','dragon_tiger',
-           'margin_trading','block_trades','shareholder_count','lockup_expiry','sector']
 tools = {}
-for module in modules:
+for module in TOOL_MODULES:
     package = importlib.import_module('src.tools.' + module + '_tool')
     for cls in vars(package).values():
         if isinstance(cls,type) and cls.__module__ == package.__name__ and getattr(cls,'name',''):

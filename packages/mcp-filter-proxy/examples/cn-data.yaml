@@ -1,7 +1,7 @@
 name: cn_data
 upstream:
-  command: vibe-trading-mcp
-  args: []
+  command: python
+  args: [../../gateways/cn-data/provider.py]
   cwd: null
   inherit_env: true
   env: {}

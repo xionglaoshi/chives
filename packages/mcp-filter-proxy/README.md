@@ -20,6 +20,8 @@ The package declares only `mcp` and `pyyaml`; the test extra adds `pytest` and
 
 ## Usage
 
+Run the example from the package directory with Chives’ data-provider Python environment active and its [read-only data component](../../gateways/cn-data/README.md) installed.
+
 ```bash
 # Run as a stdio MCP server (stdout carries the MCP protocol)
 .venv/bin/python -m mcp_filter_proxy --config examples/cn-data.yaml
@@ -32,7 +34,7 @@ The package declares only `mcp` and `pyyaml`; the test extra adds `pytest` and
 exits with code 0:
 
 ```json
-{"upstream_total": 82, "exposed": ["cn_search_symbol", "cn_get_fund_flow"], "missing": []}
+{"upstream_total": 10, "exposed": ["cn_search_symbol", "cn_get_fund_flow"], "missing": []}
 ```
 
 `exposed` uses the prefixed names; `missing` lists allowlist entries that do not

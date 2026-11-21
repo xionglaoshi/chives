@@ -1,43 +1,20 @@
 ---
 name: research-discipline
-description: "研究纪律：任何投资研究（选股、行业研究等）开始时的偏差自查清单。 A short self-bias checklist to run at the START of any investment research task (stock screen / sector study / company deep-dive). Covers leader-bias, source-language and primary-source bias, narrative-bias, confirmation-bias, and recency-bias, with an A-share-specific correction for each. Load this first, then research with the corrections in mind. A checklist, not a workflow and not investment advice."
+description: 选股、比较行业或跟踪持仓时，先固定问题、样本和证据时点，再记录什么事实能改变判断。
 ---
 
-# AI Research Bias Self-Check
+# 研究开始前的约定
 
-Run this at the **start** of any research task (screening, sector study, company
-deep-dive). These are common failure modes of AI-generated research; the checklist
-makes them visible before they shape the answer. It is an attitude reset, not a
-guarantee of better output.
+先留一行研究记录，供下一轮会话接着核对。
 
-## The biases and their corrections
+| 本次要判断什么 | 截至哪天能知道什么 | 用谁作对照 | 出现什么证据就改判 |
+| --- | --- | --- | --- |
+| 设备厂库存上升是否来自订单备货 | 只用截止日已披露的订单、交货和撤单 | 同期按订单生产的可比厂商 | 对应订单撤销、交货推迟，或披露口径无法对上 |
 
-| Bias | How it shows | Correction |
-|------|--------------|------------|
-| **Leader-bias** | Search results are dominated by large-caps; you end up analyzing only the obvious names. | Deliberately look at mid-caps and suppliers as well; add the Chinese industry term, product term, or customer name to queries. Before adding a small-cap, check liquidity (average daily turnover), ST/*ST status, delisting risk, pledge ratio of the controlling shareholder, and free-float. "Small" is not a reason to include a name. Ask: "who is NOT in the top-10 that should be here?" |
-| **Source-language / primary-source bias** | You search English secondary sources for a Chinese company and miss the primary disclosure; or you treat a blog summary as the filing. | For A-share and HK names, go to the primary source first: cninfo (巨潮资讯), SSE/SZSE/BSE announcement pages, HKEXnews, the company's annual/interim report, 互动易, 业绩预告/业绩快报. Search in Chinese with the company's full name and stock code. Use English/JP/KR/TW sources only for a genuine supply-chain thesis, and label them as secondary. |
-| **Narrative-bias** | You get pulled in by a concept label ("AI stock", "new energy") and analyze the marketing instead of the business. | Ignore the label; look at the actual product, unit economics, and financial statements. A company tagged "AI" may have no AI revenue. Ask which reportable segment, if any, contains the revenue. |
-| **Confirmation-bias** | Once a thesis forms, you only search for evidence that supports it. | Force a Munger inversion: for every bull point, deliberately search the bear case ("X risks / problems / bear case / 问询函 / 处罚"). Cite at least one disconfirming data point per conclusion, or state that none was found. |
-| **Recency-bias** | You rely on a cached/outdated figure because it ranks high in search. | For any material number, write down its period and `as_of` date. Use the latest reporting period (annual, interim, or quarterly) and say which one. Do not apply a fixed "30-day/one-year" rule: annual financials are legitimately up to about 12 months old, while a price or a consensus estimate may be stale in days. If a figure's date cannot be established, do not use it as a conclusion. |
+**固定范围。** 先写入选和排除条件，再看谁排在前面。研究名单若只含龙头、热门股、近期赢家或有完整数据的公司，记录这个缺口，找一家落选、退市或表现平平的可比公司检验解释。用原始披露的语言与单位核数，多篇转载只计作一个来源。市场价格、报告期末和披露日分别记录，盘中值注明时间。
 
-## Data-date rule
+**把竞争解释放在同一张纸上。** 先写最能支持原判断的证据，再写另一种能解释同一现象的原因。对设备厂，新增库存与有效订单能否对应、货交付后有没有收回现金，是两次不同的核验。两项证据都缺时，交付待核事项和所需资料。
 
-Every conclusion-carrying number gets a date and a source. Write it as
-`value (period, as_of YYYY-MM-DD, source)`. A number without a period is treated as
-missing, not as current. For market data, state the trading date; for financials,
-the report period; for announcements, the publication date; for consensus data,
-the snapshot date.
+**跟踪判断变化。** 写清本次用到的已激活策略、适用条件和反例。用户换一种问法时，沿用原时间点和取数口径。若结论改变，标明是新披露、数据修订、策略条件变化，还是用户资金期限发生变化。给出置信程度时说明证据覆盖，命中率留给事后有样本的复盘。
 
-## How to apply
-
-1. Before the first search, read the rows above.
-2. Write the thesis in one sentence, then for each bias ask: "am I about to fall into this?"
-3. Consciously broaden the query plan: mid-caps? primary Chinese disclosures? the bear case? the latest reporting period?
-4. After research, before writing conclusions, re-check: did I cite any disconfirming evidence? did I use a primary source for the key facts? is every key figure dated?
-
-This pairs with:
-- `financial-statement` — verify the **numbers** (data layer)
-- `report-generate` — verify the **final report** (output layer)
-- this skill — verify the **reasoning** (thinking layer)
-
-> 本清单用于研究流程。
+最终只需把影响决策的事实、反证和下一次核对日期发给用户。底稿保留公告链接或证据页，另一位 Bot 应能沿同一份材料复算。

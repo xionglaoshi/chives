@@ -70,3 +70,7 @@ No other Alpha158 field is skipped.
 | Rolling  | 145   | (roc, ma, std, beta, rsqr, resi, max, min, qtlu, qtld, rank, rsv, imax, imin, imxd, corr, cord, cntp, cntn, cntd, sump, sumn, sumd, vma, vstd, wvma, vsump, vsumn, vsumd) × {5, 10, 20, 30, 60} |
 | Skipped  | 4     | OPEN/HIGH/LOW/VWAP (price reference inputs, see above) |
 | **Total**| **154** | |
+
+## Chives distribution
+
+Chives retains the catalogue, identifiers, Chinese descriptions and formula metadata, consolidated with their source notices in _definitions.py. Individual module paths are preserved as compatibility entry points. The current daily-bar calculations use Chives’ shared measurement implementation. The preceding implementation notes describe the upstream version. A copy of the Apache license accompanies this component in Apache-2.0.txt.

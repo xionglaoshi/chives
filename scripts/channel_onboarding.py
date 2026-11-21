@@ -21,7 +21,7 @@ DEFAULT_API_URL = "https://setup.hermes-agent.nousresearch.com"
 
 TELEGRAM_ONBOARDING_URL_ENV = "TELEGRAM_ONBOARDING_URL"
 
-DEFAULT_BOT_NAME = "Hermes Agent"
+DEFAULT_BOT_NAME = "Chives"
 
 DEFAULT_POLL_TIMEOUT = 180
 

@@ -2,6 +2,7 @@ from datetime import date
 import json
 from pathlib import Path
 import pytest
+import pandas as pd
 from equity_evidence import filings
 from equity_evidence.research import (
     financial_ratio,
@@ -48,6 +49,16 @@ def test_all_factors(scenario):
         )
     for row in out.values():
         assert (row["value"] is None) == bool(row["missing"])
+
+
+def test_unsigned_volume_and_tied_extremes():
+    volume = pd.DataFrame({"A": [10, 9, 9, 12, 8, 11]}, dtype="uint32")
+    factors = registry()
+    losses = factors["qlib158_vsumn5"].compute({"volume": volume})
+    assert losses.iloc[-1, 0] == pytest.approx(5 / 11)
+    highs = pd.DataFrame({"A": [3, 5, 5, 2, 1]})
+    position = factors["qlib158_imax5"].compute({"high": highs})
+    assert position.iloc[-1, 0] == pytest.approx(2 / 5)
 
 
 def test_valuation_boundaries():

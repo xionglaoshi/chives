@@ -27,3 +27,8 @@ The Python implementations in this directory are re-written from scratch on
 top of `src.factors.base` operators; no source code is copied from qlib.
 Per-file headers cite the upstream commit and path. See `LICENSE.md` for
 full attribution scope and the list of intentionally skipped fields.
+
+Chives changes
+--------------
+
+Chives retains the catalogue, identifiers, Chinese descriptions and formula metadata, consolidated with their source notices in _definitions.py. Individual module paths are preserved as compatibility entry points. The current daily-bar calculations use Chives’ shared measurement implementation. The preceding implementation notes describe the upstream version. A copy of the Apache license accompanies this component in Apache-2.0.txt.

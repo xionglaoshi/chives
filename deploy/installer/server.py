@@ -21,7 +21,7 @@ SCRIPTS = {"macos.sh", "linux.sh", "windows.ps1", "install.py"}
 PATHS = (
     "apps", "bots", "config", "gateways", "overlays", "packages", "patches", "presets", "scripts", "skills",
     "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "tsconfig.base.json",
-    "eslint.config.js", "THIRD_PARTY_NOTICES.md",
+    "eslint.config.js", "LICENSE", "THIRD_PARTY_NOTICES.md",
 )
 
 

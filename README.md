@@ -167,3 +167,11 @@ $p = [IO.Path]::Combine([IO.Path]::GetTempPath(), ([Guid]::NewGuid().ToString() 
 ## 许可证
 
 Chives 的原创代码、策略与触发器、因子实现、Bot 设定、提示词、脚本和榜单算法采用 **PolyForm Noncommercial License 1.0.0**。个人可按许可条款用于非商业学习、研究和实验。商业部署、收费分发或将这些原创资产用于商业产品，须另获作者许可。 [许可全文](LICENSE)
+
+## 致谢
+
+[Midas](https://github.com/shihaoxiong/midas) 是与老韭菜同源的姊妹项目。感谢 [Hermes Agent](https://github.com/NousResearch/hermes-agent) 在 Agent 体验与设计上带来的启发。
+
+也感谢 Chives 在开发过程中使用过的开放项目与资产。
+
+[LangAlpha](https://github.com/ginlix-ai/langalpha) · [Vibe-Trading](https://github.com/HKUDS/Vibe-Trading) · [Hermes Agent](https://github.com/NousResearch/hermes-agent) · [Microsoft Qlib](https://github.com/microsoft/qlib) · [Apache ECharts](https://echarts.apache.org/) · [Pixelarticons](https://github.com/halfmage/pixelarticons) · [OpenBB](https://github.com/OpenBB-finance/OpenBB) · [DeepSeek Harness](https://www.npmjs.com/package/@deepseek-ai/dsh)
