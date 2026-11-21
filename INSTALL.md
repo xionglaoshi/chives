@@ -1,6 +1,6 @@
 # 老韭菜安装说明
 
-工作台和 API 分别监听本机的 8888 和 8880 端口。你可以使用[三端安装向导](README.md#快速安装)，也可以在 **macOS 登录会话中从 GitHub 源码安装**。安装后，在任意目录的新终端运行 `chives` 即可启动服务并打开默认浏览器，运行 `chives stop` 即可关闭服务。以下依赖准备步骤适用于 macOS 源码安装。
+工作台和 API 分别监听本机的 8888 和 8880 端口。你可以使用[GitHub 安装向导](README.md#快速安装)，也可以在 **macOS 登录会话中从 GitHub 源码安装**。安装后，在任意目录的新终端运行 `chives` 即可启动服务并打开默认浏览器，运行 `chives stop` 即可关闭服务。以下依赖准备步骤适用于 macOS 源码安装。
 
 ## 1. 准备工具
 
@@ -80,8 +80,14 @@ bash scripts/install-chives.sh
 
 更新后运行 `chives`。重新安装依赖时沿用首次安装的网络设置。更新后检查模型连接，并读回一条旧会话。恢复到新机器时，先准备对应版本的程序，再按需恢复个人数据并重新验证模型与频道授权。 [备份与导入说明](docs/设置中心.md)
 
-## 三端分发安装
+## GitHub 快速安装
 
-[macOS 向导](deploy/installer/macos.sh)、[Linux 向导](deploy/installer/linux.sh)和 [Windows 向导](deploy/installer/windows.ps1)均需要有效安装码及可用的分发服务。向导会下载运行环境和 Chives，安装成功后直接启动。[三端安装命令](README.md#快速安装)
+复制 [README 的一行命令](README.md#快速安装)。macOS、Linux 和 WSL2 运行 Bash 入口，Windows 10/11 使用带 `curl.exe` 和 `tar.exe` 的 PowerShell。Linux 发行包面向 GNU/Linux（构建环境为 Ubuntu 24.04）及相应的 WSL2 发行版。Mac 和 Linux 提供 x64 与 ARM64，Windows 11 ARM 使用 x64 兼容环境。工作台使用本机 8888 端口，安装码由维护者提供。[Unix 向导](deploy/installer.sh) · [Windows 向导](deploy/installer.ps1)
 
-macOS 和 Linux 默认从 `~/.chives-install` 运行，Windows 默认目录为 `%LOCALAPPDATA%\Chives`。安装及运行日志分别在该目录的 `logs/install.log` 和 `logs/supervisor.log`。日常启停直接使用 `chives` 和 `chives stop`，再次启动已有安装无需安装码。Linux、Windows 实机验证待补齐。 [分发维护说明](deploy/installer/README.md)
+1. 向导识别系统架构并检查 CPython 3.12（含 venv 和 ensurepip）、Node.js 26、npm/npx 和 pnpm。符合版本及架构要求的工具直接复用。缺少的 Python 或 Node.js/npm 按平台单独下载，缺少的 pnpm 从离线包提供。Python 项目依赖安装在专用虚拟环境中。
+2. 向导用 GitHub HTTPS 请求测试环境变量、系统代理和常见本机代理端口。选择可用代理，或使用直连。第一次取得入口脚本发生在向导启动前，若这一步需要代理，请先为终端设置代理（Unix 的 curl 可使用 `HTTPS_PROXY`，Windows PowerShell 5.1 的 irm 可使用系统代理或 `-Proxy`）。
+3. 程序、DSH、浏览器及依赖均由同一 GitHub Release 分发，向导显示实际下载进度和速率，按 SHA-256 校验并在本机验证安装码。浏览器按 Playwright 修订号和真实启动结果复用，缺少时下载匹配版本。首次安装预留数 GB 空间，缓存位于安装根目录的 `cache/installer`。
+4. 新安装的根目录为 `~/.chives`（Windows 为 `$HOME\.chives`）。同版本重跑复用已经安装的环境。若只有旧分发版，继续使用旧位置；已有源码检出请按本文的源码更新方法操作。可用 `CHIVES_INSTALL_HOME` 指定独立安装根目录。
+5. 工作台和各项服务通过本地健康检查、命令注册成功后，进度到达 100%。新终端运行 `chives` 打开工作台，`chives stop` 关闭。配置依赖时出错查看 `logs/install.log`，启动时出错查看 `logs/supervisor.log`。
+
+GitHub 安装入口与平台发行包都发布后，以上命令生效。 [发行包构建、验收和发布](deploy/installer/README.md)

@@ -9,7 +9,7 @@
 <p align="center">
   <a href="#为什么选-chives">为什么选 Chives</a> ·
   <a href="#chives-的努力方向">努力方向</a> ·
-  <a href="#如何使用-chives">快速安装</a> ·
+  <a href="#快速安装">快速安装</a> ·
   <a href="INSTALL.md">安装文档</a> ·
   <a href="#共创">加入共创</a>
 </p>
@@ -152,24 +152,18 @@ Chives 目前没有商业化计划。我们把它作为公开源码、供个人�
 
 ### 快速安装
 
-下面是仓库内的三端安装向导。向导需要有效安装码和可用的分发服务，安装完成后会启动工作台。Linux 和 Windows 的实机验证仍待补齐。macOS 也可按详细文档从公开源码安装。 [详细安装文档](INSTALL.md)
+在终端复制对应的一行。向导会验证本机代理、检查 Python、Node.js 和 npm，显示六步进度和下载速度。缺少的组件从 GitHub Releases 获取。新安装默认放在用户主目录的 `.chives`，安装码在本机验证。首次使用这些命令需要维护者先发布对应的 GitHub 安装包。 [详细安装文档](INSTALL.md#github-快速安装)
 
-**macOS**
-
-```bash
-tmp="$(mktemp)" && curl -fsSL https://raw.githubusercontent.com/xionglaoshi/chives/main/deploy/installer/macos.sh -o "$tmp" && bash "$tmp"
-```
-
-**Linux**
+**Linux、macOS、WSL2**
 
 ```bash
-tmp="$(mktemp)" && curl -fsSL https://raw.githubusercontent.com/xionglaoshi/chives/main/deploy/installer/linux.sh -o "$tmp" && bash "$tmp"
+curl -fsSL https://raw.githubusercontent.com/xionglaoshi/chives/main/deploy/installer.sh | bash
 ```
 
 **Windows · PowerShell**
 
 ```powershell
-$p = [IO.Path]::Combine([IO.Path]::GetTempPath(), ([Guid]::NewGuid().ToString() + '.ps1')); Invoke-WebRequest -UseBasicParsing -ErrorAction Stop https://raw.githubusercontent.com/xionglaoshi/chives/main/deploy/installer/windows.ps1 -OutFile $p; powershell -NoProfile -ExecutionPolicy Bypass -File $p
+iex (irm https://raw.githubusercontent.com/xionglaoshi/chives/main/deploy/installer.ps1)
 ```
 
 ### 第一次打开

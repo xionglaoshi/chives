@@ -1,16 +1,12 @@
-"""Install a version of Chives into an isolated, user-owned directory."""
+"""GitHub release installer and local Chives service supervisor (CPython 3.12)."""
 from __future__ import annotations
 
 from contextlib import contextmanager
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
-import threading
-import tomllib
 import getpass
 import hashlib
 import json
 import os
 from pathlib import Path
-import platform
 import re
 import shutil
 import signal
@@ -20,11 +16,8 @@ import sys
 import tarfile
 import tempfile
 import time
-import urllib.error
 import urllib.request
-import zipfile
 
-BASE = "https://150.158.11.154/chives-install"
 NODE_VERSION = "26.9.0"
 WINDOWS = os.name == "nt"
 HTTP = urllib.request.build_opener(urllib.request.ProxyHandler({}))
@@ -32,144 +25,17 @@ PORTS = {"gateway": 8868, "strategy": 8869, "server": 8880, "web": 8888,
          "watch": 8865, "market": 8866, "hub": 8867}
 
 
-MIRROR = None
-BATCH_DIR = None
-LAST_ASSET = ""
-CURRENT = "准备安装"
 LOG = None
-
-def show_progress(message, final=False):
-    if sys.stdout.isatty():
-        width = min(100, max(1,shutil.get_terminal_size().columns-1))
-        print("\r" + message[:width].ljust(width),end="\n" if final else "",flush=True)
-    else:
-        print(message,flush=True)
+CURRENT = "检查依赖"
 
 
-def download(url, destination, headers=None):
-    request = urllib.request.Request(url, headers=headers or {})
-    try:
-        opener = HTTP.open if url.startswith("http://127.0.0.1:") else urllib.request.urlopen
-        print(f"    正在取得 {destination.name}…",flush=True)
-        with opener(request, timeout=540) as response, destination.open("wb") as handle:
-            total = int(response.headers.get("Content-Length", 0))
-            done = 0
-            last = 0
-            while chunk := response.read(256*1024):
-                handle.write(chunk)
-                done += len(chunk)
-                if time.monotonic()-last >= 2 or done == total:
-                    progress = f" · {100*done//total}%" if total else ""
-                    filled = min(16,16*done//total) if total else 0
-                    bar = "[" + "#"*filled + "-"*(16-filled) + "] " if total else ""
-                    show_progress(f"    {bar}{done/1048576:.1f} MiB{progress}",done==total)
-                    last = time.monotonic()
-            if total and done != total:
-                raise RuntimeError(f"{destination.name} 下载不完整")
-            return response.headers
-    except urllib.error.HTTPError as exc:
-        if exc.code == 304 and headers and "If-None-Match" in headers:
-            return None
-        raise RuntimeError(exc.read(2048).decode("utf-8", errors="replace")) from None
-
-
-class RegistryServer(ThreadingHTTPServer):
-    request_queue_size = 128
-
-
-class AssetBridge(BaseHTTPRequestHandler):
-    """Package managers use an ephemeral loopback registry; only this process holds the code."""
-    def log_message(self, *unused):
-        pass
-
-    def do_HEAD(self):
-        self.do_GET()
-
-    def do_GET(self):
-        if (self.headers.get('Host') != self.server.address or self.headers.get('Origin')
-                or not self.path.startswith(('/npm/', '/pypi/', '/browser/', '/node/', '/apt/'))):
-            return self.send_error(403)
-        global LAST_ASSET
-        try:
-            LAST_ASSET = "正在取得 · " + urllib.parse.unquote(self.path).rstrip("/").rsplit("/",1)[-1][:70]
-            if BATCH_DIR and self.path.startswith('/npm/') and '/-/' in self.path:
-                name = urllib.parse.unquote(self.path.lstrip('/'))
-                file = BATCH_DIR/hashlib.sha256(name.encode()).hexdigest()
-                if file.exists():
-                    self.send_response(200)
-                    self.send_header('Content-Length',str(file.stat().st_size))
-                    self.end_headers()
-                    if self.command == 'GET':
-                        with file.open('rb') as handle:
-                            shutil.copyfileobj(handle,self.wfile)
-                    return
-            req = urllib.request.Request(BASE+'/assets'+self.path, method=self.command,
-                                         headers={'Authorization': self.server.authorization})
-            if self.path.startswith('/pypi/packages/') and self.headers.get('Range'):
-                req.add_header("Range",self.headers['Range'])
-            with urllib.request.urlopen(req, timeout=540) as res:
-                LAST_ASSET = ("缓存命中" if res.headers.get("X-Chives-Cache")=="hit" else "服务器已缓存") + " · " + urllib.parse.unquote(self.path).rstrip("/").rsplit("/",1)[-1][:70]
-                data = None
-                if self.command == 'GET' and self.path.startswith('/npm/') and '/-/' not in self.path:
-                    doc = json.load(res)
-                    for v in doc.get('versions', {}).values():
-                        dist = v.get('dist', {})
-                        if 'tarball' in dist:
-                            path = urllib.parse.urlsplit(dist['tarball']).path
-                            dist['tarball'] = 'http://'+self.server.address+'/npm'+path
-                    data = json.dumps(doc, separators=(',', ':')).encode()
-                self.send_response(res.status)
-                for key in ('Accept-Ranges','Content-Range'):
-                    if key in res.headers:
-                        self.send_header(key,res.headers[key])
-                self.send_header('Content-Type', res.headers['Content-Type'])
-                self.send_header('Content-Length', str(len(data)) if data is not None else res.headers['Content-Length'])
-                self.end_headers()
-                if self.command != 'HEAD':
-                    if data is None:
-                        shutil.copyfileobj(res,self.wfile,256*1024)
-                    else:
-                        self.wfile.write(data)
-        except urllib.error.HTTPError as exc:
-            self.send_error(exc.code)
-        except (BrokenPipeError, ConnectionResetError):
-            pass
-        except (OSError, ValueError):
-            self.send_error(502)
-
-@contextmanager
-def asset_session(code, root):
-    global MIRROR
-    # Stable registry URLs let uv and npm reuse their per-origin caches across installs.
-    port = 49152 + int(hashlib.sha256(str(root).encode()).hexdigest()[:4],16) % 16000
-    try:
-        listener = RegistryServer(('127.0.0.1',port),AssetBridge)
-    except OSError:
-        listener = RegistryServer(('127.0.0.1',0),AssetBridge)
-    with listener as svc:
-        svc.address = '127.0.0.1:'+str(svc.server_port)
-        svc.authorization = 'Bearer '+code.strip()
-        MIRROR = 'http://'+svc.address
-        worker = threading.Thread(target=svc.serve_forever,daemon=True)
-        worker.start()
-        try:
-            yield
-        finally:
-            svc.shutdown()
-            worker.join()
-            MIRROR = None
-
-def step(number, label):
+def stage(n, label):
     global CURRENT
     CURRENT = label
-    prefix = f'[{number}/6]'
-    if sys.stdout.isatty() and os.name != 'nt' and 'NO_COLOR' not in os.environ:
-        prefix = '\033[36;1m'+prefix+'\033[0m'
-    print(f'\n  {prefix} {label}',flush=True)
+    print(f"\n  [{n}/6] [{'#'*(n-1)}{'-'*(7-n)}] {(n-1)*100//6}%  {label}", flush=True)
+
 
 def run(*args, cwd, env, label=None):
-    global LAST_ASSET
-    LAST_ASSET = ''
     label = label or CURRENT
     start_time = time.monotonic()
     with LOG.open('ab') as out:
@@ -182,7 +48,7 @@ def run(*args, cwd, env, label=None):
                     result = child.wait(timeout=8)
                     break
                 except subprocess.TimeoutExpired:
-                    print(f'    {label} · 已用 {int(time.monotonic()-start_time)} 秒  {LAST_ASSET}',flush=True)
+                    print(f'    {label} · 已用 {int(time.monotonic()-start_time)} 秒',flush=True)
             if result:
                 with LOG.open('rb') as details:
                     details.seek(max(0,details.seek(0,2)-4096))
@@ -192,105 +58,28 @@ def run(*args, cwd, env, label=None):
                 raise RuntimeError(f'{label}失败（退出码 {result}）。详细日志 {LOG}')
     print(f'    ✓ {label}',flush=True)
 
-def system_deps(python, release, env):
-    info = platform.freedesktop_os_release()
-    distro, suite = info.get('ID',''), info.get('VERSION_CODENAME','')
-    if distro not in ('ubuntu','debian') or not re.fullmatch('[a-z]+',suite):
-        raise RuntimeError('Chromium 缺少系统库。此系统未配置受支持的 APT 缓存源。')
-    arch = platform.machine().lower()
-    repo = 'ubuntu-ports' if distro == 'ubuntu' and arch in ('arm64','aarch64') else distro
-    key = f'/usr/share/keyrings/{distro}-archive-keyring.gpg'
-    components = 'main universe' if distro == 'ubuntu' else 'main'
-    print('    安装 Chromium 缺少的系统库，可能需要输入 sudo 密码。', flush=True)
-    with tempfile.TemporaryDirectory() as folder:
-        tmp = Path(folder)
-        for name in ('lists/partial','archives/partial','empty'):
-            (tmp/name).mkdir(parents=True)
-        lines = []
-        for pocket in ('','-updates','-security'):
-            source = 'debian-security' if distro == 'debian' and pocket == '-security' else repo
-            lines.append(f'deb [signed-by={key}] {MIRROR}/apt/{source} {suite}{pocket} {components}')
-        (tmp/'sources.list').write_text('\n'.join(lines)+'\n')
-        conf = tmp/'apt.conf'
-        conf.write_text(f'Dir::Etc::sourcelist "{tmp}/sources.list";\nDir::Etc::sourceparts "{tmp}/empty";\n'
-                        f'Dir::State::lists "{tmp}/lists";\nDir::Cache::archives "{tmp}/archives";\n')
-        apt = ["/usr/bin/apt-get", "-o",f"Dir::Etc::sourcelist={tmp}/sources.list",
-               "-o",f"Dir::Etc::sourceparts={tmp}/empty","-o",f"Dir::State::lists={tmp}/lists",
-               "-o",f"Dir::Cache::archives={tmp}/archives"]
-        if os.geteuid() != 0:
-            apt = ["sudo", *apt]
-        subprocess.run([*apt,"update"], check=True)
-        probe = subprocess.run([str(python),"-m","playwright","install-deps","--dry-run","chromium"],
-                               cwd=release,env=dict(env,APT_CONFIG=str(conf)),text=True,capture_output=True)
-        packages = re.findall(r"^  ([a-z0-9][a-z0-9+.-]+)$",probe.stdout,re.M)
-        if not packages:
-            raise RuntimeError(f"无法确定 Chromium 缺少的系统库，请检查浏览器日志 {LOG}")
-        subprocess.run([*apt,"install","-y","--no-install-recommends",*packages],check=True)
-
-
 def runtime(root, release):
-    tools = root / "tools"
-    uv = Path(os.environ.get("CHIVES_UV", tools / ("uv.exe" if WINDOWS else "uv")))
-    system = {"Darwin": "darwin", "Linux": "linux", "Windows": "win"}[platform.system()]
-    cpu = {"aarch64": "arm64", "arm64": "arm64", "amd64": "x64", "x86_64": "x64"}[platform.machine().lower()]
-    node_name = f"node-v{NODE_VERSION}-{system}-{cpu}"
-    node_dir = tools / node_name
-    node = node_dir / ("node.exe" if WINDOWS else "bin/node")
-    npm = node_dir / ("node_modules/npm/bin/npm-cli.js" if WINDOWS else "lib/node_modules/npm/bin/npm-cli.js")
-    npx = npm.with_name("npx-cli.js")
+    config = json.loads((release / "runtime-paths.json").read_text(encoding="utf-8"))
+    node, npx = Path(config["node"]), Path(config["npx"])
+    python = release / (".venv/Scripts/python.exe" if WINDOWS else ".venv/bin/python")
     env = os.environ.copy()
+    for key in ("CHIVES_INSTALL_CODE", "CHIVES_SETUP_PROXY"):
+        env.pop(key, None)
     env.setdefault("HOME", str(Path.home()))
-    env.setdefault("PYTHONUTF8", "1")
     env.update({
-        "PATH": os.pathsep.join([str(node.parent), str(tools), env.get("PATH", "")]),
-        "CHIVES_DATA_DIR": str(root / "data"),
-        "DSH_FINANCE_HOME": str(root / "data/dsh"),
-        "DSH_HOME": str(root / "data/dsh"),
-        "DSH_FINANCE_OVERLAY": "",
-        "CHIVES_HARNESS": "dsh",
-        "CHIVES_PAPER_STATE_DIR": str(root / "data/paper"),
+        "PYTHONUTF8": "1", "CALENDAR_PYTHON": str(python),
+        "PATH": os.pathsep.join([str(node.parent), str(python.parent), env.get("PATH", "")]),
+        "CHIVES_DATA_DIR": str(root / "data"), "DSH_HOME": str(root / "data/dsh"),
+        "DSH_FINANCE_HOME": str(root / "data/dsh"), "DSH_FINANCE_OVERLAY": "",
+        "CHIVES_HARNESS": "dsh", "CHIVES_PAPER_STATE_DIR": str(root / "data/paper"),
         "CN_DAILY_STORE_DB": str(root / "data/marketdata/daily.sqlite"),
         "PLAYWRIGHT_BROWSERS_PATH": str(release / "runtime/ms-playwright/browsers"),
-        "npm_config_cache": str(root / "cache/npm"),
-        "CHIVES_NPX_JS": str(npx),
+        "npm_config_cache": str(release / "offline/npm"), "CHIVES_NPX_JS": str(npx),
     })
-    env.pop("CHIVES_INSTALL_CODE", None)
-    if MIRROR:
-        env.update({"UV_DEFAULT_INDEX":MIRROR+"/pypi/simple/", "UV_INDEX_URL":MIRROR+"/pypi/simple/",
-                    "npm_config_registry":MIRROR+"/npm/", "PLAYWRIGHT_DOWNLOAD_HOST":MIRROR+"/browser",
-                    "PLAYWRIGHT_CHROMIUM_DOWNLOAD_HOST":MIRROR+"/browser", "PLAYWRIGHT_DOWNLOAD_CONNECTION_TIMEOUT":"540000",
-                    "UV_HTTP_TIMEOUT":"540","UV_NO_CONFIG":"1","npm_config_audit":"false","npm_config_fund":"false",
-                    "NO_PROXY":"127.0.0.1,localhost","no_proxy":"127.0.0.1,localhost"})
-        for key in ("UV_EXTRA_INDEX_URL","UV_INDEX","PIP_EXTRA_INDEX_URL"):
-            env.pop(key,None)
-    python = release / (".venv/Scripts/python.exe" if WINDOWS else ".venv/bin/python")
-    env["CALENDAR_PYTHON"] = str(python)
-    return uv, node, npm, npx, python, node_name, env
-
-
-def prepare_node(node, node_name):
-    if node.is_file():
-        return
-    tools = node.parents[1 if WINDOWS else 2]
-    with tempfile.TemporaryDirectory(dir=tools) as folder:
-        work = Path(folder)
-        name = node_name + (".zip" if WINDOWS else ".tar.gz")
-        prefix = f"{MIRROR}/node/v{NODE_VERSION}"
-        archive, checksums = work / name, work / "SHASUMS256.txt"
-        download(f"{prefix}/{name}", archive)
-        download(f"{prefix}/SHASUMS256.txt", checksums)
-        expected = dict(line.split()[::-1] for line in checksums.read_text().splitlines())[name]
-        with archive.open("rb") as handle:
-            actual = hashlib.file_digest(handle, "sha256").hexdigest()
-        if actual != expected:
-            raise RuntimeError("Node.js SHA-256 校验失败")
-        if WINDOWS:
-            with zipfile.ZipFile(archive) as bundle:
-                bundle.extractall(work)
-        else:
-            with tarfile.open(archive) as bundle:
-                bundle.extractall(work, filter="data")
-        (work / node_name).rename(tools / node_name)
+    if (release / "runtime/ms-playwright/use-private-libs").is_file():
+        libs = str(release / "runtime/ms-playwright/browser-libs")
+        env["LD_LIBRARY_PATH"] = os.pathsep.join(filter(None, [libs, env.get("LD_LIBRARY_PATH")]))
+    return node, python, env
 
 
 def patch_once(path, old, new):
@@ -334,6 +123,10 @@ def portable_paths(release, python):
                "command: process.env.CALENDAR_PYTHON!,\n        args: [join(repoRoot, 'mcp-cwd.py'), overlay.cwd, overlay.command, ...args],")
     patch_once(dsh, "    command: 'npx',\n    args: [\n      '-y',",
                "    command: process.execPath,\n    args: [\n      process.env.CHIVES_NPX_JS!,\n      '-y',")
+    version = (release / "config/dsh-version").read_text().strip()
+    patch_once(dsh, "      process.env.CHIVES_NPX_JS!,\n      '-y',",
+               "      process.env.CHIVES_NPX_JS!,\n      ...(selectedVersion(options.dataDir) === " +
+               json.dumps(version) + " ? ['--offline'] : []),\n      '-y',")
     for name in ("app.ts", "settings/channels.ts", "settings/profile-excerpt.ts", "dashboard/hotspots.ts"):
         file = release / "apps/server/src" / name
         text = file.read_text(encoding="utf-8")
@@ -342,7 +135,7 @@ def portable_paths(release, python):
             r"(process.env.CALENDAR_PYTHON ?? \1)",
             text,
         )
-        if not changed:
+        if not changed and "CALENDAR_PYTHON" not in text:
             raise RuntimeError(f"最新版的 Python 路径适配需要更新: {name}")
         file.write_text(text, encoding="utf-8")
     if WINDOWS:
@@ -386,71 +179,6 @@ def flock(file, operation):
         patch_once(browser, 'python_dir / "playwright/driver/node"', 'python_dir / "playwright/driver/node.exe"')
 
 
-def fetch_batches(ref, auth, folder):
-    global BATCH_DIR
-    BATCH_DIR = folder/"npm-batches"
-    BATCH_DIR.mkdir()
-    system = {"Windows":"win32","Linux":"linux","Darwin":"darwin"}[platform.system()]
-    arch = "arm64" if platform.machine().lower() in ("aarch64","arm64") else "x64"
-    index,count = 0,1
-    while index < count:
-        archive = folder/f"依赖批次-{index+1}.tar"
-        headers = download(f"{BASE}/batch/{ref}/{system}/{arch}/{index}",archive,auth)
-        count = int(headers["X-Chives-Batches"])
-        with tarfile.open(archive) as bundle:
-            for member in bundle:
-                if not member.isfile() or not re.fullmatch("[0-9a-f]{64}",member.name):
-                    raise RuntimeError("无效的依赖分批包")
-                with (BATCH_DIR/member.name).open("wb") as out:
-                    shutil.copyfileobj(bundle.extractfile(member),out)
-        archive.unlink()
-        index += 1
-        print(f"    前端依赖批次 {index}/{count} 已就绪",flush=True)
-
-
-def prepare(root, release, ref, auth, temp):
-    uv, node, npm, npx, python, node_name, env = runtime(root, release)
-    step(3, "准备 Node.js、DSH 和 Python 依赖")
-    if node.is_file():
-        print(f"    已复用 {node_name}",flush=True)
-    prepare_node(node, node_name)
-    version = (release / "config/dsh-version").read_text().strip()
-    run(node, npx, "-y", f"@deepseek-ai/dsh@{version}", "--version", cwd=release, env=env, label="安装并检查 DSH")
-    run(uv, "venv", "--python", sys.executable, release / ".venv", cwd=release, env=env, label="创建 Python 环境")
-    editable = [arg for p in sorted((release / "packages").glob("*/pyproject.toml")) for arg in ("-e", p.parent)]
-    run(uv, "pip", "install", "--python", python, "--constraint",release/"chives-constraints.txt","qrcode[pil]", "websockets>=15,<17", *editable, cwd=release, env=env, label="安装 Python 依赖")
-    run(uv, "pip", "check", "--python", python, cwd=release, env=env, label="检查 Python 依赖")
-    for manifest in (release / "packages").glob("*/pyproject.toml"):
-        link = manifest.parent / ".venv"
-        if WINDOWS:
-            run(os.environ.get("COMSPEC", "cmd.exe"), "/d", "/c", "mklink", "/J", link, release / ".venv", cwd=release, env=env, label="创建 Python 环境")
-        else:
-            link.symlink_to(release / ".venv", target_is_directory=True)
-    portable_paths(release, python)
-    step(4, "安装并检查 Chromium 浏览器")
-    pw_env = {**env, "PYTHONPATH": str(release / "runtime/ms-playwright/python")}
-    run(uv, "pip", "install", "--python", python, "--target", pw_env["PYTHONPATH"],
-        "playwright==1.65.2", cwd=release, env=env, label="安装 Playwright")
-    run(python, "-m", "playwright", "install", "chromium", cwd=release, env=pw_env, label="下载 Chromium")
-    browser_check = [python, "-c", "from playwright.sync_api import sync_playwright\nwith sync_playwright() as p:\n b=p.chromium.launch(); print(b.version); b.close()"]
-    if sys.platform.startswith("linux"):
-        try:
-            run(*browser_check, cwd=release, env=pw_env)
-        except RuntimeError:
-            system_deps(python, release, pw_env)
-            run(*browser_check, cwd=release, env=pw_env)
-    else:
-        run(*browser_check, cwd=release, env=pw_env)
-    step(5, "安装前端依赖并构建 Chives")
-    fetch_batches(ref,auth,temp)
-    manager = json.loads((release/"package.json").read_text())["packageManager"]
-    if not re.fullmatch(r"pnpm@\d+\.\d+\.\d+(?:\+sha(?:256|512)\.[a-f0-9]+)?", manager):
-        raise RuntimeError("package.json 中缺少可验证的 pnpm 版本")
-    pnpm = [node, npx, "-y", manager.split("+")[0]]
-    run(*pnpm, "install", "--frozen-lockfile", "--store-dir", root / "cache/pnpm", cwd=release, env=env, label="安装前端依赖")
-    run(*pnpm, "build", cwd=release, env=env, label="构建 Chives")
-
-
 def healthy(name):
     path = {"web": "/", "server": "/api/health"}.get(name, "/health")
     try:
@@ -480,7 +208,7 @@ def service_specs(release, node, python):
 
 
 def supervise(root, release):
-    _, node, _, _, python, _, env = runtime(root, release)
+    node, python, env = runtime(root, release)
     logs = root / "logs"
     shutdown = root / "stop"
     children = []
@@ -580,12 +308,13 @@ def start(root, release):
                 raise RuntimeError(f"本机端口 {port} 已被占用")
     running.touch(exist_ok=False)
     runner = release / "install.py"
-    _, _, _, _, python, _, _ = runtime(root, release)
+    _, python, _ = runtime(root, release)
     options = {"creationflags": 0x00000008 | 0x00000200} if WINDOWS else {"start_new_session": True}
     log = root / "logs/supervisor.log"
     try:
         with log.open("wb") as handle:
-            child = subprocess.Popen([str(python), str(runner), str(root), str(release)], cwd=release,
+            launch_env = {k:v for k,v in os.environ.items() if k not in ("CHIVES_INSTALL_CODE", "CHIVES_SETUP_PROXY")}
+            child = subprocess.Popen([str(python), str(runner), str(root), str(release)], cwd=release, env=launch_env,
                                      stdin=subprocess.DEVNULL, stdout=handle, stderr=handle, **options)
     except BaseException:
         running.unlink(missing_ok=True)
@@ -602,86 +331,278 @@ def start(root, release):
     raise RuntimeError(f"启动超时，请检查 {log}")
 
 
-def install(root):
-    releases = root / "releases"
-    releases.mkdir(parents=True, exist_ok=True)
-    (root / "logs").mkdir(exist_ok=True)
-    (root / "data/dsh").mkdir(parents=True, exist_ok=True)
-    lock = root / "installing"
+
+def check_output(*args, env=None):
+    try:
+        return subprocess.check_output(args, text=True, stderr=subprocess.DEVNULL, timeout=10, env=env).strip()
+    except (OSError, subprocess.SubprocessError):
+        return ""
+
+
+def find_node(platform_id):
+    node = shutil.which("node")
+    npm = shutil.which("npm.cmd" if WINDOWS else "npm")
+    if node and npm:
+        actual = check_output(node, "-p", "process.versions.node+' '+process.arch")
+        # npm can be managed independently of node, especially with nvm and Volta.
+        prefix = check_output(npm, "root", "-g")
+        if prefix:
+            npx = Path(prefix) / "npm/bin/npx-cli.js"
+            npm_cli = npx.with_name("npm-cli.js")
+            if (re.fullmatch(r"26\.\d+\.\d+ " + platform_id.split("-")[1], actual)
+                    and npx.is_file() and check_output(node, npm_cli, "--version")
+                    and check_output(node, npx, "--version")):
+                print(f"    ✓ 复用 Node.js {actual} 和 npm {check_output(node, npm_cli, '--version')}", flush=True)
+                return Path(node).resolve(), npx.resolve()
+    print(f"    将补装 Node.js {NODE_VERSION} 和配套 npm/npx（当前 Node 或 npm 缺失或版本不兼容）", flush=True)
+    return None
+
+
+def file_hash(path):
+    with path.open("rb") as stream:
+        return hashlib.file_digest(stream, "sha256").hexdigest()
+
+
+def get_asset(root, tag, name):
+    base = f"https://github.com/xionglaoshi/chives/releases/download/{tag}/{name}"
+    proxy = os.environ.get("CHIVES_SETUP_PROXY", "")
+    curl = ["curl.exe" if WINDOWS else "curl", "-q", "--proto", "=https", "--proto-redir", "=https",
+            "--noproxy", "localhost,127.0.0.1" if proxy else "*", "--connect-timeout", "8",
+            "-fsSL", "--retry", "2", "--speed-time", "60", "--speed-limit", "1"]
+    if proxy:
+        curl += ["--proxy", proxy]
+    checksum = subprocess.run([*curl, "--max-time", "45", base + ".sha256"], capture_output=True, text=True)
+    match = re.fullmatch(r"([a-f0-9]{64}) ([1-9]\d*)\s*", checksum.stdout)
+    if checksum.returncode or not match:
+        raise RuntimeError(f"GitHub 缺少 {tag} 的 {name} 或完整校验信息")
+    digest, size = match[1], int(match[2])
+    folder = root / "cache/installer"
+    folder.mkdir(parents=True, exist_ok=True)
+    dest = folder / f"{digest}-{name}"
+    if dest.is_file() and dest.stat().st_size == size and file_hash(dest) == digest:
+        print(f"    ✓ 复用已校验的 {name}", flush=True)
+        return dest
+    with tempfile.TemporaryDirectory(dir=folder) as tmp:
+        pending = Path(tmp) / name
+        print(f"    {name} · {size/1048576:.1f} MiB", flush=True)
+        with subprocess.Popen([*curl, "-o", str(pending), base]) as process:
+            previous, tick = 0, time.monotonic()
+            while process.poll() is None:
+                try:
+                    process.wait(timeout=0.5 if sys.stdout.isatty() else 5)
+                except subprocess.TimeoutExpired:
+                    pass
+                count = pending.stat().st_size if pending.exists() else 0
+                now = time.monotonic()
+                fraction = min(20, 20*count//size)
+                rate = max(0, count-previous) / max(now-tick, 0.001) / 1048576
+                progress = f"    [{'#'*fraction}{'-'*(20-fraction)}] {min(100,count*100//size):3}% · {count/1048576:.1f} MiB · {rate:.2f} MiB/s"
+                print(progress, end="\r" if sys.stdout.isatty() and process.poll() is None else "\n", flush=True)
+                previous, tick = count, now
+            if process.returncode:
+                raise RuntimeError(f"{name} 下载中断，可重新运行向导")
+        if pending.stat().st_size != size or file_hash(pending) != digest:
+            raise RuntimeError(f"{name} 校验不匹配，已丢弃本次下载")
+        pending.replace(dest)
+    return dest
+
+
+def extract_tar(path, target):
+    with tarfile.open(path) as archive:
+        archive.extractall(target, filter="data")
+
+
+def unlock(payload, work, release):
+    # These two modules come from the verified GitHub bootstrap for this architecture.
+    sys.path.insert(0, str(Path(__file__).resolve().parent / "vendor"))
+    import pyzipper
+    code = os.environ.pop("CHIVES_INSTALL_CODE", None) or getpass.getpass("    Chives 安装码（输入时隐藏）: ")
+    plain = work / "chives.tar.gz"
+    try:
+        with pyzipper.AESZipFile(payload) as sealed, sealed.open("chives.tar.gz", pwd=code.encode()) as src, plain.open("wb") as out:
+            shutil.copyfileobj(src, out, 1024*1024)
+    except (RuntimeError, ValueError, pyzipper.BadZipFile) as exc:
+        raise RuntimeError("安装码不正确，或发行包损坏") from exc
+    print("    ✓ 安装码验证通过，正在展开程序、浏览器和离线依赖…", flush=True)
+    extract_tar(plain, release)
+
+
+BROWSER_CHECK = ("from playwright.sync_api import sync_playwright\n"
+                 "from pathlib import Path\n"
+                 "with sync_playwright() as p:\n"
+                 " path=Path(p.chromium.executable_path); assert path.is_file(), path\n"
+                 " b=p.chromium.launch(); print(b.version); b.close()")
+
+
+def prepare_browser(root, release, tag, platform_id):
+    runtime_dir = release / "runtime/ms-playwright"
+    home = Path.home()
+    default = (Path(os.environ.get("LOCALAPPDATA", home)) / "ms-playwright" if WINDOWS else
+               home / "Library/Caches/ms-playwright" if sys.platform == "darwin" else
+               Path(os.environ.get("XDG_CACHE_HOME", home / ".cache")) / "ms-playwright")
+    candidates = [default]
+    if os.environ.get("PLAYWRIGHT_BROWSERS_PATH"):
+        candidates.insert(0, Path(os.environ["PLAYWRIGHT_BROWSERS_PATH"]))
+    cache = runtime_dir / "browsers"
+    descriptors = json.loads((runtime_dir/"python/playwright/driver/package/browsers.json").read_text())
+    for folder in candidates:
+        if not folder.is_dir():
+            continue
+        env = dict(os.environ, PYTHONPATH=str(runtime_dir/"python"), PLAYWRIGHT_BROWSERS_PATH=str(folder))
+        probe = subprocess.run([sys.executable, "-s", "-c", BROWSER_CHECK], env=env, capture_output=True)
+        if probe.returncode:
+            continue
+        cache.mkdir()
+        for item in descriptors["browsers"]:
+            if item["name"] not in ("chromium", "chromium-headless-shell", "ffmpeg"):
+                continue
+            for rev in {item["revision"], *item.get("revisionOverrides", {}).values()}:
+                part = folder / (item["name"].replace("-", "_")+"-"+rev)
+                if part.is_dir():
+                    shutil.copytree(part, cache / part.name, symlinks=not WINDOWS)
+        # Recheck from the private path before trusting the copy (platform overrides may differ).
+        probe = subprocess.run([sys.executable, "-s", "-c", BROWSER_CHECK],
+                               env={**env, "PLAYWRIGHT_BROWSERS_PATH":str(cache)}, capture_output=True)
+        if not probe.returncode:
+            print("    ✓ 复用本机匹配且可启动的 Chromium", flush=True)
+            return
+        shutil.rmtree(cache)
+    archive = get_asset(root, tag, f"browser-{platform_id}.tar.gz")
+    extract_tar(archive, runtime_dir)
+
+
+def configure(root, release, base_python, node_pair):
+    node, npx = node_pair
+    (release / "runtime-paths.json").write_text(json.dumps({"node": str(node), "npx": str(npx)}), encoding="utf-8")
+    _, python, env = runtime(root, release)
+    offline = release / "offline"
+    env.update(PIP_CONFIG_FILE=os.devnull, PIP_NO_INDEX="1", PIP_DISABLE_PIP_VERSION_CHECK="1",
+               npm_config_offline="true", npm_config_audit="false", npm_config_fund="false",
+               npm_config_manage_package_manager_versions="false", COREPACK_ENABLE_NETWORK="0", CI="true")
+    run(base_python, "-I", "-m", "venv", release / ".venv", cwd=release, env=env, label="准备项目 Python 环境")
+    pip = [python, "-I", "-m", "pip", "--isolated", "install", "--disable-pip-version-check",
+           "--no-index", "--find-links", offline / "wheels"]
+    projects = sorted(p.parent for p in (release / "packages").glob("*/pyproject.toml"))
+    run(*pip, "hatchling", "editables", "setuptools", "wheel", cwd=release, env=env, label="安装离线构建工具")
+    run(*pip, "--no-build-isolation", "qrcode[pil]", "websockets>=15,<17",
+        *(arg for p in projects for arg in ("-e", p)), cwd=release, env=env, label="安装并链接 Python 组件")
+    run(python, "-I", "-m", "pip", "check", cwd=release, env=env, label="核对 Python 依赖")
+    for project in projects:
+        link = project / ".venv"
+        if WINDOWS:
+            run("cmd.exe", "/d", "/c", "mklink", "/J", link, release / ".venv", cwd=release, env=env, label="链接 "+project.name)
+        else:
+            link.symlink_to(release / ".venv", target_is_directory=True)
+    portable_paths(release, python)
+    manager = json.loads((release / "package.json").read_text())["packageManager"].split("@")[1].split("+")[0]
+    pnpm = shutil.which("pnpm.cmd" if WINDOWS else "pnpm")
+    if pnpm and check_output(pnpm, "--version", env=env) == manager:
+        command = [pnpm]
+        print(f"    ✓ 复用本机 pnpm {manager}", flush=True)
+    else:
+        command = [node, offline / "pnpm/bin/pnpm.cjs"]
+        print(f"    ✓ 使用随包 pnpm {manager}", flush=True)
+    run(*command, "install", "--offline", "--ignore-scripts", "--frozen-lockfile", "--store-dir", offline / "store",
+        cwd=release, env=env, label="从本地依赖库配置工作台")
+    dsh = (release / "config/dsh-version").read_text().strip()
+    run(node, npx, "--offline", "-y", f"@deepseek-ai/dsh@{dsh}", "--version", cwd=release, env=env, label="检查 DSH")
+    browser_env = {**env, "PYTHONPATH": str(release / "runtime/ms-playwright/python")}
+    try:
+        run(python, "-s", "-c", BROWSER_CHECK, cwd=release, env=browser_env, label="启动 Chromium 自检")
+    except RuntimeError:
+        libs = release / "runtime/ms-playwright/browser-libs"
+        if not sys.platform.startswith("linux") or not libs.is_dir():
+            raise
+        browser_env["LD_LIBRARY_PATH"] = os.pathsep.join(filter(None, [str(libs), env.get("LD_LIBRARY_PATH")]))
+        run(python, "-s", "-c", BROWSER_CHECK, cwd=release, env=browser_env, label="使用随包 Linux 浏览器动态库复查")
+        (libs.parent / "use-private-libs").touch()
+    if (release / "scripts/user_archive.py").is_file():
+        run(python, "scripts/user_archive.py", "--data", root / "data", "init", cwd=release, env=env, label="初始化共享用户档案")
+
+
+def install(root, tag, platform_id):
+    if (not re.fullmatch(r"installer-\d+(?:\.\d+)+", tag) or
+            not re.fullmatch(r"(?:linux|windows|macos)-(?:x64|arm64)", platform_id)):
+        raise RuntimeError("发行版或平台名称无效")
+    global LOG
+    (root / "logs").mkdir(parents=True, exist_ok=True)
+    LOG = root / "logs/install.log"
+    (root / "releases").mkdir(exist_ok=True)
+    release = root / "releases" / f"{tag}-{platform_id}"
+    if (root / ".git").exists() or (root / "package.json").exists():
+        raise RuntimeError("安装目录已有源码检出")
+    lock = root / ".installing"
     try:
         lock.mkdir()
     except FileExistsError:
-        raise RuntimeError(f"已有安装任务，若已退出请移除空目录 {lock}") from None
-    global LOG
-    LOG = root / "logs/install.log"
-    step(2, "验证安装码，检查最新版 Chives 和依赖")
+        raise RuntimeError(f"已有安装正在运行。如上次被强制终止，请确认进程已退出再移走 {lock}") from None
     try:
-        code = os.environ.get("CHIVES_INSTALL_CODE") or getpass.getpass("Chives 安装码: ")
-        with asset_session(code, root), tempfile.TemporaryDirectory(dir=root) as temp:
-            archives = root / "cache/source"
-            archives.mkdir(parents=True,exist_ok=True)
-            marker = archives/"current"
-            previous = marker.read_text().strip() if marker.exists() else ""
-            auth = {"Authorization":"Bearer "+code.strip()}
-            if re.fullmatch(r"[a-f0-9]{40}",previous) and (archives/(previous+".tar.gz")).is_file():
-                auth["If-None-Match"] = '"'+previous+'"'
-            incoming = Path(temp)/"chives.tar.gz"
-            headers = download(BASE+"/package", incoming, auth)
-            sha = previous if headers is None else headers.get("X-Chives-Commit", "")
-            if not re.fullmatch(r"[0-9a-f]{40}", sha):
-                raise RuntimeError("安装源缺少有效的 Git 提交编号")
-            archive = archives/(sha+".tar.gz")
-            if headers is None:
-                print(f"    已复用 Chives {sha[:12]} 源码",flush=True)
-            else:
-                incoming.replace(archive)
-                pending = archives/"current.new"
-                pending.write_text(sha)
-                pending.replace(marker)
-            source = Path(temp) / "source"
-            source.mkdir()
-            with tarfile.open(archive) as bundle:
-                bundle.extractall(source, filter="data")
-            # Resolve unpinned runtime requirements before deciding to reuse an installed release.
-            requirements = set(["qrcode[pil]", "websockets>=15,<17"])
-            local_names = set()
-            for manifest in (source / "packages").glob("*/pyproject.toml"):
-                project = tomllib.loads(manifest.read_text(encoding="utf-8"))["project"]
-                local_names.add(re.sub(r"[-_.]+","-",project["name"].lower()))
-                requirements.update(project.get("dependencies", []))
-            requirements = {r for r in requirements if re.sub(r"[-_.]+","-",re.match(r"[a-zA-Z0-9_.-]+",r)[0].lower()) not in local_names}
-            inputs = Path(temp)/"requirements.in"
-            inputs.write_text("\n".join(sorted(requirements))+"\n",encoding="utf-8")
-            lockfile = source/"chives-constraints.txt"
-            uv, *_, env = runtime(root,source)
-            run(uv,"pip","compile","--python",sys.executable,"--refresh","--only-binary",":all:","--no-header","--no-annotate",
-                "--output-file",lockfile,inputs,cwd=source,env=env,label="检查 Python 依赖版本")
-            revision = hashlib.sha256(Path(__file__).read_bytes() + lockfile.read_bytes() +
-                                      sys.version.encode()+uv.name.encode()).hexdigest()[:12]
-            release = releases / f"{sha[:12]}-{revision}"
-            if not (release / ".installed").exists():
+        if (release / ".installed").is_file():
+            _, python, _ = runtime(root, release)
+            if not python.is_file() or not check_output(python, "-V"):
+                raise RuntimeError(f"现有版本的 Python 无法启动，请检查 {release}")
+            print("    ✓ 复用已验证的发行版")
+            stage(4, "已复用本机解包结果")
+            print("    ✓ 本版本已经安装")
+            stage(5, "检查已有环境")
+            node, _, _ = runtime(root, release)
+            if not check_output(node, "-v"):
+                raise RuntimeError(f"现有版本的 Node.js 无法启动，请检查 {node}")
+            print("    ✓ 复用已配置的运行环境")
+        else:
+            with tempfile.TemporaryDirectory(dir=root) as tmp:
+                work = Path(tmp)
+                node_pair = find_node(platform_id)
+                node_archive = None if node_pair else get_asset(root, tag, f"node-{platform_id}.tar.gz")
+                payload = get_asset(root, tag, f"chives-{platform_id}.zip")
+                print("    ✓ 平台文件已校验", flush=True)
+                stage(4, "验证安装码并解开 Chives")
+                staging = work / "app"
+                staging.mkdir()
+                unlock(payload, work, staging)
                 if release.exists():
-                    raise RuntimeError(f"上次安装尚未完成，请先移走 {release}")
-                source.rename(release)
+                    raise RuntimeError(f"已有未完成的同名目录，请先移走 {release} 再重试")
+                staging.rename(release)
                 try:
-                    prepare(root, release, sha, {"Authorization":auth["Authorization"]}, Path(temp))
+                    if node_archive:
+                        extract_tar(node_archive, release)
+                        node_pair = (release / "tools/node" / ("node.exe" if WINDOWS else "node"),
+                                     release / "tools/npm/bin/npx-cli.js")
+                    base_python = Path(sys.executable)
+                    bundled = Path(__file__).resolve().parent / "python"
+                    if bundled.is_dir() and base_python.resolve().is_relative_to(bundled.resolve()):
+                        shutil.copytree(bundled, release / "python", symlinks=not WINDOWS)
+                        base_python = release / "python" / ("python.exe" if WINDOWS else "bin/python3")
+                    shutil.copyfile(__file__, release / "install.py")
+                    print("    ✓ 发行包已展开", flush=True)
+                    stage(5, "配置依赖并检查浏览器")
+                    prepare_browser(root, release, tag, platform_id)
+                    configure(root, release, base_python, node_pair)
+                    (release / ".installed").touch()
                 except BaseException:
-                    failed = releases / f"failed-{sha[:12]}-{time.time_ns()}"
-                    release.rename(failed)
-                    print(f"失败现场保存在 {failed}", file=sys.stderr)
+                    shutil.rmtree(release)
                     raise
-                (release / ".installed").touch()
-            else:
-                print("  [3-5/6] 已复用本机相同版本的运行环境、浏览器和构建产物",flush=True)
-            shutil.copyfile(__file__, release / "install.py")
         if os.environ.get("CHIVES_INSTALL_BUILD_ONLY") == "1":
-            print(f"Chives {sha[:12]} 依赖、浏览器及构建检查通过，未启动服务。")
+            print("    ✓ 环境检查通过（5/6）；本次仅验收安装包。")
             return
-        step(6, "启动并检查本地服务")
-        control(root, release, "restart")
-        _, _, _, _, python, _, _ = runtime(root, release)
-        subprocess.run([str(python), str(release / "scripts/chives_cli.py"), "release", "--register"], check=True)
-        print(f"Chives {sha[:12]} 已启动: http://127.0.0.1:8888/ 。请在设置中添加模型。")
+        stage(6, "启动服务，检查工作台并注册 chives")
+        ready = root / "ready"
+        previous = ready.read_text().strip() if ready.is_file() else ""
+        try:
+            (root / "data/dsh").mkdir(parents=True, exist_ok=True)
+            control(root, release, "restart")
+            _, python, _ = runtime(root, release)
+            subprocess.run([python, release / "scripts/chives_cli.py", "release", "--register"], check=True)
+        except BaseException:
+            # An upgrade may have stopped a working version. Use its own supervisor to restore it.
+            if previous and Path(previous).name == previous and previous != release.name:
+                old = root / "releases" / previous
+                old_py = old / (".venv/Scripts/python.exe" if WINDOWS else ".venv/bin/python")
+                if old_py.is_file():
+                    stop_code = "import runpy,sys,pathlib; r,p=map(pathlib.Path,sys.argv[1:]); runpy.run_path(str(p/'install.py'))['control'](r,p,'restart')"
+                    subprocess.run([old_py, "-c", stop_code, root, old], check=True)
+            raise
+        print("    ✓ [######] 100%  Chives 已启动 · http://127.0.0.1:8888/\n    新终端输入 chives 打开工作台，chives stop 关闭。", flush=True)
     finally:
         lock.rmdir()
 
@@ -690,7 +611,9 @@ if __name__ == "__main__":
     try:
         if len(sys.argv) == 3:
             supervise(Path(sys.argv[1]), Path(sys.argv[2]))
+        elif len(sys.argv) == 5 and sys.argv[1] == "install":
+            install(Path(sys.argv[2]).resolve(), sys.argv[3], sys.argv[4])
         else:
-            install(Path(sys.argv[1]).expanduser().resolve())
-    except (OSError, RuntimeError, subprocess.SubprocessError) as exc:
-        sys.exit(f"安装失败 · {CURRENT}\n{exc}" + (f"\n日志 {LOG}" if LOG else ""))
+            sys.exit("请使用 GitHub 安装入口。")
+    except (OSError, ValueError, RuntimeError, subprocess.SubprocessError, tarfile.TarError) as exc:
+        sys.exit(f"安装未完成 · {CURRENT}\n{exc}" + (f"\n日志 {LOG}" if LOG else ""))
