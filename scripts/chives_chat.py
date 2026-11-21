@@ -29,7 +29,13 @@ def colored(text, tone="accent", stream=None):
     stream = sys.stderr if stream is None else stream
     if not stream.isatty() or "NO_COLOR" in os.environ or os.environ.get("TERM") == "dumb":
         return clean(text)
-    colors = {"accent": "1;32", "gold": "33", "muted": "2", "failed": "31"}
+    if os.environ.get("COLORTERM", "").lower() in ("truecolor", "24bit"):
+        green = "38;2;101;178;138"
+    elif "256color" in os.environ.get("TERM", ""):
+        green = "38;5;72"
+    else:
+        green = "32"
+    colors = {"accent": "1;" + green, "emphasis": green, "muted": "2", "failed": "31"}
     return f"\033[{colors[tone]}m{clean(text)}\033[0m"
 
 
@@ -60,7 +66,7 @@ def banner(title):
 
 
 def prompt(label):
-    print(colored(label, "gold"), end="", file=sys.stderr, flush=True)
+    print(colored(label, "emphasis"), end="", file=sys.stderr, flush=True)
     return input().strip()
 
 
@@ -77,7 +83,7 @@ def print_answer(text):
         elif not in_code and re.match(r"^#{1,6} ", line):
             print(colored(line.lstrip("# "), stream=sys.stdout))
         elif not in_code:
-            print(re.sub(r"\*\*([^*]+)\*\*", lambda m: colored(m[1], "gold", sys.stdout), line))
+            print(re.sub(r"\*\*([^*]+)\*\*", lambda m: colored(m[1], "emphasis", sys.stdout), line))
         else:
             print(line)
     sys.stdout.flush()

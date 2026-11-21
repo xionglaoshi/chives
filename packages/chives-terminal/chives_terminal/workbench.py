@@ -77,7 +77,7 @@ class Workbench:
         self.search = TextArea(multiline=False, height=1, prompt="  ⌕  ", style="class:field")
         self.search.buffer.on_text_changed += self.filter_changed
         self.editor = TextArea(multiline=True, height=D(min=1, max=5), dont_extend_height=True,
-                               prompt=[ink("gold", " ❯  ")], style="class:field", wrap_lines=True)
+                               prompt=[ink("accent", " ❯  ")], style="class:field", wrap_lines=True)
         self.menu_list = Window(FormattedTextControl(self.menu_rows), always_hide_cursor=True,
                                 width=lambda: self.list_width if self.width >= 82 else D())
         self.picker = self.picker_layout()
@@ -107,7 +107,7 @@ class Workbench:
 
     def topline(self):
         where = "选择 Bot" if self.bot is None else one(self.bot["name"])
-        left = [ink("gold", "  ✦  CHIVES"), ink("dim", "    /    "), ink("ink", where)]
+        left = [ink("accent", "  ✦  CHIVES"), ink("dim", "    /    "), ink("ink", where)]
         host = "●  " + clip(self.host, 24)
         gap = self.width - sum(get_cwidth(s) for _, s in left) - get_cwidth(host) - 2
         return left + ([ink("green", " "*gap + host)] if gap > 2 else [])
@@ -120,14 +120,14 @@ class Workbench:
         return HSplit([
             Window(height=1), panel(lambda: masthead(self.width, self.height, len(self.bots)),
                                     height=lambda: 6 if self.width >= 49 and self.height >= 22 else 1),
-            Window(height=1), panel(lambda: [ink("gold", "  选择 Bot"), ink("dim", f"    {len(self.matches())} 位")]),
+            Window(height=1), panel(lambda: [ink("accent", "  选择 Bot"), ink("dim", f"    {len(self.matches())} 位")]),
             Window(char="─", height=1, style="class:line"),
             VSplit([self.menu_list, detail], padding=1),
             panel(lambda: [ink("dim", "  " + clip(self.current()["role"], self.width - 4))]
                   if self.current() and self.width < 82 else []),
             panel(lambda: [ink("dim", "  查找名称、职责或编号")]),
-            self.search, panel(lambda: [ink("gold", "  ↑ ↓"), ink("dim", " 选择    "),
-                                       ink("gold", "Enter"), ink("dim", " 进入    Esc 退出")]),
+            self.search, panel(lambda: [ink("accent", "  ↑ ↓"), ink("dim", " 选择    "),
+                                       ink("accent", "Enter"), ink("dim", " 进入    Esc 退出")]),
         ])
 
     def chat_layout(self):
@@ -180,7 +180,7 @@ class Workbench:
             return []
         state = {"idle": "待命", "working": "工作中", "starting": "启动中",
                  "awaiting_approval": "等待审批", "error": "需要检查"}.get(bot.get("status"), "待命")
-        return [ink("gold", f"   ✦  {bot['name']}\n\n"),
+        return [ink("accent", f"   ✦  {bot['name']}\n\n"),
                 ink("ink", "   " + one(bot["role"])+"\n\n"),
                 ink("dim", "   模型   "), ink("ink", self.model(bot)+"\n"),
                 ink("dim", "   状态   "), ink("green", state+"\n"),
@@ -197,16 +197,16 @@ class Workbench:
             label = f"{label} · {int(time.monotonic()-self.started)}s"
         prefix = "审批" if self.pending else "输入"
         text = clip(f"╭─ {prefix}  ·  {label}", self.width - 4)
-        return [ink("gold", text + " "), ink("line", "─" * max(0, self.width - get_cwidth(text)-2) + "╮")]
+        return [ink("accent", text + " "), ink("line", "─" * max(0, self.width - get_cwidth(text)-2) + "╮")]
 
     def status(self):
         model = self.model(self.bot)
         compact = self.width < 76
         label = context_label(self.used, self.size, compact=False)
         if compact:
-            return [ink("gold", "  ◈ " + clip(model, self.width-6)), ("","\n"),
+            return [ink("accent", "  ◈ " + clip(model, self.width-6)), ("","\n"),
                     ink("green", "  " + clip(label, self.width-3))]
-        return [ink("gold", "  ◈ " + clip(model, max(14, self.width-48))),
+        return [ink("accent", "  ◈ " + clip(model, max(14, self.width-48))),
                 ink("line", "    │    "), ink("green", label)]
 
     def keys_line(self):
@@ -375,7 +375,7 @@ class Workbench:
                 kind, title, text = block
                 rows.extend(body_lines(kind, title, text))
         if not rows:
-            rows = [("gold", "  ✦  " + one(self.bot["name"])), ("dim", ""),
+            rows = [("accent", "  ✦  " + one(self.bot["name"])), ("dim", ""),
                     ("ink", "  " + one(self.bot["role"]))]
         self.lexer.rows = rows
         text = "\n".join(s for _, s in rows)

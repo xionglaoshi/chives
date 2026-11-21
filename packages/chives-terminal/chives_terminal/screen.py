@@ -6,14 +6,17 @@ from prompt_toolkit.lexers import Lexer
 from prompt_toolkit.styles import Style
 from prompt_toolkit.utils import get_cwidth
 
+# The README brand swatch anchors the selected row and the shadow of the wordmark.
+FOREST = "#145337"
 STYLE = Style.from_dict({
-    "": "bg:#191b18 #e9e5d7",
-    "band": "bg:#252923 #dbd9ca", "field": "bg:#242820 #fff3d9",
-    "title": "#ffe1a1 bold", "gold": "#ecbb70", "ochre": "#ce965c",
-    "green": "#a5c895", "ink": "#eee9dc", "dim": "#aaa99a", "line": "#626958",
-    "selected": "bg:#39382b #ffe4a5 bold", "number": "#bea171",
-    "reason": "#c0b3c5", "error": "#f2a095", "user": "#f4c47d bold",
-    "agent": "#a9d5a2 bold", "strong": "#ffe2aa bold", "code": "#b7d8ce",
+    "": "bg:#101a15 #e1ebe4",
+    "band": "bg:#142e21 #d6e8dc", "field": "bg:#17291f #eff6f0",
+    "title": "#86c6a1 bold", "accent": "#65b28a", "leaf": "#38885e",
+    "brand-shadow": FOREST,
+    "green": "#a0c9ac", "ink": "#e8efe9", "dim": "#a3b4a8", "line": "#547462",
+    "selected": f"bg:{FOREST} #e3f2e6 bold", "number": "#90b89e",
+    "reason": "#b5c3c5", "error": "#f2a095", "user": "#85c79f bold",
+    "agent": "#b3dfbd bold", "strong": "#b1dfc0 bold", "code": "#acd6c9",
 })
 CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]|[\u202a-\u202e\u2066-\u2069]")
 
@@ -54,11 +57,11 @@ WORDMARK = (
 
 def masthead(width, height, count):
     if width < 49 or height < 22:
-        return [ink("title", "  CHIVES"), ink("gold", "   老韭菜 · 选择 Bot")]
+        return [ink("title", "  CHIVES"), ink("accent", "   老韭菜 · 选择 Bot")]
     result = []
     side = ["", "老 韭 菜", "终 端 投 研 工 作 台", "", f"{count} 位 Bot  /  本地服务", ""]
     for i, row in enumerate(WORDMARK):
-        result.append(ink(("title", "title", "gold", "gold", "ochre", "line")[i], "  " + row))
+        result.append(ink(("title", "accent", "accent", "leaf", "leaf", "brand-shadow")[i], "  " + row))
         if width >= 73:
             result.append(ink("title" if i == 1 else "dim", "     " + side[i]))
         if i < len(WORDMARK)-1:
