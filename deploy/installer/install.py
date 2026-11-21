@@ -74,8 +74,10 @@ def runtime(root, release):
         "CHIVES_HARNESS": "dsh", "CHIVES_PAPER_STATE_DIR": str(root / "data/paper"),
         "CN_DAILY_STORE_DB": str(root / "data/marketdata/daily.sqlite"),
         "PLAYWRIGHT_BROWSERS_PATH": str(release / "runtime/ms-playwright/browsers"),
-        "npm_config_cache": str(release / "offline/npm"), "CHIVES_NPX_JS": str(npx),
+        "npm_config_cache": config.get("npm_cache", str(release / "offline/npm")), "CHIVES_NPX_JS": str(npx),
     })
+    if config.get("dsh_js"):
+        env["CHIVES_DSH_JS"] = config["dsh_js"]
     if (release / "runtime/ms-playwright/use-private-libs").is_file():
         libs = str(release / "runtime/ms-playwright/browser-libs")
         env["LD_LIBRARY_PATH"] = os.pathsep.join(filter(None, [libs, env.get("LD_LIBRARY_PATH")]))
@@ -91,7 +93,7 @@ def patch_once(path, old, new):
     path.write_text(text.replace(old, new), encoding="utf-8")
 
 
-def portable_paths(release, python):
+def portable_paths(release, python, *, direct_dsh=False):
     wrapper = release / "mcp-cwd.py"
     wrapper.write_text(
         "import os,subprocess,sys\nos.chdir(sys.argv[1])\nraise SystemExit(subprocess.call(sys.argv[2:]))\n",
@@ -121,12 +123,18 @@ def portable_paths(release, python):
     dsh = release / "apps/server/src/harness/dsh.ts"
     patch_once(dsh, "command: '/bin/sh',\n        args: ['-c', 'cd \"$0\" && exec \"$@\"', overlay.cwd, overlay.command, ...args],",
                "command: process.env.CALENDAR_PYTHON!,\n        args: [join(repoRoot, 'mcp-cwd.py'), overlay.cwd, overlay.command, ...args],")
-    patch_once(dsh, "    command: 'npx',\n    args: [\n      '-y',",
-               "    command: process.execPath,\n    args: [\n      process.env.CHIVES_NPX_JS!,\n      '-y',")
-    version = (release / "config/dsh-version").read_text().strip()
-    patch_once(dsh, "      process.env.CHIVES_NPX_JS!,\n      '-y',",
-               "      process.env.CHIVES_NPX_JS!,\n      ...(selectedVersion(options.dataDir) === " +
-               json.dumps(version) + " ? ['--offline'] : []),\n      '-y',")
+    if direct_dsh:
+        pinned = json.dumps((release / "config/dsh-version").read_text().strip())
+        patch_once(dsh, "    command: 'npx',\n    args: [\n      '-y',\n      '@deepseek-ai/dsh@'+selectedVersion(options.dataDir),",
+                   "    command: process.execPath,\n    args: [\n      ...(selectedVersion(options.dataDir) === "+pinned+
+                   " ? [process.env.CHIVES_DSH_JS!] : [process.env.CHIVES_NPX_JS!, '-y', '@deepseek-ai/dsh@'+selectedVersion(options.dataDir)]),")
+    else:
+        patch_once(dsh, "    command: 'npx',\n    args: [\n      '-y',",
+                   "    command: process.execPath,\n    args: [\n      process.env.CHIVES_NPX_JS!,\n      '-y',")
+        version = (release / "config/dsh-version").read_text().strip()
+        patch_once(dsh, "      process.env.CHIVES_NPX_JS!,\n      '-y',",
+                   "      process.env.CHIVES_NPX_JS!,\n      ...(selectedVersion(options.dataDir) === " +
+                   json.dumps(version) + " ? ['--offline'] : []),\n      '-y',")
     for name in ("app.ts", "settings/channels.ts", "settings/profile-excerpt.ts", "dashboard/hotspots.ts"):
         file = release / "apps/server/src" / name
         text = file.read_text(encoding="utf-8")
@@ -434,13 +442,13 @@ BROWSER_CHECK = ("from playwright.sync_api import sync_playwright\n"
                  " b=p.chromium.launch(); print(b.version); b.close()")
 
 
-def prepare_browser(root, release, tag, platform_id):
+def reuse_browser(release, candidates=()):
     runtime_dir = release / "runtime/ms-playwright"
     home = Path.home()
     default = (Path(os.environ.get("LOCALAPPDATA", home)) / "ms-playwright" if WINDOWS else
                home / "Library/Caches/ms-playwright" if sys.platform == "darwin" else
                Path(os.environ.get("XDG_CACHE_HOME", home / ".cache")) / "ms-playwright")
-    candidates = [default]
+    candidates = [*candidates, default]
     if os.environ.get("PLAYWRIGHT_BROWSERS_PATH"):
         candidates.insert(0, Path(os.environ["PLAYWRIGHT_BROWSERS_PATH"]))
     cache = runtime_dir / "browsers"
@@ -465,10 +473,26 @@ def prepare_browser(root, release, tag, platform_id):
                                env={**env, "PLAYWRIGHT_BROWSERS_PATH":str(cache)}, capture_output=True)
         if not probe.returncode:
             print("    ✓ 复用本机匹配且可启动的 Chromium", flush=True)
-            return
+            return True
         shutil.rmtree(cache)
+    return False
+
+
+def prepare_browser(root, release, tag, platform_id):
+    if reuse_browser(release):
+        return
+    runtime_dir = release / "runtime/ms-playwright"
     archive = get_asset(root, tag, f"browser-{platform_id}.tar.gz")
     extract_tar(archive, runtime_dir)
+
+
+def link_projects(projects, release, env):
+    for project in projects:
+        link = project / ".venv"
+        if WINDOWS:
+            run("cmd.exe", "/d", "/c", "mklink", "/J", link, release / ".venv", cwd=release, env=env, label="链接 "+project.name)
+        else:
+            link.symlink_to(release / ".venv", target_is_directory=True)
 
 
 def configure(root, release, base_python, node_pair):
@@ -487,12 +511,7 @@ def configure(root, release, base_python, node_pair):
     run(*pip, "--no-build-isolation", "qrcode[pil]", "websockets>=15,<17",
         *(arg for p in projects for arg in ("-e", p)), cwd=release, env=env, label="安装并链接 Python 组件")
     run(python, "-I", "-m", "pip", "check", cwd=release, env=env, label="核对 Python 依赖")
-    for project in projects:
-        link = project / ".venv"
-        if WINDOWS:
-            run("cmd.exe", "/d", "/c", "mklink", "/J", link, release / ".venv", cwd=release, env=env, label="链接 "+project.name)
-        else:
-            link.symlink_to(release / ".venv", target_is_directory=True)
+    link_projects(projects, release, env)
     portable_paths(release, python)
     manager = json.loads((release / "package.json").read_text())["packageManager"].split("@")[1].split("+")[0]
     pnpm = shutil.which("pnpm.cmd" if WINDOWS else "pnpm")
@@ -518,6 +537,27 @@ def configure(root, release, base_python, node_pair):
         (libs.parent / "use-private-libs").touch()
     if (release / "scripts/user_archive.py").is_file():
         run(python, "scripts/user_archive.py", "--data", root / "data", "init", cwd=release, env=env, label="初始化共享用户档案")
+
+
+def activate(root, release):
+    stage(6, "启动服务，检查工作台并注册 chives")
+    ready = root / "ready"
+    previous = ready.read_text().strip() if ready.is_file() else ""
+    try:
+        (root / "data/dsh").mkdir(parents=True, exist_ok=True)
+        control(root, release, "restart")
+        _, python, _ = runtime(root, release)
+        subprocess.run([python, release / "scripts/chives_cli.py", "release", "--register"], check=True)
+    except BaseException:
+        # An upgrade may have stopped a working version. Use its own supervisor to restore it.
+        if previous and Path(previous).name == previous and previous != release.name:
+            old = root / "releases" / previous
+            old_py = old / (".venv/Scripts/python.exe" if WINDOWS else ".venv/bin/python")
+            if old_py.is_file():
+                stop_code = "import runpy,sys,pathlib; r,p=map(pathlib.Path,sys.argv[1:]); runpy.run_path(str(p/'install.py'))['control'](r,p,'restart')"
+                subprocess.run([old_py, "-c", stop_code, root, old], check=True)
+        raise
+    print("    ✓ [######] 100%  Chives 已启动 · http://127.0.0.1:8888/\n    新终端输入 chives 打开工作台，chives stop 关闭。", flush=True)
 
 
 def install(root, tag, platform_id):
@@ -585,24 +625,7 @@ def install(root, tag, platform_id):
         if os.environ.get("CHIVES_INSTALL_BUILD_ONLY") == "1":
             print("    ✓ 环境检查通过（5/6）；本次仅验收安装包。")
             return
-        stage(6, "启动服务，检查工作台并注册 chives")
-        ready = root / "ready"
-        previous = ready.read_text().strip() if ready.is_file() else ""
-        try:
-            (root / "data/dsh").mkdir(parents=True, exist_ok=True)
-            control(root, release, "restart")
-            _, python, _ = runtime(root, release)
-            subprocess.run([python, release / "scripts/chives_cli.py", "release", "--register"], check=True)
-        except BaseException:
-            # An upgrade may have stopped a working version. Use its own supervisor to restore it.
-            if previous and Path(previous).name == previous and previous != release.name:
-                old = root / "releases" / previous
-                old_py = old / (".venv/Scripts/python.exe" if WINDOWS else ".venv/bin/python")
-                if old_py.is_file():
-                    stop_code = "import runpy,sys,pathlib; r,p=map(pathlib.Path,sys.argv[1:]); runpy.run_path(str(p/'install.py'))['control'](r,p,'restart')"
-                    subprocess.run([old_py, "-c", stop_code, root, old], check=True)
-            raise
-        print("    ✓ [######] 100%  Chives 已启动 · http://127.0.0.1:8888/\n    新终端输入 chives 打开工作台，chives stop 关闭。", flush=True)
+        activate(root, release)
     finally:
         lock.rmdir()
 

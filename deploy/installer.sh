@@ -3,10 +3,11 @@
 (
 set -euo pipefail
 repo=xionglaoshi/chives
-channel="https://raw.githubusercontent.com/$repo/main/deploy/installer/channel"
+source_url="https://codeload.github.com/$repo/tar.gz/refs/heads/main"
+lock=
 step=0
 work=
-cleanup() { test -z "$work" || rm -rf -- "$work"; }
+cleanup() { test -z "$work" || rm -rf -- "$work"; test -z "$lock" || rmdir -- "$lock"; }
 trap cleanup EXIT
 trap 'printf "\n安装在第 %s 步中断，请查看上方错误后重试。\n" "$step" >&2' ERR
 fail() { printf '\n安装未完成 · 第 %s 步 · %s\n' "$step" "$*" >&2; exit 1; }
@@ -27,7 +28,7 @@ banner() {
    ███ █ █ ███  █  ███ ███
 BANNER
     if [[ -t 1 && -z ${NO_COLOR+x} ]]; then printf '\033[0m'; fi
-    printf '\n  老韭菜 · 本地安装向导\n  将从 GitHub 安装 Chives 工作台、DSH、Python、Node.js 和 Chromium。\n  共六步：检查本机 → 选择网络 → 下载校验 → 解包 → 配置环境 → 启动工作台\n'
+    printf '\n  老韭菜 · 本地安装向导\n  从仓库取得 Chives 源码，复用本机工具，缺少的组件从官方来源下载。\n  共六步：检查本机 → 选择网络 → 下载源码 → 准备运行环境 → 安装依赖并构建 → 启动工作台\n'
 }
 proxy_candidates() {
     printf '%s\n' "${https_proxy:-}" "${HTTPS_PROXY:-}" "${all_proxy:-}" "${ALL_PROXY:-}" "${http_proxy:-}" "${HTTP_PROXY:-}"
@@ -52,21 +53,8 @@ proxy_candidates() {
     done
 }
 download() {
-    local name=$1 hash dest actual
-    hash=$("${fetch[@]}" -fsSL --retry 2 "$base/$name.sha256") || fail "GitHub 缺少 $name 的校验文件，请检查发行版 $tag。"
-    hash=${hash%%[[:space:]]*}
-    [[ "$hash" =~ ^[a-f0-9]{64}$ ]] || fail "GitHub 校验文件格式错误：$name"
-    dest="$cache/$hash-$name"
-    if [[ -f "$dest" ]]; then
-        actual=$("${digest[@]}" < "$dest")
-        if [[ ${actual%% *} == "$hash" ]]; then done_step "复用已校验的 $name"; downloaded=$dest; return; fi
-    fi
-    printf '    下载 %s（curl 显示百分比、已收字节及当前速率）\n' "$name"
-    "${fetch[@]}" -fL --retry 2 --speed-time 60 --speed-limit 1 -o "$work/$name" -w '\n    已接收 %{size_download} 字节 · 平均 %{speed_download} B/s\n' "$base/$name" || fail "$name 下载失败，可重新运行向导。"
-    actual=$("${digest[@]}" < "$work/$name")
-    [[ ${actual%% *} == "$hash" ]] || fail "$name 的 SHA-256 不匹配"
-    mv -f "$work/$name" "$dest"
-    downloaded=$dest
+    printf '    下载 %s（已收字节 / 当前速率）\n' "$3"
+    "${fetch[@]}" -fL --retry 2 --speed-time 90 --speed-limit 1 -o "$2" -w '\n    已接收 %{size_download} 字节 · 平均 %{speed_download} B/s\n' "$1" || fail "$3 下载失败"
 }
 main() {
     banner
@@ -81,13 +69,22 @@ main() {
     if command -v sha256sum >/dev/null; then digest=(sha256sum); else command -v shasum >/dev/null || fail '缺少 SHA-256 工具'; digest=(shasum -a 256); fi
     platform="$os-$arch"
     python=
-    for exe in python3.12 python3 python; do
+    py_dir="$root/tools/cpython-3.12.13-20260510-$platform"
+    for exe in python3.12 python3 python "$py_dir/bin/python3"; do
         if command -v "$exe" >/dev/null && "$exe" -I -c 'import ctypes,ensurepip,platform,ssl,struct,sys,venv; assert sys.implementation.name=="cpython" and sys.version_info[:2]==(3,12) and struct.calcsize("P")==8 and ("arm64" if platform.machine().lower() in ("arm64","aarch64") else "x64")==sys.argv[1]' "$arch" >/dev/null 2>&1; then
             python=$(command -v "$exe"); break
         fi
     done
     done_step "$os/$arch · $root"
-    if [[ -n "$python" ]]; then done_step "复用 $("$python" -V) · $python"; else printf '    缺少兼容的 Python 3.12，将使用 GitHub 运行时。\n'; fi
+    if [[ -n "$python" ]]; then done_step "复用 $("$python" -V) · $python"; else printf '    缺少兼容的 Python 3.12，将从 Astral 的 CPython 分发下载。\n'; fi
+    local tool info
+    for tool in node npm pnpm; do
+        if command -v "$tool" >/dev/null && info=$(COREPACK_ENABLE_NETWORK=0 npm_config_manage_package_manager_versions=false "$tool" --version 2>/dev/null); then
+            printf '    已检测到 %s %s\n' "$tool" "$info"
+        else
+            printf '    %s 未就绪，将按仓库要求补齐。\n' "$tool"
+        fi
+    done
     stage 2 '验证通往 GitHub 的网络'
     # Force each probe to use its candidate, including when NO_PROXY contains github.com.
     fetch=(curl -q --proto '=https' --proto-redir '=https' --connect-timeout 8)
@@ -99,26 +96,34 @@ main() {
         fi
     done < <(proxy_candidates | awk 'NF && !seen[$0]++')
     fetch+=("${via[@]}")
-    tag=$("${fetch[@]}" -fsSL --retry 2 --max-time 30 "$channel") || fail "无法从 GitHub 取得发布清单，请检查网络及 main 分支的安装入口。"
-    [[ $tag != disabled ]] || fail '维护者已暂停便捷安装'
-    [[ "$tag" =~ ^installer-[0-9]+([.][0-9]+)+$ ]] || fail 'GitHub 发布清单格式错误'
-    base="https://github.com/$repo/releases/download/$tag"
-    done_step "GitHub $route · $tag"
-    stage 3 '下载并验证平台文件'
-    mkdir -p "$root/cache/installer"
-    cache="$root/cache/installer"
-    work=$(mktemp -d "$root/.setup.XXXXXXXX")
-    download "bootstrap-$platform.tar.gz"; tar -xzf "$downloaded" -C "$work"
-    if [[ -z "$python" && -x "$root/releases/$tag-$platform/python/bin/python3" ]]; then
-        python="$root/releases/$tag-$platform/python/bin/python3"
-        done_step '复用 Chives 已安装的 Python'
-    fi
-    if [[ -z "$python" ]]; then
-        download "python-$platform.tar.gz"; tar -xzf "$downloaded" -C "$work"
-        python="$work/python/bin/python3"
-    fi
     if [[ "$route" == 代理 ]]; then export CHIVES_SETUP_PROXY="$candidate"; else export CHIVES_SETUP_PROXY=; fi
-    PYTHONUTF8=1 "$python" -X utf8 -I -u "$work/install.py" install "$root" "$tag" "$platform"
+    done_step "已选择$route"
+    stage 3 '下载 GitHub main 分支源码'
+    mkdir -p "$root/tools"
+    mkdir "$root/.installing" 2>/dev/null || fail "已有安装任务；若上次被强制终止，请确认后移走 $root/.installing"
+    lock="$root/.installing"
+    work=$(mktemp -d "$root/.setup.XXXXXXXX")
+    download "$source_url" "$work/main.tar.gz" 'Chives 源码'
+    tar -xzf "$work/main.tar.gz" -C "$work" chives-main/deploy/installer/source.py chives-main/deploy/installer/install.py
+    done_step '源码和安装引擎已就绪'
+    stage 4 '准备 Python、Node.js 和 npm'
+    if [[ -z "$python" ]]; then
+        case "$platform" in
+            macos-arm64) target=aarch64-apple-darwin; hash=55bc1a5edbc8ac4da0081f4f5731ed2d1ed10c57cb37a820b2a0dbc7cad742e9;;
+            macos-x64) target=x86_64-apple-darwin; hash=6bab7fa97d4f2ddba86da0e05acff66c53b5edaca1df8edcf00ddca785a9c59b;;
+            linux-arm64) target=aarch64-unknown-linux-gnu; hash=8e2907baca8b08ae43f366e65f09fda6337d3543f322c399d8800cf689c79973;;
+            linux-x64) target=x86_64-unknown-linux-gnu; hash=d480f5d5878910ecbae212bf23bd7c25d7b209eb8cf5e98823c977384d272e88;;
+        esac
+        url="https://github.com/astral-sh/python-build-standalone/releases/download/20260510/cpython-3.12.13%2B20260510-$target-install_only_stripped.tar.gz"
+        download "$url" "$work/python.tar.gz" 'CPython 3.12'
+        actual=$("${digest[@]}" < "$work/python.tar.gz")
+        [[ ${actual%% *} == "$hash" ]] || fail 'CPython 的 SHA-256 不匹配'
+        tar -xzf "$work/python.tar.gz" -C "$work"
+        [[ ! -e "$py_dir" ]] || fail "已有无法使用的 Python 目录，请检查 $py_dir"
+        mv "$work/python" "$py_dir"
+        python="$py_dir/bin/python3"
+    fi
+    "$python" -X utf8 -I -u "$work/chives-main/deploy/installer/source.py" "$root" "$work/main.tar.gz" "$platform" || exit $?
 }
 main
 )

@@ -82,12 +82,19 @@ bash scripts/install-chives.sh
 
 ## GitHub 快速安装
 
-复制 [README 的一行命令](README.md#快速安装)。macOS、Linux 和 WSL2 运行 Bash 入口，Windows 10/11 使用带 `curl.exe` 和 `tar.exe` 的 PowerShell。Linux 发行包面向 GNU/Linux（构建环境为 Ubuntu 24.04）及相应的 WSL2 发行版。Mac 和 Linux 提供 x64 与 ARM64，Windows 11 ARM 使用 x64 兼容环境。工作台使用本机 8888 端口，安装码由维护者提供。[Unix 向导](deploy/installer.sh) · [Windows 向导](deploy/installer.ps1)
+复制 [README 的一行命令](README.md#快速安装)。Bash 入口适用于 macOS、GNU/Linux 和 WSL2 的 x64、ARM64 系统；Windows 10/11 使用系统自带的 PowerShell、`curl.exe` 和 `tar.exe`，Windows 11 ARM 走 x64 兼容环境。Linux 建议使用 Playwright 支持的 Debian 或 Ubuntu 版本。 [Bash 入口](deploy/installer.sh) · [PowerShell 入口](deploy/installer.ps1)
 
-1. 向导识别系统架构并检查 CPython 3.12（含 venv 和 ensurepip）、Node.js 26、npm/npx 和 pnpm。符合版本及架构要求的工具直接复用。缺少的 Python 或 Node.js/npm 按平台单独下载，缺少的 pnpm 从离线包提供。Python 项目依赖安装在专用虚拟环境中。
-2. 向导用 GitHub HTTPS 请求测试环境变量、系统代理和常见本机代理端口。选择可用代理，或使用直连。第一次取得入口脚本发生在向导启动前，若这一步需要代理，请先为终端设置代理（Unix 的 curl 可使用 `HTTPS_PROXY`，Windows PowerShell 5.1 的 irm 可使用系统代理或 `-Proxy`）。
-3. 程序、DSH、浏览器及依赖均由同一 GitHub Release 分发，向导显示实际下载进度和速率，按 SHA-256 校验并在本机验证安装码。浏览器按 Playwright 修订号和真实启动结果复用，缺少时下载匹配版本。首次安装预留数 GB 空间，缓存位于安装根目录的 `cache/installer`。
-4. 新安装的根目录为 `~/.chives`（Windows 为 `$HOME\.chives`）。同版本重跑复用已经安装的环境。若只有旧分发版，继续使用旧位置；已有源码检出请按本文的源码更新方法操作。可用 `CHIVES_INSTALL_HOME` 指定独立安装根目录。
-5. 工作台和各项服务通过本地健康检查、命令注册成功后，进度到达 100%。新终端运行 `chives` 打开工作台，`chives stop` 关闭。配置依赖时出错查看 `logs/install.log`，启动时出错查看 `logs/supervisor.log`。
+| 安装内容 | 本机已有时 | 缺少时的来源 |
+| --- | --- | --- |
+| Chives 源码 | 同一份已构建的快照可以复用 | 本仓库 main 分支的源码归档 |
+| CPython 3.12 | 检查架构、venv 和 ensurepip | Astral 维护的可迁移 CPython 构建，按平台校验 SHA-256 |
+| Node.js 26、npm/npx | 检查 Node 架构与工具可执行性，可以单独补 npm | Node.js 官网分发或 npm 官方 registry |
+| pnpm、DSH | 检查仓库指定版本以及全局或 Chives 私有工具 | npm 官方 registry；前端依赖按锁文件安装 |
+| Python 项目依赖 | 安装在当前版本的独立虚拟环境，重跑同版本复用 | PyPI |
+| Playwright、Chromium | 检查本机缓存或上个安装版本的浏览器能否由匹配版本的 Playwright 启动 | Playwright 的 Python 包来自 PyPI，Chromium 由 Playwright 官方下载器安装。Linux 缺少系统库时通过发行版包管理器补装，可能提示输入 sudo 密码 |
 
-GitHub 安装入口与平台发行包都发布后，以上命令生效。 [发行包构建、验收和发布](deploy/installer/README.md)
+向导探测环境变量、系统代理和常见本机代理端口，选用能实际访问 GitHub 的代理，或使用直连。这个选择会传给后续安装工具。首次获取入口脚本发生在向导启动之前，需要时先为终端设置代理。终端显示阶段、勾选标记、文件传输速率及依赖工具输出。
+
+新安装位于 `~/.chives`（Windows 为 `$HOME\.chives`）。程序快照与用户的 `data/` 分开存放。如果检测到现有 Git 源码检出，向导会提示按源码方式更新；如要独立试装，在运行命令前将 `CHIVES_INSTALL_HOME` 设为另一个绝对路径。启动时工作台及后台服务所用端口需要空闲。已有旧版分发目录时会沿用旧位置。
+
+重新运行同一条命令即可取得最新源码。向导完成本机构建、启动服务并注册当前用户的命令后，新终端输入 `chives` 打开工作台，`chives stop` 关闭。安装日志在安装根目录的 `logs/install.log`，启动日志在 `logs/supervisor.log`。 [安装机制](deploy/installer/README.md)
