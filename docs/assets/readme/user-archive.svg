@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="752" height="474" viewBox="0 0 752 474" role="img" aria-labelledby="title desc" lang="zh-CN">
+  <title id="title">用户档案如何影响一条持仓建议（设计示意）</title>
+  <desc id="desc">属性说明用户的资金期限，长期记忆保留买入理由，短期记忆记录上次查到哪里，账本提供实际持仓。Bot 把这些资料与相同的订单证据和已激活策略结合。三个月后要用钱的持有人先核现金缺口，资金可放三年的持有人跟踪交付、尾款及后续垫资。</desc>
+  <defs>
+    <marker id="arrow" viewBox="0 0 8 8" markerWidth="7" markerHeight="7" refX="6.5" refY="4" orient="auto">
+      <path d="M1 1 6.5 4 1 7" fill="none" stroke="#536c66" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+    <style>
+      text { font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif; }
+      .heading { font-size: 23px; font-weight: 650; }
+      .body { font-size: 18px; }
+      .branch { fill: #173e30; font-size: 20px; font-weight: 650; }
+      .line { fill: none; stroke: #536c66; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+    </style>
+  </defs>
+  <rect width="752" height="474" rx="12" fill="#fbfcfa"/>
+
+  <g fill="#163e5e">
+    <rect x="16" y="16" width="350" height="184" rx="12" fill="#e7f2fb" stroke="#6995b6"/>
+    <text x="38" y="52" class="heading">你的用户档案</text>
+    <text x="38" y="85" class="body">用户属性 · 资金能放多久？</text>
+    <text x="38" y="115" class="body">长期记忆 · 当时为什么买？</text>
+    <text x="38" y="145" class="body">短期记忆 · 上次查到哪里？</text>
+    <text x="38" y="175" class="body">持仓账本 · 实际还持有多少？</text>
+  </g>
+  <g fill="#604017">
+    <rect x="386" y="16" width="350" height="184" rx="12" fill="#fff1d8" stroke="#bc914f"/>
+    <text x="408" y="52" class="heading">公共证据与策略</text>
+    <text x="408" y="91" class="body">设备厂新增 100 台成品</text>
+    <text x="408" y="121" class="body">其中 85 台能对应到有效订单</text>
+    <text x="408" y="160" class="body" font-weight="600">按示例规则，备货策略激活</text>
+  </g>
+
+  <g class="line" marker-end="url(#arrow)">
+    <path d="M191 200 V218 H306 V236"/>
+    <path d="M561 200 V218 H446 V236"/>
+  </g>
+  <rect x="142" y="240" width="468" height="72" rx="12" fill="#17543b"/>
+  <text x="376" y="285" text-anchor="middle" fill="#fff" class="heading">投研 Bot ·「我还能再拿半年吗？」</text>
+
+  <g class="line">
+    <path d="M376 312 V336"/>
+    <path d="M376 336 H191 V357" marker-end="url(#arrow)"/>
+    <path d="M376 336 H561 V357" marker-end="url(#arrow)"/>
+  </g>
+  <g>
+    <rect x="16" y="362" width="350" height="96" rx="12" fill="#ecf5ee" stroke="#8cab95"/>
+    <text x="38" y="399" class="branch">三个月后要用钱</text>
+    <text x="38" y="433" class="body" fill="#284f3f">先核用款日的现金缺口</text>
+  </g>
+  <g>
+    <rect x="386" y="362" width="350" height="96" rx="12" fill="#ecf5ee" stroke="#8cab95"/>
+    <text x="408" y="399" class="branch">资金可以放三年</text>
+    <text x="408" y="433" class="body" fill="#284f3f">跟踪交付、尾款和下一批垫资</text>
+  </g>
+</svg>
