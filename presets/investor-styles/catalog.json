@@ -1,5 +1,5 @@
 {
-  "version": "2026-11-20.2",
+  "version": "2026-11-21.1",
   "people": [
     {
       "id": "buffett",
@@ -8,7 +8,7 @@
       "bio": "巴菲特长期主持伯克希尔·哈撒韦的资本配置，把一张股票看作企业的一份所有权。他会问，企业靠什么留住顾客，提价后客户会不会离开，以及每增加一元利润要再投入多少资本。早年他重视相对资产价值的折价，后来受芒格影响，愿意为优质企业支付合理价格。若你会核对利润与现金流，能说明竞争优势何时失效，也愿意在日常价格波动中长期持有，这些习惯与他相近。仅凭喜欢消费龙头或长期持有亏损股，还不足以作出这一类比。",
       "baike": "https://baike.baidu.com/item/%E6%B2%83%E4%BC%A6%C2%B7%E5%B7%B4%E8%8F%B2%E7%89%B9/472378",
       "portrait": "portraits/a-buffett.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Warren_Buffett_at_the_2015_SelectUSA_Investment_Summit_(cropped).jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "sources": [
         "https://www.berkshirehathaway.com/letters/1989.html"
       ],
@@ -22,14 +22,14 @@
         "discount",
         "concentrate"
       ],
-      "portraitCredit": "USA International Trade Administration",
-      "portraitLicense": "Public domain",
-      "portraitLicenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "af42d4c021cc4ec8cedce77d2bd8e50be14de795b493ff29d6497a6bc17bc831",
+      "portraitCredit": "Chives",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "586673f9a952d5110a4ea5a4445ea540bb74c8e5e6ca2992b472d95a9297bab9",
       "englishName": "Warren Buffett",
       "webReleaseEligible": true,
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "munger",
@@ -38,7 +38,7 @@
       "bio": "芒格曾任伯克希尔·哈撒韦副董事长，也是巴菲特长期的投资伙伴。他推动伯克希尔从寻找便宜的普通公司，转向购买能够持续创造价值的好公司。他尤其关心，一家企业为什么能把赚来的钱继续投出好回报，以及激励制度会让管理者怎样行动。映射到你的决策中，一个有意义的特征是会主动提出反例，例如管理层收入与短期营收挂钩时，增长是否来自放宽赊销。单凭仓位集中很难类比，还要看集中前是否理解经营机制和失败条件。",
       "baike": "https://baike.baidu.com/item/%E6%9F%A5%E7%90%86%C2%B7%E8%8A%92%E6%A0%BC/4325934",
       "portrait": "portraits/a-munger.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Charlie_Munger_(cropped).jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "sources": [
         "https://www.berkshirehathaway.com/letters/2023ltr.pdf"
       ],
@@ -52,14 +52,14 @@
         "concentrate",
         "discretion"
       ],
-      "portraitCredit": "Nick",
-      "portraitLicense": "CC BY 2.0",
-      "portraitLicenseUrl": "https://creativecommons.org/licenses/by/2.0",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "cfe135f208bcc14fa973736439af135de8264f9ab31f75e4de2225943139dc07",
+      "portraitCredit": "Chives",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "4cbb2691faa64d6f7f8b8b96ae73f60e275608e6a4a9d13ef7646f851cb6cfb1",
       "englishName": "Charlie Munger",
       "webReleaseEligible": true,
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "graham",
@@ -68,7 +68,7 @@
       "bio": "格雷厄姆在哥伦比亚大学讲授证券分析，与多德合著《证券分析》，把企业资产、盈利能力与证券价格摆在一起衡量。他强调安全边际，估算难免出错，买价与保守价值之间要留有余地。遇到一家跌破净资产的公司，这种风格会先查应收款能收回多少、存货是否积压、债务清偿后还剩什么，再考虑把机会放进一组分散的持仓里。若你的答案包括保守折价、反复核实资产和分散判断错误，就比单纯偏爱低价或下跌的股票更有辨识度。",
       "baike": "https://baike.baidu.com/item/%E6%9C%AC%E6%9D%B0%E6%98%8E%C2%B7%E6%A0%BC%E9%9B%B7%E5%8E%84%E5%A7%86/3481029",
       "portrait": "portraits/a-graham.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Benjamin_Graham_(1894-1976)_portrait_on_23_March_1950.jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "sources": [
         "https://business.columbia.edu/heilbrunn/about/valueinvestinghistory"
       ],
@@ -80,14 +80,14 @@
         "portfolio",
         "discretion"
       ],
-      "portraitCredit": "Anonymous Unknown author",
-      "portraitLicense": "Public domain",
-      "portraitLicenseUrl": "https://commons.wikimedia.org/wiki/File:Benjamin_Graham_(1894-1976)_portrait_on_23_March_1950.jpg",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "709b67cd2317011df7be3cd78a08e35aa7d26f04bd7791974bef74558142e1bb",
+      "portraitCredit": "Chives",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "9779cfbdc0823eb0a18029ce87d3f499f1992cd0bbad2ce24d81e81dcedb204f",
       "englishName": "Benjamin Graham",
       "webReleaseEligible": true,
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "bogle",
@@ -96,7 +96,7 @@
       "bio": "博格尔创办先锋领航，将低成本指数基金带给个人投资者。他把问题从“下一个赢家是谁”换成“整个市场创造的回报，有多少能留在我的账户里”。费用、频繁交易和临时改变配置，都会影响长期结果。用这种方法研究股票，主要精力会放在指数覆盖什么公司、行业是否过度集中、费率和跟踪效果怎样。如果你愿意分散持有、按计划再平衡，即使热门股票轮番领涨仍能坚持原定配置，这与他的思路相近。该类比专指指数化配置，与选股因子模型分开。",
       "baike": "https://baike.baidu.com/item/%E7%BA%A6%E7%BF%B0%C2%B7%E5%8D%9A%E6%A0%BC%E5%B0%94/10173048",
       "portrait": "portraits/a-bogle.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Photo_of_a_John_C._Bogle_By_Bill_Cramer.jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "sources": [
         "https://knowledge.wharton.upenn.edu/article/john-c-bogles-advice-live-long-and-prosper-on-index-funds/"
       ],
@@ -108,14 +108,14 @@
         "system",
         "compound"
       ],
-      "portraitCredit": "BillCramer",
-      "portraitLicense": "CC BY-SA 4.0",
-      "portraitLicenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "9b724f388e5aab0e5ee95d80cab400faf36b7303ddf8f4553273f31f9dfa9c32",
+      "portraitCredit": "Chives",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "5a8943f76b276abebbe0c56c5fbed6375f2247a664c15c0a46936fb7691f11a8",
       "englishName": "John C. Bogle",
       "webReleaseEligible": true,
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "marks",
@@ -124,7 +124,7 @@
       "bio": "马克斯是橡树资本联合创始人，长期研究信用、困境资产和市场周期。他所说的第二层思考，关心的不只是企业会变好还是变坏，还包括这个判断有多少已反映在价格中。例如，一家公司盈利回升，若市场原先押注的是更快增长，兑现好消息仍可能令持有人失望。若你会比较自己的预期与市场隐含预期，在融资容易、风险溢价很薄时更审慎，同时把可能永久损失的金额写清，便与这套分析接近。这一类比不能推定你有预测市场拐点的能力。",
       "baike": "https://baike.baidu.com/item/%E9%9C%8D%E5%8D%8E%E5%BE%B7%C2%B7%E9%A9%AC%E5%85%8B%E6%96%AF/23492777",
       "portrait": "portraits/a-marks.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Howard_Marks_2.17.12_(cropped).jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "sources": [
         "https://www.oaktreecapital.com/docs/default-source/memos/2015-09-09-its-not-easy.pdf"
       ],
@@ -137,14 +137,14 @@
         "discount",
         "discretion"
       ],
-      "portraitCredit": "kellywritershouse",
-      "portraitLicense": "CC BY 2.0",
-      "portraitLicenseUrl": "https://creativecommons.org/licenses/by/2.0",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "3307f200dd0aa71cd93a9dee32bcc6387c9846d2392c34d54a5f5547c6a4c197",
+      "portraitCredit": "Chives",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "70bbf0061c269280a5d9c47d102c07f46989ef6d2713585f787b19a1f04f7754",
       "englishName": "Howard Marks",
       "webReleaseEligible": true,
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "ackman",
@@ -153,7 +153,7 @@
       "bio": "阿克曼创办潘兴广场，投资方法中一个醒目的部分，是在少数看得懂的公司建立较大头寸，并在合适条件下以股东身份推动经营或治理变化。他研究的不只是公司值多少钱，还包括董事会、资本配置或业务结构改变后，价值怎样释放。对于个人投资者，相似之处可以表现为阅读表决事项、追踪回购和分红承诺、核查重组条件。大型机构能与管理层交涉，普通股东可行的路径通常是观察兑现过程，不能因为同样看好改革就假设催化剂必然发生。",
       "baike": "https://baike.baidu.com/item/%E6%AF%94%E5%B0%94%C2%B7%E9%98%BF%E5%85%8B%E6%9B%BC/18545736",
       "portrait": "portraits/a-ackman.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Valeant_Pharmaceuticals%27_Business_Model_(headshot).jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "sources": [
         "https://pershingsquareholdings.com/about-us/"
       ],
@@ -167,14 +167,14 @@
         "concentrate",
         "quality"
       ],
-      "portraitCredit": "Senate Democrats",
-      "portraitLicense": "CC BY 2.0",
-      "portraitLicenseUrl": "https://creativecommons.org/licenses/by/2.0",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "d668d17fa65a21b799323a43f04cf81452cec0064f86c47eb75fc5c441f9aebd",
+      "portraitCredit": "Chives",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "96e110e79127257635d2896acea0e29678d4901b709be73cbfe80e7be53a5492",
       "englishName": "Bill Ackman",
       "webReleaseEligible": true,
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "klarman",
@@ -183,7 +183,7 @@
       "bio": "卡拉曼长期负责鲍波斯特集团的投资，强调把控制潜在损失放在研究起点。机会不够吸引人时，他愿意保留现金，并在复杂或被忽略的资产中寻找价格相对于价值的折扣。对应到一只重组股，投资者可以先算最坏情境下权益还能值多少，再考虑事件延期、债权顺位和资金占用多久。如果你的答案常常是写出失败情境、要求更厚的安全边际、找不到合适价格便耐心等待，这种判断有卡拉曼的影子。单纯怕跌不敢入场，还不足以成立。",
       "baike": "https://baike.baidu.com/item/%E5%A1%9E%E6%96%AF%C2%B7%E5%8D%A1%E6%8B%89%E6%9B%BC/10340423",
       "portrait": "portraits/a-klarman.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Seth_Klarman_at_147th_Preakness_Stakes.jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "sources": [
         "https://www.baupost.com/investment_philosophy"
       ],
@@ -195,14 +195,14 @@
         "catalyst",
         "discretion"
       ],
-      "portraitCredit": "Maryland GovPics",
-      "portraitLicense": "CC BY 2.0",
-      "portraitLicenseUrl": "https://creativecommons.org/licenses/by/2.0",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "d9f09250aaec2f21178e78a1418f362d503f71ed01c606b22320bf288f7b3318",
+      "portraitCredit": "Chives",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "f519b70b5f15fae11c829f418f60a09de70d69e79a557e86c30377e92c2b544f",
       "englishName": "Seth Klarman",
       "webReleaseEligible": true,
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "wood",
@@ -211,7 +211,7 @@
       "bio": "伍德创办方舟投资，团队从有望改变产业成本结构的技术出发，再自下而上寻找能够把技术转成收入的企业。这一路径常会同时考察成本下降、采用率和潜在市场，而进入壁垒、融资需求与竞争会决定企业能捕获多少价值。例如，预测技术渗透率很高，还需要说明市场份额、单位经济效益和估值之间如何衔接。若你会列出乐观与落空两套情境，愿意随数据修改假设，你在研究创新公司的方法上与她有相似处。仅仅喜欢高波动题材并不能建立这种相似性。",
       "baike": "https://baike.baidu.com/item/%E5%87%AF%E8%8C%9C%C2%B7%E4%BC%8D%E5%BE%B7/61946469",
       "portrait": "portraits/a-wood.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Cathie_Wood_ARK_Invest_Photo.jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "sources": [
         "https://www.ark-invest.com/investment-process"
       ],
@@ -223,14 +223,14 @@
         "field",
         "discretion"
       ],
-      "portraitCredit": "Caroline Wood",
-      "portraitLicense": "CC BY-SA 4.0",
-      "portraitLicenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "060c748f212a3221ba40ce2d2cd8bcedf8e786fb95fd969d07fc16d94d89775e",
+      "portraitCredit": "Chives",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "702ab2ac9fdc8d849d1421e417b2a67f8c3ba377b172b7e61b311e0d980dc217",
       "englishName": "Cathie Wood",
       "webReleaseEligible": true,
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "dodd",
@@ -239,7 +239,7 @@
       "bio": "多德在哥伦比亚大学从事证券分析教学，与格雷厄姆合著《证券分析》。他们把公司披露、证券条款和长期盈利记录纳入可以复查的估值工作。用这种方法看一家利润大增的公司，值得逐项核对利润是否经常发生、现金是否到账、利息与优先债权要先取走多少，以及普通股股东最后能分享什么。若你愿意读年报附注，把分析调整前后的数字并列，并追问同业为何采用不同会计口径，这种习惯比“我喜欢便宜的公司”更接近多德代表的研究传统。",
       "baike": "https://baike.baidu.com/item/%E6%88%B4%E7%BB%B4%C2%B7%E5%A4%9A%E5%BE%B7/68167009",
       "portrait": "portraits/a-dodd.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:David_LeFevre_Dodd.jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "sources": [
         "https://business.columbia.edu/heilbrunn/about/valueinvestinghistory"
       ],
@@ -251,14 +251,14 @@
         "quality",
         "discretion"
       ],
-      "portraitCredit": "(i) Manny Warman or optionally, Emanuel \"Manny\" Warman (1915-1983),Columbia University's official photographer for 37 years. (ii) Courtesy Columbia University Archives.",
-      "portraitLicense": "Attribution",
-      "portraitLicenseUrl": "https://commons.wikimedia.org/wiki/File:David_LeFevre_Dodd.jpg",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "c8ef31f128ef15a812c4437288e33b00847f4111ab7cc40624e7da33ed5be10e",
+      "portraitCredit": "Chives",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "94f45d66297dac425a8942f126bb601e6f11ad7086265a1a260af4a4c26e0fb6",
       "englishName": "David Dodd",
       "webReleaseEligible": true,
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "mobius",
@@ -267,7 +267,7 @@
       "bio": "墨比尔斯长期从事新兴市场投资，曾领导邓普顿的新兴市场投资团队。这种研究特别重视到当地观察企业，理解行业所受的制度、基础设施和公司治理约束。同样一家连锁企业，财报上的门店增长很快，实地却可能看到客流不足、经销商压货或竞争者正在降价。把走访发现与公开数字互相核对，比单听管理层介绍更能体现这一风格。如果你在熟悉的行业有可验证的一手观察，也会为样本偏差和小股东权利留下疑问，可以据此建立类比。",
       "baike": "https://baike.baidu.com/item/%E9%A9%AC%E5%85%8B%C2%B7%E5%A2%A8%E6%AF%94%E5%B0%94%E6%96%AF/8162816",
       "portrait": "portraits/a-mobius.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Mark_Mobius_(rectangle_portrait_crop).jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "sources": [
         "https://www.franklintempleton.com/press-releases/news-room/2018/dr.-mark-mobius-announces-plans-to-retire-from-franklin-templeton-investments"
       ],
@@ -280,14 +280,14 @@
         "quality",
         "discretion"
       ],
-      "portraitCredit": "www.marcinmizerski.com",
-      "portraitLicense": "CC0",
-      "portraitLicenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "0ddf20869ff6d482f1de3faf9156dd41f6b4c2b2077cf299bf459a976819df4d",
+      "portraitCredit": "Chives",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "51f272103aad4c41851d7eecb1cf58671cd0c79c33c277e9ada21d8275061a9e",
       "englishName": "Mark Mobius",
       "webReleaseEligible": true,
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "siegel",
@@ -296,7 +296,7 @@
       "bio": "西格尔在沃顿商学院研究股票长期回报，尤其关注估值和股息再投资。他曾比较高增长科技企业与传统石油企业的长期表现，说明企业业绩增长更快，股东回报却可能因为买价过高而落后。持续分红能让长期投资者在股价较低时积累更多股份。对应到你的选择，若你看的是含分红再投资的总回报，并会查经营现金能否维持派息，这比只按当年股息率排名更接近他的框架。长期样本是理解机制的依据，不能把过去的市场回报率直接填进个人未来收益假设。",
       "baike": "https://baike.baidu.com/item/%E6%9D%B0%E9%87%8C%E7%B1%B3J.%E8%A5%BF%E6%A0%BC%E5%B0%94/3051562",
       "portrait": "portraits/a-siegel.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Jeremy_Siegel_Port.jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "sources": [
         "https://knowledge.wharton.upenn.edu/podcast/knowledge-at-wharton-podcast/jeremy-siegels-latest-book-lays-out-the-future-for-investors/"
       ],
@@ -310,14 +310,14 @@
         "portfolio",
         "discount"
       ],
-      "portraitCredit": "Treplap",
-      "portraitLicense": "CC0",
-      "portraitLicenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "3d43c4d0a30771bacfd4c8edbc596d6018c4901d8cc46fc619f84eef74bd5538",
+      "portraitCredit": "Chives",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "0cdbd3d8b0aa8bdd4611e35203c20f9316c0edf6340debc4b30829cdf7bfbc24",
       "englishName": "Jeremy Siegel",
       "webReleaseEligible": true,
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。",
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。",
       "analogyScope": "研究方法或理论视角，匹配文案不得替其虚构个人交易记录。"
     },
     {
@@ -327,7 +327,7 @@
       "bio": "纽伯格参与创办资产管理公司路博迈，个人投资生涯跨过多个市场周期。他的经验包含两层决策：个别企业可能有投资价值，整组持仓仍可能同时受到市场下跌的冲击。他在一九二九年前后利用卖空对冲持仓风险，是理解这一区别的例子。若你习惯分别记录个股投资理由和组合的共同风险，并在同类风险过度集中时主动缩小暴露，这一点与他相似。个人账户可以通过现金和持仓规模表达谨慎，这张人物卡也不意味着需要复制当年的卖空做法。",
       "baike": "https://baike.baidu.com/item/%E7%BD%97%E4%BC%8A%C2%B7%E7%BA%BD%E4%BC%AF%E6%A0%BC/8160028",
       "portrait": "portraits/a-neuberger.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Roy_Neuberger-George_W_Bush.jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "sources": [
         "https://www.nb.com/who-we-are/faq",
         "https://www.arts.gov/honors/medals/roy-r-neuberger"
@@ -341,15 +341,15 @@
         "hedge",
         "discretion"
       ],
-      "portraitCredit": "NEA photographer Michael Stewart",
-      "portraitLicense": "Public domain",
-      "portraitLicenseUrl": "https://creativecommons.org/publicdomain/mark/1.0/",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "7b8e6644ca09cf758e898175c62449e7263fd1d8e8c876dad3aaca4875c6667c",
+      "portraitCredit": "Chives",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "9e5147d2f96c50103797bad44a7ff70bb61d576ca74749b7fb9bea9c265fcb19",
       "portraitDownloadSource": "https://www.arts.gov/sites/default/files/Neuberger1.jpg",
       "englishName": "Roy R. Neuberger",
       "webReleaseEligible": true,
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "simons",
@@ -361,12 +361,12 @@
       "baikeCheck": "移动版正文与词条数字 ID 已核对",
       "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E8%A9%B9%E5%A7%86%E6%96%AF%C2%B7%E8%A5%BF%E8%92%99%E6%96%AF",
       "portrait": "portraits/b-simons.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Jim_Simons_at_MSRI.jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/7/7f/Jim_Simons_at_MSRI.jpg/330px-Jim_Simons_at_MSRI.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-      "portraitLicense": "CC BY-SA 3.0",
-      "portraitLicenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "e4429d2c213149a7fd1132ee3611e5564f6d85bc630f9a602037578ff13a8ff3",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "0d4e9a07c3e63533a350272724a9fc9a604f72efe467d59ff3e88b0b3d2745a4",
       "webReleaseEligible": true,
       "sources": [
         "https://www.simonsfoundation.org/news/simons-foundation-co-founder-mathematician-and-investor-jim-simons-dies-at-86/"
@@ -379,8 +379,8 @@
         "portfolio"
       ],
       "englishName": "Jim Simons",
-      "portraitCredit": "Gleuschk",
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "portraitCredit": "Chives",
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "dalio",
@@ -392,12 +392,12 @@
       "baikeCheck": "移动版正文与词条数字 ID 已核对",
       "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E7%91%9E%C2%B7%E8%BE%BE%E5%88%A9%E6%AC%A7",
       "portrait": "portraits/b-dalio.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Web_Summit_2018_-_Forum_-_Day_2,_November_7_HM1_7481_(44858045925).jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1f/Web_Summit_2018_-_Forum_-_Day_2%2C_November_7_HM1_7481_%2844858045925%29.jpg/330px-Web_Summit_2018_-_Forum_-_Day_2%2C_November_7_HM1_7481_%2844858045925%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-      "portraitLicense": "CC BY 2.0",
-      "portraitLicenseUrl": "https://creativecommons.org/licenses/by/2.0",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "320ba63763665fe56390d73352c9af67b01e424eda9770f810f149bde3e05d80",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "72592fb02158ece2657ebe10eff2f84e1238ca0fd743c91416414bcbce44eeae",
       "webReleaseEligible": true,
       "sources": [
         "https://www.bridgewater.com/research-and-insights/the-all-weather-story"
@@ -412,8 +412,8 @@
         "system"
       ],
       "englishName": "Ray Dalio",
-      "portraitCredit": "Web Summit",
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "portraitCredit": "Chives",
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "taleb",
@@ -425,12 +425,12 @@
       "baikeCheck": "移动版正文与词条数字 ID 已核对",
       "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E7%BA%B3%E8%A5%BF%E5%A7%86%C2%B7%E5%B0%BC%E5%8F%A4%E6%8B%89%E6%96%AF%C2%B7%E5%A1%94%E5%8B%92%E5%B8%83",
       "portrait": "portraits/b-taleb.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Taleb_mug.JPG",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/9/9b/Taleb_mug.JPG/330px-Taleb_mug.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-      "portraitLicense": "Attribution",
-      "portraitLicenseUrl": "",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "97e404f4a36cba3893b2d79fbf0dc175cc5c0528be8ea6c37c11bb5bb249f16f",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "970597b7ab3ef655520a5ffa7fa7c34c9d93b8246395e5041c446ca63dd96387",
       "webReleaseEligible": true,
       "sources": [
         "https://www.fooledbyrandomness.com/"
@@ -444,8 +444,8 @@
         "portfolio"
       ],
       "englishName": "Nassim Nicholas Taleb",
-      "portraitCredit": "Sarah Josephine Taleb",
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "portraitCredit": "Chives",
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "jones",
@@ -457,12 +457,12 @@
       "baikeCheck": "移动版正文与词条数字 ID 已核对",
       "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E4%BF%9D%E7%BD%97%C2%B7%E9%83%BD%E9%93%8E%C2%B7%E7%90%BC%E6%96%AF",
       "portrait": "portraits/b-jones.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Paul_Tudor_Jones_2006.jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/1/1d/Paul_Tudor_Jones_2006.jpg/330px-Paul_Tudor_Jones_2006.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-      "portraitLicense": "Public domain",
-      "portraitLicenseUrl": "",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "5fa40536fa98dc70a85ccf45740164eb4439dfea727a9678507d9902168bc3c3",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "455e0624b2e6e953bb7e7e16b68b2a8f4e9dd7e03489f7f5857afccee60e46f8",
       "webReleaseEligible": true,
       "sources": [
         "https://www.tudor.com/"
@@ -477,8 +477,8 @@
         "breakout"
       ],
       "englishName": "Paul Tudor Jones",
-      "portraitCredit": "Department of the Interior. National Business Center. Administrative Operations Directorate. Division of Employee and Public Services. Creative Communications Branch. Photographic Services. 2000",
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "portraitCredit": "Chives",
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "livermore",
@@ -490,12 +490,12 @@
       "baikeCheck": "移动版正文与词条数字 ID 已核对",
       "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E6%9D%B0%E8%A5%BF%C2%B7%E5%8A%B3%E4%BC%A6%E6%96%AF%E9%A1%BF%C2%B7%E5%88%A9%E5%BC%97%E8%8E%AB%E5%B0%94/65213966?fromtitle=%E6%9D%B0%E8%A5%BF%C2%B7%E5%88%A9%E5%BC%97%E8%8E%AB%E5%B0%94&fromid=9705511",
       "portrait": "portraits/b-livermore.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Press_photo_of_Jesse_Livermore_in_1940_(cropped).jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/0a/Press_photo_of_Jesse_Livermore_in_1940_%28cropped%29.jpg/330px-Press_photo_of_Jesse_Livermore_in_1940_%28cropped%29.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-      "portraitLicense": "Public domain",
-      "portraitLicenseUrl": "",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "3f793e129b0a955a537b306d5da3c470d343aadf64778d1ed2e22990338f0fce",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "af163e33ef7ad39601e0379f2a104f5631545ead4238291bd1b3bf707da095bd",
       "webReleaseEligible": true,
       "sources": [
         "https://www.r-5.org/files/books/trading/speculation/Jesse_Livermore-How_To_Trade_In_Stocks_%281940_original%29-EN.pdf"
@@ -509,8 +509,8 @@
         "concentrate"
       ],
       "englishName": "Jesse Livermore",
-      "portraitCredit": "Acme Photo",
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "portraitCredit": "Chives",
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "asness",
@@ -522,12 +522,12 @@
       "baikeCheck": "移动版正文与词条数字 ID 已核对",
       "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E5%85%8B%E9%87%8C%E5%A4%AB%C2%B7%E9%98%BF%E6%96%AF%E5%86%85%E6%96%AF",
       "portrait": "portraits/b-asness.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Cliff-asness-by-bill-cramer.jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/8/8b/Cliff-asness-by-bill-cramer.jpg/330px-Cliff-asness-by-bill-cramer.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-      "portraitLicense": "CC BY-SA 4.0",
-      "portraitLicenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "4f5621c6799683880e6890e05f65f8bd804851e4fa64ec64fb69019b750513bf",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "1bbf0a31afd08bd5b4fd9c8e84ebfd0c2328f52374169a1d424bd9de0ad47f71",
       "webReleaseEligible": true,
       "sources": [
         "https://pages.stern.nyu.edu/~lpederse/papers/ValMomEverywhere.pdf"
@@ -543,8 +543,8 @@
         "discount"
       ],
       "englishName": "Cliff Asness",
-      "portraitCredit": "BillCramer",
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "portraitCredit": "Chives",
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "rogers",
@@ -556,12 +556,12 @@
       "baikeCheck": "移动版正文与词条数字 ID 已核对",
       "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E5%90%89%E5%A7%86%C2%B7%E7%BD%97%E6%9D%B0%E6%96%AF",
       "portrait": "portraits/b-rogers.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Jim-rogers-madrid-160610.jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/b/b5/Jim-rogers-madrid-160610.jpg/330px-Jim-rogers-madrid-160610.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-      "portraitLicense": "CC BY-SA 3.0",
-      "portraitLicenseUrl": "https://creativecommons.org/licenses/by-sa/3.0",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "1b829a752615b06d846b5ea16865cda2240b0b75188ce1a1d10c56b0d1b4c6a3",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "71c771dde06a61a030d159f543b6bf0c2e7dd55899d044698331ee2e6e66792a",
       "webReleaseEligible": true,
       "sources": [
         "https://time.com/archive/6904827/qa-with-investing-legend-jim-rogers/"
@@ -576,8 +576,8 @@
         "discretion"
       ],
       "englishName": "Jim Rogers",
-      "portraitCredit": "FDV",
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "portraitCredit": "Chives",
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "fama",
@@ -589,12 +589,12 @@
       "baikeCheck": "移动版正文与词条数字 ID 已核对",
       "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E5%B0%A4%E9%87%91%C2%B7%E6%B3%95%E9%A9%AC/1462319?fromtitle=%E5%B0%A4%E9%87%91%C2%B7%E6%B3%95%E7%8E%9B&fromid=1461980",
       "portrait": "portraits/b-fama.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Eugene_Fama_at_Nobel_Prize,_2013.jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f5/Eugene_Fama_at_Nobel_Prize%2C_2013.jpg/330px-Eugene_Fama_at_Nobel_Prize%2C_2013.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-      "portraitLicense": "CC BY 2.0",
-      "portraitLicenseUrl": "https://creativecommons.org/licenses/by/2.0",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "383bab6281d2cc04af80d8a2293de5891ee98028ecbcac96718e2ef36f132422",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "e96c3bbd1c285d61a9a86d306974cd2434287f8b04032c4968774b293b66c838",
       "webReleaseEligible": true,
       "sources": [
         "https://www.nobelprize.org/prizes/economic-sciences/2013/fama/facts/"
@@ -609,8 +609,8 @@
         "compound"
       ],
       "englishName": "Eugene Fama",
-      "portraitCredit": "Bengt Nyman",
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。",
+      "portraitCredit": "Chives",
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。",
       "analogyScope": "研究方法或理论视角，匹配文案不得替其虚构个人交易记录。"
     },
     {
@@ -623,12 +623,12 @@
       "baikeCheck": "移动版正文与词条数字 ID 已核对",
       "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E7%BD%97%E4%BC%AF%E7%89%B9%C2%B7%E5%B8%AD%E5%8B%92",
       "portrait": "portraits/b-shiller.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Robert_J._Shiller_2017.jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/5/55/Robert_J._Shiller_2017.jpg/330px-Robert_J._Shiller_2017.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-      "portraitLicense": "CC BY 2.0",
-      "portraitLicenseUrl": "https://creativecommons.org/licenses/by/2.0",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "1faf284f6ed53605eb5a8f8a994105e629eb393280b90c054aa4aceb7da3eaf7",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "d4b89b3b9dd8babf1d5273b5445dad0bd09f63ded5a92dc2d06c9d7f1ac3aa79",
       "webReleaseEligible": true,
       "sources": [
         "https://www.econ.yale.edu/~shiller/data.htm"
@@ -644,8 +644,8 @@
         "discretion"
       ],
       "englishName": "Robert J. Shiller",
-      "portraitCredit": "w:en:Presidential Office Building, Taiwan",
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。",
+      "portraitCredit": "Chives",
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。",
       "analogyScope": "研究方法或理论视角，匹配文案不得替其虚构个人交易记录。"
     },
     {
@@ -658,12 +658,12 @@
       "baikeCheck": "移动版正文与词条数字 ID 已核对",
       "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E4%BC%AF%E7%BA%B3%E5%BE%B7%C2%B7%E5%B7%B4%E9%B2%81%E5%85%8B",
       "portrait": "portraits/b-baruch.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:BARUCH,_BERNARD_2.jpg",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/c/c8/BARUCH%2C_BERNARD_2.jpg/330px-BARUCH%2C_BERNARD_2.jpg?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-      "portraitLicense": "Public domain",
-      "portraitLicenseUrl": "",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "d3f64d2d1c920ee16f5a7e832a08973d79297ead0e0647d8f9a2cf042c8dad52",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "7a9f99cff65ee9aff76be51ff24c57c08e9704216d13c33e5c0a83f27c37b9ab",
       "webReleaseEligible": true,
       "sources": [
         "https://blogs.baruch.cuny.edu/bernardbaruch/"
@@ -678,8 +678,8 @@
         "concentrate"
       ],
       "englishName": "Bernard Baruch",
-      "portraitCredit": "Harris & Ewing, photographer",
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。"
+      "portraitCredit": "Chives",
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "black",
@@ -691,12 +691,12 @@
       "baikeCheck": "移动版正文与词条数字 ID 已核对",
       "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E8%B4%B9%E5%B8%8C%E5%B0%94%C2%B7%E5%B8%83%E8%8E%B1%E5%85%8B",
       "portrait": "portraits/b-black.jpg",
-      "portraitSource": "https://commons.wikimedia.org/wiki/File:Fischer_Black.JPG",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "portraitOriginal": "https://thumb.wikimedia.org/wikipedia/commons/thumb/6/6d/Fischer_Black.JPG/330px-Fischer_Black.JPG?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail",
-      "portraitLicense": "Public domain",
-      "portraitLicenseUrl": "",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "c4de5be37e727c9e847b4679bbad02235bd08f3b8869d182ca9ec9455f0f4ecc",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "e64bbf02bc49a71210b32bbc323008195b809e7abcb61f036efdec89e104df1d",
       "webReleaseEligible": true,
       "sources": [
         "https://doi.org/10.1086/260062",
@@ -710,8 +710,8 @@
         "hedge"
       ],
       "englishName": "Fischer Black",
-      "portraitCredit": "Dalmatine at English Wikipedia",
-      "releaseNote": "上线时随图保留作者、来源、许可及修改说明，并按逐图条款复核。",
+      "portraitCredit": "Chives",
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。",
       "analogyScope": "研究方法或理论视角，匹配文案不得替其虚构个人交易记录。"
     },
     {
@@ -724,13 +724,13 @@
       "baikeCheck": "移动版正文与词条数字 ID 已核对",
       "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E5%BE%90%E7%BF%94/6229557",
       "portrait": "portraits/b-xu.jpg",
-      "portraitSource": "https://www.infzm.com/contents/112712",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "portraitOriginal": "https://images.infzm.com/medias/2015/1103/96232.jpeg@660x440",
-      "portraitLicense": "本机资料研究用，未核得对外再发布授权",
-      "portraitLicenseUrl": "",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "36f0bcaa2d0c19d657833abac3b938a05051c29dff6c90f9b877da378263b776",
-      "webReleaseEligible": false,
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "f0b5a409cce3a1ac33f907135e31162ceaa96dbf8d405b6e701ea9f3fae269a2",
+      "webReleaseEligible": true,
       "sources": [
         "https://www.amac.org.cn/zlgl/jlcf/scfjg/201706/P020231126392983549337.pdf",
         "https://www.gsm.pku.edu.cn/__local/C/B1/53/91BBAAF16B83CE0EAD73A769A32_3F94AB25_1A8189.pdf",
@@ -746,8 +746,8 @@
       ],
       "comparisonBoundary": "仅类比公开信息下的短线观察方法；传闻、内幕与操纵行为不得用作正向匹配证据。",
       "englishName": "Xu Xiang",
-      "portraitCredit": "新华视点微博截图，南方周末2015-11-03报道标注",
-      "releaseNote": "限本地研究；上线前取得授权或更换肖像。"
+      "portraitCredit": "Chives",
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "qiu-guolu",
@@ -759,13 +759,13 @@
       "baikeCheck": "移动版正文、团队身份与词条数字 ID 已核对",
       "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E9%82%B1%E5%9B%BD%E9%B9%AD/56330137",
       "portrait": "portraits/b-qiu-guolu.jpg",
-      "portraitSource": "https://www.gyasset.com/p/site/investTeam?type=5",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "portraitOriginal": "https://www.gyasset.com/static/img/investTeam/qgl.jpg",
-      "portraitLicense": "机构官网人物像，本机研究用；未核得对外再发布授权",
-      "portraitLicenseUrl": "",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "6e5e2dd06f080d136ee8561026d926484c66c264691693135cc9c5af98556fe6",
-      "webReleaseEligible": false,
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "b46d9e0bb9f06d5a7f45eaa75c9925af208dffd3742550f1de22a3f733858142",
+      "webReleaseEligible": true,
       "sources": [
         "https://www.gyasset.com/p/site/investTeam?type=5",
         "https://www.gyasset.com/p/site/investTeamNewsArticle?id=172&type=5"
@@ -780,8 +780,8 @@
         "discretion"
       ],
       "englishName": "Qiu Guolu",
-      "portraitCredit": "高毅资产团队介绍页，未列摄影师",
-      "releaseNote": "限本地研究；上线前取得授权或更换肖像。"
+      "portraitCredit": "Chives",
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "feng-liu",
@@ -793,13 +793,13 @@
       "baikeCheck": "移动版正文、团队身份与词条数字 ID 已核对",
       "baikeVerifiedUrl": "https://wapbaike.baidu.com/item/%E5%86%AF%E6%9F%B3/68452024",
       "portrait": "portraits/b-feng-liu.jpg",
-      "portraitSource": "https://www.gyasset.com/p/site/investTeam?type=9",
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
       "portraitOriginal": "https://www.gyasset.com/static/img/investTeam/fl.jpg",
-      "portraitLicense": "机构官网人物像，本机研究用；未核得对外再发布授权",
-      "portraitLicenseUrl": "",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "614231b930103d17885658b769a9343667c6a4cc38812b66fa0cf15ddfe7c204",
-      "webReleaseEligible": false,
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "042357dd57c05ade9f1968a3d4e152170b2942eae9e4bea3963ab127a5d0e89b",
+      "webReleaseEligible": true,
       "sources": [
         "https://www.gyasset.com/p/site/investTeam?type=9",
         "https://www.gyasset.com/p/site/investTeamNewsArticle?id=220&type=9"
@@ -814,8 +814,8 @@
         "discount"
       ],
       "englishName": "Feng Liu",
-      "portraitCredit": "高毅资产团队介绍页，未列摄影师",
-      "releaseNote": "限本地研究；上线前取得授权或更换肖像。"
+      "portraitCredit": "Chives",
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。"
     },
     {
       "id": "duan-yongping",
@@ -826,11 +826,11 @@
         "https://zdpx.zju.edu.cn/news1.aspx?fl=301&id=52618",
         "https://www.zju.edu.cn/2023/0317/c75052a2730004/page.htm"
       ],
-      "portraitSource": "https://zdpx.zju.edu.cn/news1.aspx?fl=301&id=9489",
-      "portraitCredit": "浙江大学微信公众号供图（浙江大学继续教育学院转载），摄影者未署名",
-      "portraitLicense": "校方报道配图；未核得对外再发布授权，仅限本机研究",
-      "portraitLicenseUrl": "https://zdpx.zju.edu.cn/news1.aspx?fl=301&id=9489",
-      "webReleaseEligible": false,
+      "portraitSource": "https://github.com/xionglaoshi/chives/blob/main/scripts/render-investor-marks.py",
+      "portraitCredit": "Chives",
+      "portraitLicense": "PolyForm Noncommercial 1.0.0",
+      "portraitLicenseUrl": "https://github.com/xionglaoshi/chives/blob/main/LICENSE",
+      "webReleaseEligible": true,
       "style": "从产品、生意模式与企业文化判断价值",
       "bio": "段永平曾经营小霸王、创办步步高。他看股票时，习惯把自己放到企业经营者和顾客的位置上：顾客为什么愿意反复买这个产品？如果对手把价格降下来，顾客还会留下吗？在浙大与学生交流时，他用产品差异和企业文化解释，为什么有的生意值得长期跟踪。他也看重一家公司愿意放弃哪些眼前的利益。若你习惯从真实的产品体验追问利润能否持久，看不懂生意时宁愿等待，即便股价已经上涨也能坚持自己的判断，这些做法与他相近。",
       "portrait": "portraits/duan-yongping.jpg",
@@ -843,9 +843,9 @@
         "field",
         "concentrate"
       ],
-      "releaseNote": "头像供本机研究使用，网页公开展示需另获授权。",
-      "portraitModification": "以面部为中心裁为正方形，等比缩放为 288 × 288 像素。",
-      "portraitSha256": "613d97c8c18892e3bb9a321f2be8b79f79d204158913d188999673361f83cf0c"
+      "releaseNote": "本地与公开版本均使用 Chives 人物标识。",
+      "portraitModification": "根据姓名首字母和 Chives 像素字形绘制。",
+      "portraitSha256": "a23f8e5546a488f0b96b122dfeea658b3331d8750333ed6bc543c72552bb34ef"
     }
   ],
   "name": "投资人物卡"
