@@ -557,7 +557,7 @@ def activate(root, release):
                 stop_code = "import runpy,sys,pathlib; r,p=map(pathlib.Path,sys.argv[1:]); runpy.run_path(str(p/'install.py'))['control'](r,p,'restart')"
                 subprocess.run([old_py, "-c", stop_code, root, old], check=True)
         raise
-    print("    ✓ [######] 100%  Chives 已启动 · http://127.0.0.1:8888/\n    新终端输入 chives 打开工作台，chives stop 关闭。", flush=True)
+    print("    ✓ [######] 100%  Chives 已启动 · http://127.0.0.1:8888/\n    新终端输入 chives 选择 Bot，chives web 打开网页，chives stop 关闭服务。", flush=True)
 
 
 def install(root, tag, platform_id):

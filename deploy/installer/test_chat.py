@@ -4,10 +4,11 @@ from io import StringIO
 from pathlib import Path
 import sys
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "scripts"))
 import chives_chat as chat
+import chives_cli
 
 
 def message(mid, role, content):
@@ -15,6 +16,19 @@ def message(mid, role, content):
 
 
 class SharedTurns(unittest.TestCase):
+    def test_all_four_entries_start_the_service_and_select_a_bot(self):
+        bots = [{"id": "expert", "name": "投资专家"}]
+        for args in ([], ["bot"], ["chat"], ["cli"]):
+            with self.subTest(args=args), patch.object(chives_cli, "control") as start, \
+                    patch.object(chat, "LocalAPI") as api, patch.object(chat, "menu", return_value=None) as menu, \
+                    patch("sys.stdin", StringIO()), patch("webbrowser.open") as browser:
+                api.return_value.port = 8880
+                api.return_value.json.return_value = bots
+                chives_cli.main("release", args)
+                start.assert_called_once_with("release")
+                menu.assert_called_once_with(bots)
+                browser.assert_not_called()
+
     def test_stream_disconnect_reads_only_accepted_turn(self):
         api = Mock()
         api.open.return_value = nullcontext(iter(()))
@@ -53,6 +67,32 @@ class SharedTurns(unittest.TestCase):
         with redirect_stdout(output), self.assertRaisesRegex(RuntimeError, "model_auth"):
             chat.persisted_result(api, "same-task", "cli", "投资专家")
         self.assertEqual(output.getvalue(), "")
+
+
+class TerminalView(unittest.TestCase):
+    def test_stream_summary_tools_usage_and_canonical_answer(self):
+        from prompt_toolkit.input.defaults import create_pipe_input
+        from prompt_toolkit.output import DummyOutput
+        from chives_terminal.workbench import Workbench
+        from chives_terminal.screen import context_label
+        bot = {"id":"expert", "name":"投资专家", "role":"分析", "model":"fixture"}
+        with create_pipe_input() as inp:
+            desk = Workbench(Mock(), [bot], Mock(), input=inp, output=DummyOutput())
+            desk.bot = bot
+            self.assertIn("待上报", context_label(desk.used, desk.size))
+            desk.handle_event({"type":"draft.delta", "kind":"reasoning", "text":"公开摘要"})
+            desk.handle_event({"type":"draft.delta", "kind":"text", "text":"临时草稿"})
+            for state, kind in (("running","tool.started"), ("completed","tool.ended")):
+                desk.handle_event({"type":kind, "tool":{"id":"call1","title":"核对资料","status":state}})
+            desk.handle_event({"type":"usage","usage":{"used":2400,"size":10000}})
+            desk.show_result(["正式答复"], {"status":"done"})
+            desk.end_turn(None)
+            desk.prepare(desk.app)
+            self.assertEqual(desk.transcript.text.count("核对资料"), 1)
+            self.assertEqual(desk.transcript.text.count("正式答复"), 1)
+            self.assertNotIn("临时草稿", desk.transcript.text)
+            self.assertIn("公开摘要", desk.transcript.text)
+            self.assertIn("24%", context_label(desk.used, desk.size))
 
 
 if __name__ == "__main__":

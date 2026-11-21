@@ -12,9 +12,9 @@ import webbrowser
 URL = "http://127.0.0.1:8888/"
 SCRIPT = Path(__file__).resolve()
 PROJECT = SCRIPT.parents[1]
-USAGE = """chives                 启动本地服务并打开浏览器
-chives bot             选择一位 Bot 并开始对话
-chives chat            进入投资专家，连续提问
+USAGE = """chives                 启动服务，进入终端 Bot 选择台
+chives bot / chat / cli 同样进入 Bot 选择台
+chives web             在浏览器打开工作台
 chives ask "问题"      向投资专家提问一次，可用 --bot 指定其他 Bot
 chives stop            关闭本地服务"""
 
@@ -110,14 +110,14 @@ def main(mode, args):
     if args in (["--help"], ["-h"]):
         print(USAGE)
         return
-    if args and args[0] in ("bot", "ask", "chat"):
+    if not args or args[0] in ("bot", "ask", "chat", "cli"):
         from chives_chat import run
-        run(args, lambda: control(mode))
+        run(args or ["cli"], lambda: control(mode))
         return
-    if args not in ([], ["stop"]):
+    if args not in (["web"], ["stop"]):
         sys.exit(USAGE)
-    control(mode, stop=bool(args))
-    if args:
+    control(mode, stop=args == ["stop"])
+    if args == ["stop"]:
         print("Chives 本地服务已关闭。")
     elif sys.platform == "darwin":
         subprocess.run(["/usr/bin/open", URL], check=True)

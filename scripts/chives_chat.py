@@ -161,7 +161,11 @@ def history(api, bot):
         hint(f"{by} › {brief[:160]}{'…' if len(brief) > 160 else ''}")
 
 
-def approval(api, item):
+def approval(api, item, view=None):
+    if view is not None:
+        decision = view.approve(item)
+        api.json("/api/approvals/" + quote(item["id"], safe=""), {"decision": decision})
+        return
     if not sys.stdin.isatty():
         raise RuntimeError("本轮等待审批。请在网页工作台处理，回复会保存在同一条会话中。")
     hint(f"工具请求审批 · {item['sourceBotName']} · {item['title'] or item['toolCallId']}")
@@ -176,7 +180,7 @@ def approval(api, item):
              {"decision": "allow" if choice == "y" else "reject"})
 
 
-def persisted_result(api, task_id, message_id, bot_name, finished=None):
+def persisted_result(api, task_id, message_id, bot_name, finished=None, view=None):
     """A task can be reused. Only the rows between this question and the next belong to us."""
     detail = api.json("/api/tasks/" + quote(task_id, safe=""))
     rows = iter(detail["messages"])
@@ -194,17 +198,20 @@ def persisted_result(api, task_id, message_id, bot_name, finished=None):
             notices.append(row["content"])
     if status == "running":
         return False
-    if answers and sys.stdout.isatty():
-        print(colored("◆ " + bot_name, stream=sys.stdout), flush=True)
-    for answer in answers:
-        print_answer(answer)
+    if view is not None:
+        view.result(answers, detail["task"])
+    else:
+        if answers and sys.stdout.isatty():
+            print(colored("◆ " + bot_name, stream=sys.stdout), flush=True)
+        for answer in answers:
+            print_answer(answer)
     if status != "done" or not answers:
         reason = notices[-1] if notices else detail["task"].get("errorCode") or status
         raise RuntimeError(f"本轮未能正常返回答案（{clean(reason)}）。可在工作台查看任务详情和模型设置。")
     return True
 
 
-def reply(api, bot, text):
+def reply(api, bot, text, view=None):
     # Subscribe before submitting so an instant answer or reused task cannot race the CLI.
     with api.open("/api/events") as events:
         try:
@@ -214,7 +221,7 @@ def reply(api, bot, text):
         task_id, message_id = accepted["taskId"], accepted["messageId"]
         own_turn = False
         draft = ""
-        interactive = sys.stderr.isatty() and sys.stdout.isatty()
+        interactive = view is None and sys.stderr.isatty() and sys.stdout.isatty()
         preview = interactive and os.environ.get("TERM") != "dumb" and "NO_COLOR" not in os.environ
         if interactive:
             print(colored("◇ " + bot["name"] + " · 处理中", "muted"), file=sys.stderr, flush=True)
@@ -236,8 +243,10 @@ def reply(api, bot, text):
                     if draft:
                         print("\r\033[2K", end="", file=sys.stderr, flush=True)
                         draft = ""
-                    persisted_result(api, task_id, message_id, bot["name"], event["task"]["status"])
+                    persisted_result(api, task_id, message_id, bot["name"], event["task"]["status"], view)
                     return
+                if view is not None:
+                    view.event(event)
                 if interactive and kind in ("tool.started", "tool.ended"):
                     tool = event["tool"]
                     failed = tool["status"] == "failed"
@@ -248,7 +257,7 @@ def reply(api, bot, text):
                     print(colored(f"  {mark} {fit(tool['title'], width() - 5)}",
                                   "failed" if failed else "muted"), file=sys.stderr, flush=True)
                 if kind == "approval.requested":
-                    approval(api, event["approval"])
+                    approval(api, event["approval"], view)
                 if preview and kind in ("draft.reset", "draft.delta"):
                     if kind == "draft.reset":
                         draft = ""
@@ -261,11 +270,15 @@ def reply(api, bot, text):
             if draft:
                 print("\r\033[2K", end="", file=sys.stderr, flush=True)
     # The POST was accepted. On a broken stream use persisted results; never resend the question.
-    hint("实时连接已结束，正在读取已提交任务的结果。")
-    while not persisted_result(api, task_id, message_id, bot["name"]):
+    note = "实时连接已结束，正在读取已提交任务的结果。"
+    if view is None:
+        hint(note)
+    else:
+        view.notice(note)
+    while not persisted_result(api, task_id, message_id, bot["name"], view=view):
         for item in api.json("/api/approvals?status=pending"):
             if item["rootTaskId"] == task_id:
-                approval(api, item)
+                approval(api, item, view)
         time.sleep(1)
 
 
@@ -283,10 +296,12 @@ def run(args, start_service):
         if not question:
             parser.error('请输入问题，例如 chives ask "这家公司靠什么赚钱？"')
     api = LocalAPI()
+    if command != "ask" and api.port == 8880:
+        start_service()
     try:
         bots = api.json("/api/bots")
     except ConnectionRefusedError:
-        if api.port != 8880:
+        if command != "ask" or api.port != 8880:
             raise
         start_service()
         bots = api.json("/api/bots")
@@ -295,11 +310,13 @@ def run(args, start_service):
     if command == "ask":
         reply(api, select_bot(bots, options.bot), question)
         return
-    bot = menu(bots) if command == "bot" else select_bot(bots, DEFAULT_BOT)
+    if sys.stdin.isatty() and sys.stdout.isatty() and os.environ.get("TERM") != "dumb":
+        from chives_terminal.workbench import Workbench
+        Workbench(api, bots, reply).run()
+        return
+    bot = menu(bots)
     if bot is None:
         return
-    if command == "chat":
-        banner("终端工作台")
     print(colored("◆ " + bot["name"]) + "  " + colored(bot.get("modelDisplayName") or bot["model"], "muted"),
           file=sys.stderr)
     hint("输入问题可连续追问，/exit 退出。")
