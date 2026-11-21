@@ -19,3 +19,4 @@ done
 pnpm install --frozen-lockfile --store-dir "$store"
 pnpm build
 bash scripts/run-dsh.sh --version
+"$env_dir/bin/python" scripts/chives_cli.py source --register

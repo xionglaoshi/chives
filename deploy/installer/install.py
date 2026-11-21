@@ -522,17 +522,57 @@ def supervise(root, release):
         (root / "running").unlink(missing_ok=True)
 
 
+@contextmanager
+def command_lock(root):
+    # The OS releases this lock even when a terminal or installer is interrupted.
+    with (root / "service.lock").open("a+b") as handle:
+        if handle.tell() == 0:
+            handle.write(b"0")
+            handle.flush()
+        handle.seek(0)
+        try:
+            if WINDOWS:
+                import msvcrt
+                msvcrt.locking(handle.fileno(), msvcrt.LK_NBLCK, 1)
+            else:
+                import fcntl
+                fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except OSError as exc:
+            raise RuntimeError("另一个 Chives 启停命令正在执行，请稍后重试") from exc
+        yield
+
+
+def stop_service(root):
+    running = root / "running"
+    if not running.exists():
+        return
+    (root / "stop").touch()
+    for _ in range(120):
+        if not running.exists():
+            return
+        time.sleep(0.5)
+    # A power loss can leave a marker with no supervisor or services left.
+    for port in PORTS.values():
+        with socket.socket() as stream:
+            if stream.connect_ex(("127.0.0.1", port)) == 0:
+                raise RuntimeError(f"服务仍在退出，请查看 {root / 'logs/supervisor.log'}")
+    running.unlink(missing_ok=True)
+    (root / "ready").unlink(missing_ok=True)
+
+
+def control(root, release, action):
+    with command_lock(root):
+        if action == "open" and (root / "running").exists() and (root / "ready").exists():
+            if healthy("server") and healthy("web"):
+                return
+        stop_service(root)
+        if action != "stop":
+            start(root, release)
+
+
 def start(root, release):
     running = root / "running"
     stop = root / "stop"
-    if running.exists():
-        stop.touch()
-        for _ in range(100):
-            if not running.exists():
-                break
-            time.sleep(0.3)
-        else:
-            raise RuntimeError("旧实例尚未退出，请检查 Chives 日志")
     stop.unlink(missing_ok=True)
     for port in PORTS.values():
         with socket.socket() as stream:
@@ -638,7 +678,9 @@ def install(root):
             print(f"Chives {sha[:12]} 依赖、浏览器及构建检查通过，未启动服务。")
             return
         step(6, "启动并检查本地服务")
-        start(root, release)
+        control(root, release, "restart")
+        _, _, _, _, python, _, _ = runtime(root, release)
+        subprocess.run([str(python), str(release / "scripts/chives_cli.py"), "release", "--register"], check=True)
         print(f"Chives {sha[:12]} 已启动: http://127.0.0.1:8888/ 。请在设置中添加模型。")
     finally:
         lock.rmdir()

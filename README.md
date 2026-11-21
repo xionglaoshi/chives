@@ -16,9 +16,11 @@
 
 ## 为什么选 Chives
 
-Chives 由[@xionglaoshi](https://github.com/xionglaoshi) 和 [@shihaoxiong](https://github.com/shihaoxiong) 共同构建。它从 Midas 的工程基线演进而来。两个姊妹产品各有侧重，分别探索不同的技术路线和投资策略，未来正式发布的产品可能结合两边的长处。 [Midas 仓库](https://github.com/shihaoxiong/midas)
+这个项目的中文名是「老韭菜」，英文名是 Chives，由 [@xionglaoshi](https://github.com/xionglaoshi) 和 [@shihaoxiong](https://github.com/shihaoxiong) 共同构建。它从 Midas 的工程基线演进而来。两个姊妹产品各有侧重，分别探索不同的技术路线和投资策略，未来正式发布的产品可能结合两边的长处。 [Midas 仓库](https://github.com/shihaoxiong/midas)
 
 **你是不是也有这些痛点？** 你问「这只股票还能拿吗」，AI 很快就列出估值、均线和资金流，最后给一句「谨慎看好」。可你上周刚告诉它，这笔钱半年后要用。今天另开一个会话，它又默认你能拿三年。你接着问「看到什么我就该改变判断」，它把利好和风险重新列了一遍，决定还是落回你手里。
+
+更让人心里没底的是，同一份财报，你让它挑好消息，它说库存增加是为旺季备货。让它挑坏消息，它又说货压在仓库里卖不动。你只问一句「你确定吗」，没添任何新证据，它就能换一套同样像模像样的说辞。一个值得信赖的投资顾问，至少该告诉你他更相信哪一种解释、依据是什么，以及看到什么才会改口。
 
 在我们用过的股票 AI 产品里，绝大部分走的是「模型＋技能＋因子库」路线。查数、算因子、找相似走势都很快，难处在于判断这些经验**今天还适不适用**。同样是放量上涨，牛市里可能是资金追着全行业买，在熊市里却可能只是一次短暂回补。同样是库存上升，造船厂可能是在为已签订单备料，消费品公司却可能是货卖不动了。只看同一个因子的高低，很容易把两门生意读成同一个故事。
 
@@ -28,14 +30,14 @@ Chives 走的是 **策略＋Bot** 路线。我们已经构思了上百项策略�
 
 ### 为什么Chives的判断能更准确
 
-**竞品模式 · 模型＋技能＋因子库**
+**竞品模式：模型+技能+因子库**
 
 ```mermaid
 flowchart LR
     ask["用户新开会话提问"] --> data["Agent 查询公开数据、比对因子库"] --> answer["Agent 使用技能给出答案"]
 ```
 
-**Chives · 策略＋Bot**
+**Chives：策略+Bot**
 
 ```mermaid
 flowchart TB
@@ -50,8 +52,12 @@ flowchart TB
     gate -->|不满足条件| closed["关闭策略"]
     active --> choose
     choose --> reply["Bot 基于策略使用技能，给出答案"]
-    classDef activeNode fill:#145337,color:#fff,stroke:#38a879
-    class active,choose,reply activeNode
+    classDef question fill:#145337,color:#ffffff,stroke:#3e966a
+    classDef profile fill:#dceefe,color:#123b62,stroke:#437daf
+    classDef strategy fill:#ffedce,color:#553511,stroke:#aa772c
+    class ask,clarify,lookup,choose,reply question
+    class survey,learn,memory,user profile
+    class daily,algo,gate,active,closed strategy
 ```
 
 Chives 的设计里有两套不同的时间表。市场每天都在变，Agent 定时采集公共数据，按行业、阈值和有效期重新计算每项策略的开关。等你来提问，Bot 先结合你的用户画像和历史会话弄清楚要解决什么问题，再从已经激活的策略里挑出适用的，说明它为什么命中、什么变化会让它失效。策略市场已预留入口，完整触发链和首批规则将逐步接入验证。
@@ -126,7 +132,7 @@ $p = [IO.Path]::Combine([IO.Path]::GetTempPath(), ([Guid]::NewGuid().ToString() 
 
 ### 第一次打开
 
-1. **启动。** macOS 源码安装后，在仓库根目录执行 `./start start`。使用分发安装向导的用户，等待向导提示启动完成。然后打开[本地工作台 127.0.0.1:8888](http://127.0.0.1:8888/)。
+1. **启动。** 安装完成后，在新终端输入 `chives`，本地服务就绪后会自动在默认浏览器打开工作台。再次输入可重新打开页面，输入 `chives stop` 可关闭本地服务。 [本地工作台 127.0.0.1:8888](http://127.0.0.1:8888/)
 2. **添加模型。** 到「设置 → 模型设置」，填写自己的连接，验证后设为默认。
 3. **先做一次风格评估。** 从工作台打开「风格评估」，完成问卷，生成初始用户画像。相同的股票和价格，对需要随时用钱的人与能承受几年波动的人，合适的建议可能不同。Bot 会参考你的资金安排、风险承受能力和投资偏好。以后可以根据实际交易和想法更新用户画像。
 4. **问一个手里有资料的问题。** 例如「请把这家公司近两期的归母净利润、销售收现和应收账龄列在一起，给出公告出处，并告诉我还要核什么」。先用自己熟悉的公司看看回答能不能复核。
