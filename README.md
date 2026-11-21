@@ -2,7 +2,7 @@
   <img src="docs/assets/readme/chives-banner.png" alt="CHIVES-AGENT" width="100%">
 </p>
 
-<h1 align="center"><img src="apps/web/public/chives.svg" width="38" height="38" align="absmiddle" alt=""> 老韭菜 · Chives</h1>
+<h1 align="center"><img src="docs/assets/readme/title-logo.svg" width="46" height="46" align="absmiddle" alt=""> 老韭菜 · Chives</h1>
 
 <p align="center"><strong>面向 A 股的本地 AI 投研平台</strong></p>
 
