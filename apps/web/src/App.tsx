@@ -31,6 +31,7 @@ import {
   decideApproval,
   deleteRoutine,
   postMessage,
+  suggestOperatorDraft,
   reopenTask,
   retryTask,
   revealBotPath,
@@ -148,6 +149,7 @@ interface ConversationTarget {
   messageId?: string;
   taskId?: string;
   draft?: string;
+  attachment?: MessageAttachmentDto;
 }
 
 const GlobalSearch = lazy(() => import('./components/GlobalSearch'));
@@ -156,6 +158,11 @@ export function App(): ReactElement {
   const { bots, loading, error: serverError, setBots, setBotStatus, reload } = useBots();
   const [route, setRoute] = useState<AppRoute>(() => readRoute(window.location.hash));
   const [composerText, setComposerText] = useState('');
+  const [askDraft, setAskDraft] = useState<{prompt: string; source: string} | null>(null);
+  const editComposer = useCallback((text: string) => {
+    setAskDraft(null);
+    setComposerText(text);
+  }, []);
   const [notice, setNotice] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   useEffect(()=>{void desk<Preferences>('prefs').then(applyDesk).catch(()=>{});},[]);
@@ -296,6 +303,15 @@ export function App(): ReactElement {
     if (target.taskId) setLocateTaskId(target.taskId);
     if (target.draft !== undefined) {
       setComposerText(target.draft);
+      if (target.attachment) {
+        setAttachments([target.attachment]);
+        setAskDraft({prompt: target.draft, source: target.attachment.name});
+        setNotice(null);
+        setUploadNotice(null);
+        setContinuation(null);
+      } else {
+        setAskDraft(null);
+      }
       setComposerFocusToken(value => value + 1);
     }
   }, [navigate, route.name, selectedId]);
@@ -306,7 +322,9 @@ export function App(): ReactElement {
     setComposerText(target?.draft ?? '');
     if (target?.draft !== undefined) setComposerFocusToken(value => value + 1);
     setNotice(null);
-    setAttachments([]);
+    setAttachments(target?.attachment ? [target.attachment] : []);
+    setAskDraft(target?.attachment && target.draft !== undefined
+      ? {prompt: target.draft, source: target.attachment.name} : null);
     setUploadNotice(null);
     setDragActive(false);
     setPreview(null);
@@ -317,6 +335,19 @@ export function App(): ReactElement {
     setHighlightMessageId(null);
     previewTriggerRef.current = null;
   }, [currentRouteKey,selectedId]);
+
+  useEffect(() => {
+    if (askDraft === null || route.name !== 'conversation' || selectedId !== 'operator') return;
+    const signal = AbortSignal.timeout(12000);
+    const request = new AbortController();
+    void suggestOperatorDraft(askDraft.prompt, askDraft.source, AbortSignal.any([request.signal, signal]))
+      .then(({draft}) => {
+        if (draft && !request.signal.aborted && !signal.aborted) {
+          setComposerText(current => current === askDraft.prompt ? draft : current);
+        }
+      }).catch(() => { /* The editable template is already available. */ });
+    return () => request.abort();
+  }, [askDraft, route.name, selectedId]);
 
   const removePending = useCallback((botId: string, pendingId: string) => {
     setPendingByBot((current) => {
@@ -540,6 +571,7 @@ export function App(): ReactElement {
   );
 
   const removeAttachment = useCallback((path: string): void => {
+    setAskDraft(null);
     setAttachments((current) => current.filter((attachment) => attachment.path !== path));
   }, []);
 
@@ -614,8 +646,7 @@ export function App(): ReactElement {
   );
 
   function askOperator(prompt: string, attachment: MessageAttachmentDto) {
-    navigate({name:'conversation',botId:'operator'});
-    void send('operator', prompt, undefined, [attachment]);
+    openConversationTarget({botId: 'operator', draft: prompt, attachment});
   }
 
   const handleSend = useCallback(
@@ -623,6 +654,7 @@ export function App(): ReactElement {
       if (selectedBot === null || selectedBot.hired === false) return;
       if (text.trim() === '' && attachments.length === 0) return;
       const outgoing = [...attachments];
+      setAskDraft(null);
       setComposerText('');
       setAttachments([]);
       setUploadNotice(null);
@@ -945,7 +977,7 @@ export function App(): ReactElement {
                 {showWelcome ? (
                   <Welcome
                     value={composerText}
-                    onChange={setComposerText}
+                    onChange={editComposer}
                     onSend={handleSend}
                     onStop={() => void handleStop()}
                     running={running}
@@ -1019,7 +1051,7 @@ export function App(): ReactElement {
                         )}
                         <Composer
                           value={composerText}
-                          onChange={setComposerText}
+                          onChange={editComposer}
                           onSend={handleSend}
                           onStop={() => void handleStop()}
                           running={running}

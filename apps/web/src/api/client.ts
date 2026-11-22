@@ -274,6 +274,12 @@ export function revealDeliverable(id: string): Promise<{ ok: boolean }> {
   });
 }
 
+export function suggestOperatorDraft(prompt: string, source: string, signal: AbortSignal) {
+  return request<{draft: string | null}>('/api/bots/operator/question-draft', {
+    method: 'POST', body: JSON.stringify({prompt, source}), signal
+  });
+}
+
 export function postMessage(
   botId: string,
   text: string,
