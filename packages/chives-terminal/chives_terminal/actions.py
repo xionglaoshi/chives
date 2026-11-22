@@ -93,6 +93,19 @@ class Actions:
     def toggle_label(self, key):
         return APPEARANCE[key][0] + (" · 开" if self.prefs[key] else " · 关")
 
+    async def employment(self):
+        path = "/api/settings/desk/employment"
+        roster = await self.api(path)
+        options = [(b["id"], b["name"] + (" · 常驻" if b["id"] == "expert" else "")) for b in roster]
+        expected = {b["id"]: b["hired"] for b in roster}
+        choice = await self.ui.checklist("聘用管理 · 选中即聘用", options,
+                                         [key for key, hired in expected.items() if hired], {"expert"})
+        if choice is None:
+            return
+        await self.api(path, {"expected": expected, "hiredIds": choice}, "PUT")
+        await self.desk.reload_bots()
+        self.desk.saved(f"已聘用 {len(self.desk.bots)} 位 Bot")
+
     def primary_settings(self):
         name = self.desk.default_model
         return [("default", "默认模型" + (" · " + name if name else "")),

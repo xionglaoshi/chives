@@ -15,6 +15,15 @@ export class BotRegistry {
   private byId: ReadonlyMap<string, BotManifest>;
   private personas: ReadonlyMap<string, string>;
   private sharedRules: string;
+  private hired: ReadonlySet<string> | undefined;
+
+  setHired(ids: readonly string[]): void {
+    this.hired = new Set(ids);
+  }
+
+  isHired(id: string): boolean {
+    return this.byId.has(id) && (id === DEFAULT_ENTRY_BOT_ID || this.hired === undefined || this.hired.has(id));
+  }
 
   constructor(
     manifests: readonly BotManifest[],

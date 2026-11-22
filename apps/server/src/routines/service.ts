@@ -187,7 +187,7 @@ export class RoutineService {
     const next = computeNextRun(routine.schedule, now);
     const nextIso = next === null ? null : next.toISOString();
     const settings = readProactiveSettings(this.store);
-    if (!settings.enabled || !settings.autoAnalysis || settings.observeOnly) {
+    if (!this.registry.isHired(routine.botId) || !settings.enabled || !settings.autoAnalysis || settings.observeOnly) {
       this.store.routines.setNextRun(routine.id, nextIso);
       return;
     }

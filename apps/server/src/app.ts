@@ -3,6 +3,7 @@ import {readProfile} from './settings/interview-profile.js';
 import {ProfileService} from './settings/profile-service.js';
 import {StyleAssessment} from './settings/style-assessment.js';
 import {previewExcerpt} from './settings/profile-excerpt.js';
+import { BotEmployment } from './bots/employment.js';
 import { coordinatorId, writeExpert } from './bots/coordinator.js';
 import {preferences,parsePreferences,preferenceKey} from './settings/workbench.js';
 import {backupPersonal,restorePersonal} from './settings/personal-backup.js';
@@ -419,6 +420,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
   const store = Store.open(config.dataDir);
   const registry =
     options.registry ?? loadBots(config.botsDir, buildCatalog(config.repoRoot));
+  const employment = new BotEmployment(store, registry);
   const configuredBot = (bot: BotManifest) => {
     const selected = assets(config.dataDir,bot);
     const prefs=preferences(store);
@@ -670,7 +672,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
   }
   const pump=setInterval(()=>{
     for(const bot of registry.list()){
-      if(inFlight.has(bot.id)||orchestrator.runningTaskId(bot.id))continue;
+      if(!registry.isHired(bot.id)||inFlight.has(bot.id)||orchestrator.runningTaskId(bot.id))continue;
       const entry=queueFor(bot.id)[0];
       if(!entry)continue;
       const remove=()=>putQueue(bot.id,queueFor(bot.id).filter(item=>item.id!==entry.id));
@@ -686,15 +688,18 @@ export function createApp(options: CreateAppOptions): ChivesApp {
     bot: BotManifest,
     override: ReturnType<Store['bots']['get']>,
     pendingCounts: Record<string, number>,
-  ): BotSummary =>
-    toBotSummary(
+  ): BotSummary => ({
+    ...toBotSummary(
       bot,
       override,
       orchestrator.status(bot.id),
       orchestrator.runningTaskId(bot.id),
       pendingCounts[bot.id] ?? 0,
       summaryExtras(bot),
-    );
+    ),
+    hired: registry.isHired(bot.id),
+    canDelegateTo: bot.can_delegate_to.filter(id => registry.isHired(id)),
+  });
 
   const markRoutineConfirmation = (
     botId: string,
@@ -798,7 +803,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           const input = await readJsonObject(request);
           const catalog = buildCatalog(config.repoRoot);
           if (action === 'roster') {
-            sendJson(response,200,{experts:registry.list().map(b=>({id:b.id,name:store.bots.get(b.id)?.displayName ?? b.name,role:b.role})),
+            sendJson(response,200,{experts:registry.list().map(b=>({id:b.id,name:store.bots.get(b.id)?.displayName ?? b.name,role:b.role,hired:registry.isHired(b.id)})),
               assets:assetOptions(config.dataDir,registry.get(coordinatorId)!,catalog)});
             return;
           }
@@ -1387,7 +1392,19 @@ export function createApp(options: CreateAppOptions): ChivesApp {
         const origin=request.headers.origin;
         if(request.headers['x-chives-kernel-manager']!=='local'||request.headers['sec-fetch-site']==='cross-site'||(origin&&!/^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:[0-9]+)?$/.test(origin)))throw new AppError(403,'local_only','请从 Mac 本机设置访问个人设置');
         let result:unknown;
-        if(section==='hotspots' && (method==='GET'||method==='POST')){
+        if(section==='employment' && (method==='GET'||method==='PUT')){
+          if(method==='PUT'){
+            const changed = employment.update(await readJsonObject(request));
+            const pending = orchestrator.pendingApprovalCounts();
+            const affected = new Set(changed);
+            for (const manifest of registry.list()) {
+              if (!affected.has(manifest.id) && !manifest.can_delegate_to.some(id => affected.has(id))) continue;
+              const bot = summaryFor(manifest, store.bots.get(manifest.id), pending);
+              bus.publish({type:'bot.updated',botId:manifest.id,bot});
+            }
+          }
+          result=employment.list();
+        }else if(section==='hotspots' && (method==='GET'||method==='POST')){
           result=method==='GET'?hotspots.current():await hotspots.start();
         }else if(section==='holdings' && (method==='GET'||method==='POST')){
           const body=method==='GET'?{action:'get'}:await readJsonObject(request);
@@ -2424,6 +2441,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
             return;
           }
           const body = await readJsonObject(request);
+          orchestrator.requireHired(botId);
           const text = body.text;
           if (text !== undefined && typeof text !== 'string') {
             throw new AppError(400, 'validation_error', 'text must be a string');

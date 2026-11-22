@@ -40,6 +40,8 @@ export interface BotAvatar {
 }
 
 export interface BotSummary {
+  /** Older workbenches have no employment preference. */
+  hired?: boolean;
   headline?: string;
   id: string;
   name: string;

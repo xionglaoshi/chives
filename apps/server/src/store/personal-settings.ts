@@ -5,7 +5,7 @@ import type {DatabaseSync} from 'node:sqlite';
 
 const names:Record<string,string>={
  'workbench.preferences.v1':'account-settings.json',appearance:'appearance.json',proactive:'notifications.json',
- 'sidebar.botOrder':'sidebar-order.json','workbench.style-assessment.v1':'legacy-assessment.json',
+ 'sidebar.botOrder':'sidebar-order.json','bots.hired.v1':'bot-employment.json','workbench.style-assessment.v1':'legacy-assessment.json',
  'workbench.investor-context':'legacy-context.json'
 };
 export class PersonalSettings {

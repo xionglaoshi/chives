@@ -83,7 +83,9 @@ class SlashMenu(Completer):
 
 class Workbench:
     def __init__(self, api, bots, reply, stop_service=None, **terminal):
-        self.api, self.bots, self.reply = api, bots, reply
+        self.api, self.reply = api, reply
+        self.bots = [b for b in bots if b.get("hired", True)]
+        self.roster_generation = 0
         self.panels = Panels(self)
         self.actions = Actions(self, stop_service)
         self.boards = []
@@ -101,7 +103,7 @@ class Workbench:
         self.host = one(socket.gethostname().split(".")[0])
         self.generation = 0
         self.bot = None
-        self.selected = next((i for i, b in enumerate(bots) if b["id"] == "expert"), 0)
+        self.selected = next((i for i, b in enumerate(self.bots) if b["id"] == "expert"), 0)
         self.busy = self.loading = False
         self.pending = None
         self.message = ""
@@ -163,7 +165,9 @@ class Workbench:
         return left + ([ink("green", " "*gap + host)] if gap > 2 else [])
 
     def picker_layout(self):
-        self.launch_windows = [self.menu_list] + [
+        bot_column = HSplit([self.menu_list, Window(height=1, char="─", style="class:line"),
+                             panel(self.employment_row)], width=D(min=1, preferred=1, weight=1))
+        self.launch_windows = [bot_column] + [
             Window(FormattedTextControl(lambda c=c: self.section_items(c), focusable=True),
                    width=D(min=1, preferred=1, weight=1), always_hide_cursor=True)
             for c in (1, 2)]
@@ -202,6 +206,39 @@ class Workbench:
                 self.open_selected()
         return select
 
+    def employment_row(self):
+        row = len(self.matches())
+        active = self.column == 0 and self.selected == row
+        return [(*ink("selected" if active else "accent", ("  ▸ " if active else "    ") + "聘用管理"),
+                 self.launch_click(0, row))]
+
+    async def reload_bots(self):
+        self.roster_generation += 1
+        generation = self.roster_generation
+        roster = await self.actions.api("/api/bots")
+        if generation != self.roster_generation:
+            return
+        current = self.current()
+        self.bots = [b for b in roster if b.get("hired", True)]
+        items = self.matches()
+        if current is None:
+            self.selected = len(items)
+        else:
+            self.selected = next((i for i, (_,b) in enumerate(items) if b["id"] == current["id"]), 0)
+        self.app.invalidate()
+
+    async def watch_roster(self):
+        while True:
+            await asyncio.sleep(4)
+            if self.in_dialog or self.bot is not None:
+                continue
+            try:
+                roster = await self.actions.api("/api/settings/desk/employment")
+                if {b["id"] for b in roster if b["hired"]} != {b["id"] for b in self.bots}:
+                    await self.reload_bots()
+            except (OSError, RuntimeError, ValueError):
+                continue
+
     def start_catalog(self):
         async def refresh_boards():
             while True:
@@ -218,6 +255,7 @@ class Workbench:
                 self.app.invalidate()
             except (OSError, RuntimeError, ValueError):
                 pass
+        self.app.create_background_task(self.watch_roster())
         self.app.create_background_task(refresh_boards())
         self.app.create_background_task(load_model())
 
@@ -248,6 +286,8 @@ class Workbench:
             self.dialog(self.actions.settings(key), title)
         elif self.current():
             self.enter(self.current())
+        else:
+            self.dialog(self.actions.employment(), "聘用管理")
 
     def section_tabs(self):
         result = []
@@ -314,7 +354,7 @@ class Workbench:
 
     def current(self):
         items = self.matches()
-        return items[min(self.selected, len(items)-1)][1] if items else None
+        return items[self.selected][1] if 0 <= self.selected < len(items) else None
 
     def filter_changed(self, _):
         self.selected = 0
@@ -395,6 +435,10 @@ class Workbench:
         @kb.add("left", filter=picking)
         def previous_column(e):
             self.switch_column((self.column - 1) % 3)
+        @kb.add("end", filter=picking & Condition(lambda: self.column == 0))
+        def last_bot_action(e):
+            self.selected = len(self.matches())
+
         @kb.add("up", filter=picking)
         def up(e):
             if self.column:
@@ -407,7 +451,7 @@ class Workbench:
                 count = len(self.page_items() if self.column == 1 else self.actions.primary_settings())
                 self.section_row = min(count-1, self.section_row+1)
             else:
-                self.selected = max(0, min(len(self.matches())-1, self.selected+1))
+                self.selected = max(0, min(len(self.matches()), self.selected+1))
         @kb.add("enter", filter=picking)
         def choose(e):
             self.open_selected()

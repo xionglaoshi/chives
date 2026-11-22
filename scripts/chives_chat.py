@@ -311,8 +311,9 @@ def run(args, start_service, stop_service=None):
             raise
         start_service()
         bots = api.json("/api/bots")
+    bots = [bot for bot in bots if bot.get("hired", True)]
     if not bots:
-        raise RuntimeError("工作台还没有可用 Bot。")
+        raise RuntimeError("工作台还没有已聘用的 Bot。")
     if command == "ask":
         reply(api, select_bot(bots, options.bot), question)
         return

@@ -514,7 +514,7 @@ export function BotProfile({
             className="bot-profile__button bot-profile__button--primary"
             onClick={() => onOpenConversation(bot.id)}
           >
-            去对话
+            {bot.hired === false ? '查看历史对话' : '去对话'}
           </button>
           <button
             type="button"

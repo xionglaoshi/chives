@@ -1,4 +1,5 @@
-import type { ReactElement } from 'react';
+import { useState, type ReactElement } from 'react';
+import { desk } from './deskApi';
 
 import type { BotSummary } from '@chives/server/protocol';
 
@@ -21,6 +22,7 @@ export interface BotsOverviewProps {
   loading: boolean;
   error: string | null;
   onRetry: () => void;
+  onEmploymentSaved?: (changes: ReadonlyMap<string, boolean>) => void;
   onOpenConversation: (botId: string) => void;
   onOpenProfile: (botId: string) => void;
 }
@@ -30,9 +32,30 @@ export function BotsOverview({
   loading,
   error,
   onRetry,
+  onEmploymentSaved,
   onOpenConversation,
   onOpenProfile
 }: BotsOverviewProps): ReactElement {
+  const [saving, setSaving] = useState<string | null>(null);
+  const [notice, setNotice] = useState('');
+  async function changeHire(bot: BotSummary) {
+    if (saving !== null || bot.id === 'expert') return;
+    setSaving(bot.id);
+    setNotice('');
+    const hire = bot.hired === false;
+    const expected = Object.fromEntries(bots.map(b => [b.id, b.hired !== false]));
+    const hiredIds = bots.filter(b => b.id === bot.id ? hire : b.hired !== false).map(b => b.id);
+    try {
+      const roster = await desk<{id:string; hired:boolean}[]>('employment','PUT',{expected,hiredIds});
+      onEmploymentSaved?.(new Map(roster.map(b => [b.id,b.hired])));
+      setNotice((hire ? '已聘用' : '已解聘') + bot.name);
+    } catch (error) {
+      setNotice(error instanceof Error ? error.message : '名册未保存，请重试。');
+      onRetry();
+    } finally {
+      setSaving(null);
+    }
+  }
   const working = bots.filter(
     (bot) => bot.status === 'working' || bot.status === 'starting'
   ).length;
@@ -45,12 +68,12 @@ export function BotsOverview({
         <div className="bots-overview__intro">
           <h1 className="bots-overview__title">人才市场</h1>
           <p className="bots-overview__subtitle">
-            查看 Bot 的分工、技能与资料，选择合适的 Bot 继续对话。
+            聘用需要的 Bot，它们会出现在终端和网页的对话名册中。
           </p>
         </div>
         <div className="bots-overview__stats" aria-label="Bot 概览统计">
           <span>
-            <strong>{bots.length}</strong> 个 Bot
+            <strong>{bots.filter(bot => bot.hired !== false).length} / {bots.length}</strong> 位已聘用
           </span>
           <span>
             <strong className="bots-overview__stat--gold">{working}</strong> 个工作中
@@ -61,6 +84,7 @@ export function BotsOverview({
         </div>
       </header>
 
+      {notice && <p role="status">{notice}</p>}
       {!loading && bots.length > 0 && working === 0 && pending === 0 ? (
         <p className="bots-overview__quiet" role="status">
           现在没有 Bot 在运行。需要时从下面进入对话。
@@ -115,7 +139,7 @@ export function BotsOverview({
                     BOT_STATUS_TONES[bot.status]
                   }`}
                 >
-                  {statusLabel}
+                  {bot.hired === false ? '待聘' : '已聘用 · ' + statusLabel}
                 </span>
               </div>
 
@@ -151,12 +175,17 @@ export function BotsOverview({
               </dl>
 
               <div className="bots-overview__actions">
+                <button type="button" className="bots-overview__action" disabled={bot.id === 'expert' || saving !== null}
+                  aria-label={bot.id === 'expert' ? bot.name+' · 常驻' : (bot.hired === false ? '聘用' : '解聘')+bot.name}
+                  onClick={() => void changeHire(bot)}>
+                  {bot.id === 'expert' ? '常驻' : saving === bot.id ? '保存中…' : bot.hired === false ? '聘用' : '解聘'}
+                </button>
                 <button
                   type="button"
                   className="bots-overview__action bots-overview__action--primary"
                   onClick={() => onOpenConversation(bot.id)}
                 >
-                  对话
+                  {bot.hired === false ? '查看历史对话' : '对话'}
                 </button>
                 <button
                   type="button"

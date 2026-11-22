@@ -743,6 +743,7 @@ export class WatchService {
     if (id === null) return { status: 'skipped', reason: 'not_chives_plan' };
     const watch = this.store.watches.get(id);
     if (watch === undefined) return { status: 'skipped', reason: 'unknown_watch' };
+    if (!this.registry.isHired(watch.botId)) return { status: 'skipped', reason: 'bot_not_hired' };
     if (watch.status !== 'active') return { status: 'skipped', reason: 'watch_not_active' };
     const to = stateOf(input.alert);
     let current = watch;

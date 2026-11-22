@@ -322,7 +322,7 @@ export class Orchestrator {
     attachments: readonly MessageAttachmentDto[] = [],
     messageId?: string,
   ): Promise<SubmitResult> {
-    const bot = this.requireBot(botId);
+    const bot = this.requireHired(botId);
     if (this.submitting.has(botId) || this.store.tasks.findRunning(botId) !== undefined) {
       throw new AppError(409, 'bot_busy', 'this bot already has a running task');
     }
@@ -344,6 +344,7 @@ export class Orchestrator {
     const now = this.now();
     const latest = this.store.tasks.latestForBot(botId);
     const decision = await this.segmentation.decide(botId, text, now);
+    this.requireHired(botId);
     const continuing = decision.kind === 'continue' && decision.previous !== undefined;
     const fallbackTitle =
       attachments.length === 0 ? text : attachments.map((attachment) => attachment.name).join('、');
@@ -473,7 +474,7 @@ export class Orchestrator {
    * injection block followed by the caller's prompt.
    */
   async submitProactive(botId: string, input: ProactiveTaskInput): Promise<SubmitResult> {
-    const bot = this.requireBot(botId);
+    const bot = this.requireHired(botId);
     if (this.submitting.has(botId) || this.store.tasks.findRunning(botId) !== undefined) {
       throw new AppError(409, 'bot_busy', 'this bot already has a running task');
     }
@@ -611,6 +612,7 @@ export class Orchestrator {
     if (task.delegated) {
       throw new AppError(400, 'validation_error', 'a delegated task cannot be reopened');
     }
+    this.requireHired(task.botId);
     const running = this.store.tasks.findRunning(task.botId);
     if (running !== undefined && running.id !== taskId) {
       throw new AppError(409, 'bot_busy', 'this bot already has a running task');
@@ -623,6 +625,7 @@ export class Orchestrator {
         this.segmentation.closeTask(entry.id, 'reopen').catch(() => undefined),
       ),
     );
+    this.requireHired(task.botId);
     const reopened = this.store.tasks.reopen(taskId, this.now().toISOString());
     if (reopened === undefined) {
       throw new AppError(404, 'task_not_found', `unknown task "${taskId}"`);
@@ -679,7 +682,7 @@ export class Orchestrator {
     if (task.delegated) {
       throw new AppError(400, 'validation_error', 'a delegated task cannot be retried');
     }
-    const bot = this.requireBot(task.botId);
+    const bot = this.requireHired(task.botId);
     if (this.submitting.has(bot.id) || this.store.tasks.findRunning(bot.id) !== undefined) {
       throw new AppError(409, 'bot_busy', 'this bot already has a running task');
     }
@@ -768,7 +771,7 @@ export class Orchestrator {
     const task = this.store.tasks.get(taskId);
     if (task === undefined || task.status === 'running') return false;
     const bot = this.registry.get(task.botId);
-    if (bot === undefined) return false;
+    if (bot === undefined || !this.registry.isHired(bot.id)) return false;
     if (task.delegated) {
       if (this.delegatedActive.has(taskId)) return false;
     } else if (
@@ -830,9 +833,9 @@ export class Orchestrator {
    */
   startDelegatedTask(task: TaskRecord, brief: string): void {
     const bot = this.registry.get(task.botId);
-    if (bot === undefined) {
+    if (!bot || !this.registry.isHired(task.botId)) {
       const finished = this.store.tasks.finish(task.id, 'failed', this.now().toISOString());
-      this.hooks?.onChildFinished(finished, `未知的 bot「${task.botId}」`);
+      this.hooks?.onChildFinished(finished, bot ? '这位 Bot 尚未聘用' : `未知的 bot「${task.botId}」`);
       return;
     }
     const parent = task.parentTaskId === null ? undefined : this.store.tasks.get(task.parentTaskId);
@@ -881,6 +884,12 @@ export class Orchestrator {
       }, CANCEL_FALLBACK_MS);
       turn.fallbackTimer.unref();
     }
+  }
+
+  requireHired(botId: string): BotManifest {
+    const bot = this.requireBot(botId);
+    if (!this.registry.isHired(botId)) throw new AppError(409, 'bot_not_hired', '请先聘用这位 Bot，再开始新的工作。');
+    return bot;
   }
 
   private requireBot(botId: string): BotManifest {

@@ -219,6 +219,9 @@ export class DelegationService {
     if (initiator === undefined) return { error: 'unknown_bot', message: `未知的发起方 ${identity.botId}` };
     const target = this.registry.get(input.bot);
     if (target === undefined) return { error: 'unknown_bot', message: `未知的 bot「${input.bot}」` };
+    if (!this.registry.isHired(target.id) || !this.registry.isHired(initiator.id)) {
+      return { error: 'forbidden', message: '只有已聘用的 Bot 可以发起或接受委派。' };
+    }
     if (target.id === identity.botId) {
       return { error: 'self_delegation', message: '不能把任务委派给自己' };
     }

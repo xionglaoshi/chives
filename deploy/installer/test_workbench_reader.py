@@ -32,6 +32,13 @@ class FixtureAPI:
                 for m in self.models:
                     m["active"] = m["id"] == body["id"]
             return self.models
+        if path.endswith("/employment"):
+            if body:
+                for bot in self.bots:
+                    bot["hired"] = bot["id"] in body["hiredIds"]
+            return self.bots
+        if path == "/api/bots":
+            return self.bots
         if path.endswith("/hotspots"):
             return {"snapshot":self.snapshot}
         if path.endswith("/channels"):
@@ -81,6 +88,28 @@ class KeyFlow(unittest.IsolatedAsyncioTestCase):
 
     def body(self):
         return "".join(t for _,t in self.desk.panels.render())
+
+    async def test_employment_keyboard_expert_lock_and_cancel(self):
+        desk = self.desk
+        self.api.bots[0]["hired"] = True
+        for n in range(1, 20):
+            self.api.bots.append(dict(id=f"b{n}", name=f"同事{n}", role="研究", hired=n < 3))
+        await desk.reload_bots()
+        self.assertEqual(len(desk.matches()), 3)
+        await self.key("\x1b[B"*3+"\r", lambda: desk.panels.kind=="checklist")
+        self.assertEqual(len(desk.panels.options), 20)
+        self.pipe.send_text(" " + "\x1b[B "*2 + "\r")
+        await self.until(lambda: not desk.in_dialog)
+        self.assertEqual([b["id"] for b in desk.bots], ["expert"])
+        self.assertEqual(self.api.writes[-1][1]["hiredIds"], ["expert"])
+        await self.key("\r", lambda: desk.panels.kind=="checklist")
+        self.pipe.send_text("\x1b[B \x1b")
+        await self.until(lambda: not desk.in_dialog)
+        self.assertEqual(len(self.api.writes), 1)
+        await self.key("\r", lambda: desk.panels.kind=="checklist")
+        self.pipe.send_text("\x1b[B \r")
+        await self.until(lambda: not desk.in_dialog)
+        self.assertEqual([b["id"] for b in desk.bots], ["expert", "b1"])
 
     async def test_direct_board_market_holdings_full_profile(self):
         desk = self.desk

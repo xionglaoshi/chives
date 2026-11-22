@@ -68,6 +68,6 @@ export function ModelsDesk(){
  <section className="settings__section" aria-labelledby="bot-default-models">
    <h3 id="bot-default-models">各 Bot 的默认模型</h3>
    {bots?.map(bot=><div className="settings__row" key={bot.id}><span>{bot.name}</span><span>{bot.modelDisplayName}</span></div>)}
-   {bots?.length===0&&<p>暂无已招募的 Bot</p>}
+   {bots?.length===0&&<p>暂无可配置的 Bot</p>}
  </section></>;
 }

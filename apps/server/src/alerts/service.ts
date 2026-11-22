@@ -429,6 +429,7 @@ export class AlertService {
       skipAll('unknown_bot');
       return;
     }
+    if (!this.registry.isHired(botId)) { skipAll('bot_not_hired'); return; }
     const markerKey = `alerts.strategyDay.${botId}.${strategyId}`;
     if (this.store.settings.get<string>(markerKey) === day) {
       skipAll('already_woken_today');
@@ -599,6 +600,7 @@ export class AlertService {
       this.skip(source, alert, 'unknown_bot', now);
       return;
     }
+    if (!this.registry.isHired(botId)) { this.skip(source, alert, 'bot_not_hired', now); return; }
     if (alert.ts === null || !Number.isFinite(Date.parse(alert.ts))) {
       this.skip(source, alert, 'invalid_alert_ts', now);
       return;

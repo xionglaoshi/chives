@@ -94,8 +94,14 @@ export function Sidebar({
     setOrder(next);
     try { localStorage.setItem(toolOrderKey, JSON.stringify(next)); } catch { /* Keep the in-session order. */ }
   }
-  const roster = useSidebarPins('bots', initialBots);
-  const visibleBots = bots.filter(bot => roster.pins.includes(bot.id));
+  const [legacyHidden] = useState(() => {
+    try {
+      const previous: unknown = JSON.parse(localStorage.getItem('chives.sidebar.pins.bots') ?? 'null');
+      return Array.isArray(previous) ? initialBots.filter(id => !previous.includes(id)) : [];
+    } catch { return []; }
+  });
+  const hiddenBots = useSidebarPins('hidden-bots.v1', legacyHidden);
+  const visibleBots = bots.filter(bot => !hiddenBots.pins.includes(bot.id));
   return (
     <nav className={`sidebar${compact ? ' sidebar--compact' : ''}`} aria-label="Bot 列表">
       <div className="sidebar__brand">
@@ -143,22 +149,22 @@ export function Sidebar({
       ) : compact ? (
         <BotRail bots={visibleBots} selectedId={selectedId} onSelect={onSelect} />
       ) : (
-        <BotList onPin={roster.toggle} onMove={onMove} bots={visibleBots} selectedId={selectedId} onSelect={onSelect} />
+        <BotList onPin={hiddenBots.toggle} onMove={onMove} bots={visibleBots} selectedId={selectedId} onSelect={onSelect} />
       )}
-      {!loading || bots.length > 0 ? <HiddenMenu label="隐藏Bot" items={bots.filter(bot => !roster.pins.includes(bot.id))}
-        open={onSelect} pin={roster.toggle}/> : null}
+      {!loading || bots.length > 0 ? <HiddenMenu label="隐藏Bot" items={bots.filter(bot => hiddenBots.pins.includes(bot.id))}
+        open={onSelect} pin={hiddenBots.toggle}/> : null}
       <div className="sidebar__footer">
         <button
           type="button"
           className={`sidebar__all${allBotsActive ? ' sidebar__all--active' : ''}`}
           onClick={onShowAll}
           aria-current={allBotsActive ? 'page' : undefined}
-          title="人才市场 · 招募其他Bot" aria-label="人才市场，招募其他Bot"
+          title="人才市场 · 聘用与解聘 Bot" aria-label="人才市场，聘用与解聘 Bot"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 6h7v7H4zM13 6h7v7h-7zM4 15h7v5H4zM13 15h7v5h-7z" />
           </svg>
-          <span className="sidebar__all-label">人才市场</span><small className="sidebar__hint">招募其他Bot</small>
+          <span className="sidebar__all-label">人才市场</span><small className="sidebar__hint">聘用与解聘 Bot</small>
         </button>
         <button
           type="button"

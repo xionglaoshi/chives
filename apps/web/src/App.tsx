@@ -168,6 +168,7 @@ export function App(): ReactElement {
   const [taskClosedToken, setTaskClosedToken] = useState(0);
   const [watchRevision, setWatchRevision] = useState(0);
 
+  const hiredBots = useMemo(() => bots.filter(bot => bot.hired !== false), [bots]);
   const selectedId =
     route.name === 'conversation' || route.name === 'profile' ? route.botId : null;
   const selectedBot = useMemo(
@@ -192,11 +193,11 @@ export function App(): ReactElement {
     if (bots.length === 0) return;
     if (route.name !== 'conversation' && route.name !== 'profile') return;
     if (route.botId !== null && bots.some((bot) => bot.id === route.botId)) return;
-    const fallback = defaultBotId(bots);
+    const fallback = defaultBotId(hiredBots);
     if (fallback !== null) {
       navigate({ name: 'conversation', botId: fallback }, true);
     }
-  }, [bots, route, navigate]);
+  }, [bots, hiredBots, route, navigate]);
 
   useEffect(() => {
     const onHashChange = (): void => {
@@ -501,7 +502,7 @@ export function App(): ReactElement {
 
   const addFiles = useCallback(
     async (files: readonly File[]): Promise<void> => {
-      if (selectedBot === null || files.length === 0 || uploading) return;
+      if (selectedBot === null || selectedBot.hired === false || files.length === 0 || uploading) return;
       const error = uploadError(files, attachments.length);
       if (error !== null) {
         setUploadNotice(error);
@@ -604,7 +605,7 @@ export function App(): ReactElement {
 
   const handleSend = useCallback(
     (text: string): void => {
-      if (selectedBot === null) return;
+      if (selectedBot === null || selectedBot.hired === false) return;
       if (text.trim() === '' && attachments.length === 0) return;
       const outgoing = [...attachments];
       setComposerText('');
@@ -818,7 +819,7 @@ export function App(): ReactElement {
       <ServiceBanner serverError={serverError} eventStatus={eventStatus} onRetry={reload} />
       <div className={`app__body${preview === null ? '' : ' app__body--preview'}`}>
         {route.name!=='settings'&&<Sidebar
-          bots={bots}
+          bots={hiredBots}
           selectedId={selectedId}
           loading={loading}
           compact={preview !== null}
@@ -854,6 +855,7 @@ export function App(): ReactElement {
               loading={loading}
               error={serverError}
               onRetry={reload}
+              onEmploymentSaved={states => setBots(list => list.map(bot => ({...bot, hired: states.get(bot.id) ?? bot.hired ?? true})))}
               onOpenConversation={(botId) => navigate({ name: 'conversation', botId })}
               onOpenProfile={(botId) => navigate({ name: 'profile', botId })}
             />
@@ -916,7 +918,12 @@ export function App(): ReactElement {
                   openPanels={sidePanel.open}
                   onTogglePanel={sidePanel.toggle}
                 />
-                {selectedBot.status === 'error' ? (
+                {selectedBot.hired === false ? (
+                  <div className="bots-overview__quiet" role="status">这位 Bot 待聘，历史记录可继续查看。
+                    <button type="button" className="bots-overview__action" onClick={() => navigate({name:'overview'})}>去人才市场聘用</button>
+                  </div>
+                ) : null}
+                {selectedBot.status === 'error' && selectedBot.hired !== false ? (
                   <div className="main__bot-error" role="alert">
                     <span>这个 Bot 的运行环境没有启动成功。检查 dsh 是否可用后重试。</span>
                     <button
@@ -941,8 +948,8 @@ export function App(): ReactElement {
                     sending={sending}
                     notice={notice}
                     focusToken={composerFocusToken}
-                    disabled={serverUnavailable}
-                    disabledReason="连不上 Chives 服务，恢复后才能发送。"
+                    disabled={serverUnavailable || selectedBot.hired === false}
+                    disabledReason={selectedBot.hired === false ? "这位 Bot 待聘，聘用后可以继续对话。" : "连不上 Chives 服务，恢复后才能发送。"}
                     botId={selectedBot.id}
                     botName={selectedBot.name}
                     botRole={selectedBot.role}
@@ -1015,8 +1022,8 @@ export function App(): ReactElement {
                           sending={sending}
                           notice={notice}
                           focusToken={composerFocusToken}
-                          disabled={serverUnavailable}
-                          disabledReason="连不上 Chives 服务，恢复后才能发送。"
+                          disabled={serverUnavailable || selectedBot.hired === false}
+                          disabledReason={selectedBot.hired === false ? "这位 Bot 待聘，聘用后可以继续对话。" : "连不上 Chives 服务，恢复后才能发送。"}
                           botId={selectedBot.id}
                           placeholder={`给 ${selectedBot.name} 发消息`}
                           attachments={attachments}

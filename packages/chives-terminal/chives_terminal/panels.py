@@ -67,6 +67,16 @@ class Panels:
         self.offset = 0
         return await self.present("choice", title)
 
+    async def checklist(self, title, options, checked, locked):
+        self.options, self.checked, self.locked = list(options), set(checked), set(locked)
+        self.index = self.offset = 0
+        return await self.present("checklist", title)
+
+    def toggle_check(self):
+        key = self.options[self.index][0]
+        if key not in self.locked:
+            self.checked.symmetric_difference_update([key])
+
     async def field(self, title, initial="", password=False):
         self.editor = TextArea(text=initial, multiline=False, password=password, height=1,
                                prompt=[ink("accent", "  ❯  ")], style="class:field")
@@ -148,6 +158,8 @@ class Panels:
             text = "Tab / ↑ ↓ 换行    ← → 切选项    Ctrl+S 保存    Esc 取消"
         elif self.kind == "field":
             text = "Enter 确认    Esc 返回"
+        elif self.kind == "checklist":
+            text = "↑ ↓ 移动  空格勾选  Enter 保存  Esc 取消"
         elif self.kind == "choice":
             text = "↑ ↓ 选择    Enter 确认    Esc 返回"
             if self.title == "更多设置":
@@ -168,6 +180,9 @@ class Panels:
         def handle(event):
             if event.event_type == MouseEventType.MOUSE_UP:
                 self.index = index
+                if self.kind == "checklist":
+                    self.toggle_check()
+                    return None
                 self.finish(self.options[index][0])
             else:
                 return NotImplemented
@@ -177,13 +192,16 @@ class Panels:
         if self.kind == "loading":
             return [ink("dim", "  正在读取或保存，请稍候…")]
         width = max(1, self.desk.width-4)
-        if self.kind == "choice":
+        if self.kind in ("choice", "checklist"):
             self.offset = max(0, min(self.offset, self.index))
             self.offset = max(self.offset, self.index-self.height+1)
             lines = []
             for i in range(self.offset, min(self.offset+self.height, len(self.options))):
                 active = self.index == i
-                line = ("▸ " if active else "  ") + clip(one(self.options[i][1]), max(1,width-2))
+                key, label = self.options[i]
+                if self.kind == "checklist":
+                    label = ("[✓] " if key in self.checked else "[ ] ") + label
+                line = ("▸ " if active else "  ") + clip(one(label), max(1,width-2))
                 lines.append([(*ink("selected" if active else "ink", line), self.click(i))])
         else:
             rows = self.paper.lines(width)
@@ -199,7 +217,7 @@ class Panels:
         keys = KeyBindings()
         active = Condition(lambda: self.desk.in_dialog)
         reading = active & Condition(lambda: self.kind == "reader")
-        moving = active & Condition(lambda: self.kind in ("reader", "choice"))
+        moving = active & Condition(lambda: self.kind in ("reader", "choice", "checklist"))
         @keys.add("up", filter=moving)
         @keys.add("down", filter=moving)
         @keys.add("pageup", filter=moving)
@@ -210,7 +228,7 @@ class Panels:
             key = e.key_sequence[-1].key
             delta = {"up":-1,"down":1,"pageup":-self.height,"pagedown":self.height,
                      "home":-10**9,"end":10**9}[key]
-            if self.kind == "choice":
+            if self.kind in ("choice", "checklist"):
                 self.index = max(0, min(self.index+delta, len(self.options)-1))
             else:
                 self.offset = max(0, min(self.offset+delta, len(self.paper.lines(max(1,self.desk.width-4)))-1))
@@ -220,6 +238,10 @@ class Panels:
         def page(e):
             if self.paging:
                 self.finish("next" if e.key_sequence[-1].key == "right" else "prev")
+
+        @keys.add(" ", filter=active & Condition(lambda: self.kind == "checklist"))
+        def toggle(e):
+            self.toggle_check()
 
         form = active & Condition(lambda: self.kind == "form")
         @keys.add("tab", filter=form)
@@ -249,6 +271,8 @@ class Panels:
                     self.form_save()
                 else:
                     self.form_move(1)
+            elif self.kind == "checklist":
+                self.finish([key for key, _ in self.options if key in self.checked])
             elif self.kind == "choice":
                 self.finish(self.options[self.index][0])
             elif self.kind == "field":
