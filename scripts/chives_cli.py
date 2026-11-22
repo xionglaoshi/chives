@@ -11,7 +11,8 @@ import tempfile
 SCRIPT = Path(__file__).resolve()
 PROJECT = SCRIPT.parents[1]
 USAGE = """chives      启动终端工作台，也可从管道接收问题
-chives web  在浏览器打开工作台"""
+chives web  在浏览器打开工作台
+chives uninstall  卸载 Chives 并永久删除本机用户数据"""
 
 
 def add_windows_path(directory):
@@ -62,8 +63,26 @@ def register(mode):
         directory = PROJECT.parent.parent / "bin"
         # Relative paths keep the batch file ASCII even under a Unicode user profile.
         release = r"%~dp0..\releases" + "\\" + PROJECT.name
-        body = (f'@rem Chives CLI\n@echo off\n"{release}\\.venv\\Scripts\\python.exe" '
+        body = ('@rem Chives CLI\n@echo off\nsetlocal DisableDelayedExpansion\n'
+                'set "CHIVES_UNINSTALL_LAUNCHER=%~f0"\n'
+                f'"{release}\\.venv\\Scripts\\python.exe" '
                 f'"{release}\\scripts\\chives_cli.py" release %*\n')
+        # Leave the executing batch file before removing the private runtime and launcher.
+        body += (r'''
+@if not "%errorlevel%"=="78" exit /b %errorlevel%
+@for %%I in ("%~dp0..") do @set "chives_root=%%~fI"
+@if not exist "%chives_root%\.uninstall-pending" exit /b 1
+@cd /d "%USERPROFILE%" || exit /b 1
+@set "chives_delete=\\?\%chives_root%"
+@if "%chives_root:~0,2%"=="\\" set "chives_delete=\\?\UNC\%chives_root:~2%"
+@(goto) 2>nul & rd /s /q "%chives_delete%" & if exist "%chives_root%\." (
+    echo Chives cleanup incomplete. Close programs using "%chives_root%" and remove that folder. 1>&2
+    "%SystemRoot%\System32\cmd.exe" /d /c exit 1
+) else (
+    echo Chives uninstalled. Local user data deleted.
+    "%SystemRoot%\System32\cmd.exe" /d /c exit 0
+)
+'''.lstrip())
         launcher = directory / "chives.cmd"
     else:
         directory = Path.home() / ".local/bin"
@@ -99,6 +118,12 @@ def control(mode, stop=False):
 
 
 def main(mode, args):
+    if args == ["uninstall"]:
+        from chives_uninstall import uninstall
+        uninstall(PROJECT, mode)
+        return
+    if mode == "release" and (PROJECT.parent.parent / ".uninstall-pending").exists():
+        raise RuntimeError("本机卸载尚未完成，请执行 chives uninstall。")
     if args == ["--register"]:
         register(mode)
         return

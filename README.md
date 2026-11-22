@@ -175,6 +175,8 @@ iex (irm https://raw.githubusercontent.com/xionglaoshi/chives/main/deploy/instal
 
 **通过 SSH 使用。** 输入 `chives`，在快速启动台选择 Bot、工作台或设置。Tab 切栏，方向键选择，回车打开。对话中输入 `/` 查看命令。浏览器入口为 `chives web`。 [终端用法](INSTALL.md#终端对话)
 
+**卸载。** 在终端输入 `chives uninstall`，核对窗口中的安装目录后，手动输入小写 `yes`。Chives 会停止服务，永久删除本机的程序、用户档案、持仓、会话和模型凭证。需要留存的资料请先备份。[卸载说明](INSTALL.md#卸载)
+
 ## 共创
 
 我们都有自己的工作，Chives 是闲下来才做的测试产品，还有不少地方没想透。就我自己来说，离开专业投资机构这么久，以前本来就是半桶水，现在恐怕连十分之一桶都没有了。

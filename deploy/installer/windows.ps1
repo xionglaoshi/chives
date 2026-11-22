@@ -80,6 +80,7 @@
         try {
             $installLock = [IO.File]::Open((Join-Path $root '.source-install.lock'), 'OpenOrCreate', 'ReadWrite', 'None')
         } catch { throw '已有安装正在进行，请稍后重试。' }
+        if (Test-Path -LiteralPath (Join-Path $root '.uninstall-pending')) { throw '卸载尚未完成，请先完成当前卸载。' }
         [IO.Directory]::CreateDirectory($tempDir) | Out-Null
         $archive = Join-Path $tempDir 'main.tar.gz'
         Get-Download "https://codeload.github.com/$repo/tar.gz/refs/heads/main" $archive 'Chives 源码'

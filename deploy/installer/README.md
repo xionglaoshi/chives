@@ -8,6 +8,10 @@ Windows 一行命令的入口只含 ASCII 字节。它按 UTF-8 读取实际的 
 
 更新依赖版本时，同步维护源码包的包管理器版本、config/dsh-version、Python/Node 平台对应的归档和摘要。Node 包来自 [Node.js 官方分发](https://nodejs.org/dist/)，缺少 Python 时采用 [Astral 可迁移 CPython 构建](https://github.com/astral-sh/python-build-standalone)。Python 库使用 [PyPI](https://pypi.org/)，Node 库使用 [npm registry](https://registry.npmjs.org/)，Chromium 使用 [Playwright 浏览器下载器](https://playwright.dev/python/docs/browsers)。
 
+## 终端卸载
+
+三端共用 [交互确认和清理逻辑](../../scripts/chives_uninstall.py)。Windows 的 [命令入口](../../scripts/chives_cli.py) 等待专用 Python 退出后再移除程序树。验收时应从新终端核对命令、用户数据、服务端口、PATH 和安装目录，并确认安装目录内的符号链接或 Windows 目录联接指向的外部文件仍可读取。[用户操作](../../INSTALL.md#卸载)
+
 ## 历史离线包工具
 
 build_release.py、check_release.py、channel 和手动 Actions 工作流属于早期的加密离线包方案。README 的快速安装入口直接使用仓库源码。旧服务器相关文件保留供历史部署维护。
