@@ -7,16 +7,11 @@ import shlex
 import subprocess
 import sys
 import tempfile
-import webbrowser
 
-URL = "http://127.0.0.1:8888/"
 SCRIPT = Path(__file__).resolve()
 PROJECT = SCRIPT.parents[1]
-USAGE = """chives                 启动服务，进入终端 Bot 选择台
-chives bot / chat / cli 同样进入 Bot 选择台
-chives web             在浏览器打开工作台
-chives ask "问题"      向投资专家提问一次，可用 --bot 指定其他 Bot
-chives stop            关闭本地服务"""
+USAGE = """chives      启动终端工作台，也可从管道接收问题
+chives web  在浏览器打开工作台"""
 
 
 def add_windows_path(directory):
@@ -91,7 +86,7 @@ def register(mode):
         add_windows_path(directory)
     else:
         add_unix_path(directory)
-    print(f"已注册 {launcher}。请在新终端输入 chives 或 chives stop。")
+    print(f"已注册 {launcher}。请在新终端输入 chives。")
 
 
 def control(mode, stop=False):
@@ -110,19 +105,17 @@ def main(mode, args):
     if args in (["--help"], ["-h"]):
         print(USAGE)
         return
-    if not args or args[0] in ("bot", "ask", "chat", "cli"):
+    if not args:
         from chives_chat import run
-        run(args or ["cli"], lambda: control(mode))
+        command = "cli" if sys.stdin.isatty() else "ask"
+        run([command], lambda: control(mode), stop_service=lambda: control(mode, stop=True))
         return
-    if args not in (["web"], ["stop"]):
-        sys.exit(USAGE)
-    control(mode, stop=args == ["stop"])
-    if args == ["stop"]:
-        print("Chives 本地服务已关闭。")
-    elif sys.platform == "darwin":
-        subprocess.run(["/usr/bin/open", URL], check=True)
-    elif not webbrowser.open(URL):
-        print(f"请在浏览器打开 {URL}")
+    if args == ["web"]:
+        control(mode)
+        from chives_terminal.actions import open_page
+        open_page()
+        return
+    sys.exit(USAGE)
 
 
 if __name__ == "__main__":

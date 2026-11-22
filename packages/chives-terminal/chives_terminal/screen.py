@@ -12,7 +12,7 @@ STYLE = Style.from_dict({
     "": "bg:#101a15 #e1ebe4",
     "band": "bg:#142e21 #d6e8dc", "field": "bg:#17291f #eff6f0",
     "title": "#86c6a1 bold", "accent": "#65b28a", "leaf": "#38885e",
-    "brand-shadow": FOREST,
+    "brand-shadow": FOREST, "up": "#f29489 bold", "down": "#78ca9a bold",
     "green": "#a0c9ac", "ink": "#e8efe9", "dim": "#a3b4a8", "line": "#547462",
     "selected": f"bg:{FOREST} #e3f2e6 bold", "number": "#90b89e",
     "reason": "#b5c3c5", "error": "#f2a095", "user": "#85c79f bold",

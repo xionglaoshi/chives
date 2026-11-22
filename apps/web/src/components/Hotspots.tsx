@@ -1,3 +1,4 @@
+import content from '../../../../packages/chives-terminal/chives_terminal/workbench-content.json';
 import {useEffect,useState} from 'react';
 import {useExpertAttachment,type AskExpert} from './useExpertAttachment';
 import {appPath} from '../appPath';
@@ -10,7 +11,9 @@ type Payload={snapshot:{publishedAt:string;boards:Record<string,Board>;retained:
 const headers={'x-chives-kernel-manager':'local'};
 const api=appPath('/api/settings/desk/hotspots');
 function changeValue(id:string,r:Entry){
-  return id==='global'?r.shareChange:['in','out','popular','emerging'].includes(id)?r.r5:r.r30;
+  const fields:Record<string,string>=content.hotspots.changeField;
+  const field=fields[id]??content.hotspots.defaultChangeField;
+  return r[field as 'shareChange'|'r5'|'r30'];
 }
 function percent(change:number|undefined|null,world=false){
   return change==null?(world?'待满五日':'暂无数据'):(change>0?'+':'')+change.toFixed(2)+'%';

@@ -10,13 +10,21 @@ from urllib.parse import quote
 
 from prompt_toolkit.application import Application
 from prompt_toolkit.document import Document
+from prompt_toolkit.completion import Completer, Completion
+from prompt_toolkit.layout.menus import CompletionsMenu
+from prompt_toolkit.layout.containers import Float, FloatContainer
+from prompt_toolkit.styles import ConditionalStyleTransformation, SwapLightAndDarkStyleTransformation
+from .actions import Actions, COMMANDS, PAGES
+from .panels import Panels
+from .pages import DESK
 from prompt_toolkit.filters import Condition
-from prompt_toolkit.key_binding import KeyBindings
+from prompt_toolkit.key_binding import KeyBindings, merge_key_bindings
 from prompt_toolkit.layout import Layout
 from prompt_toolkit.layout.containers import ConditionalContainer, DynamicContainer, HSplit, VSplit, Window
 from prompt_toolkit.layout.controls import FormattedTextControl
 from prompt_toolkit.layout.dimension import Dimension as D
 from prompt_toolkit.output import ColorDepth
+from prompt_toolkit.mouse_events import MouseEventType
 from prompt_toolkit.utils import get_cwidth
 from prompt_toolkit.widgets import TextArea
 
@@ -37,6 +45,9 @@ class TurnView:
         if not self.loop.is_closed():
             self.loop.call_soon_threadsafe(fn, *args)
 
+    def accepted(self, task_id):
+        self.post(self.desk.accepted, task_id)
+
     def event(self, event):
         self.post(self.desk.handle_event, event)
 
@@ -52,9 +63,42 @@ class TurnView:
         return answer.result()
 
 
+class SlashMenu(Completer):
+    def __init__(self, desk):
+        self.desk = desk
+
+    def get_completions(self, document, complete_event):
+        text = document.text
+        if not text.startswith("/") or document.cursor_position != len(text):
+            return
+        commands = list(COMMANDS)
+        if self.desk.pending:
+            commands = ["/allow", "/deny"] + commands[:-2]
+        else:
+            commands = commands[:-2]
+        query = text[1:].casefold()
+        for command in commands:
+            if command[1:].startswith(query) or query in COMMANDS[command]:
+                yield Completion(command, start_position=-len(text), display_meta=COMMANDS[command])
+
+
 class Workbench:
-    def __init__(self, api, bots, reply, **terminal):
+    def __init__(self, api, bots, reply, stop_service=None, **terminal):
         self.api, self.bots, self.reply = api, bots, reply
+        self.panels = Panels(self)
+        self.actions = Actions(self, stop_service)
+        self.boards = []
+        self.board_status = "读取榜单中…"
+        self.default_model = ""
+        self.saved_notice = ""
+        self.notice_until = 0.0
+        self.read_task = None
+        self.column = 0
+        self.section_row = 0
+        self.in_dialog = False
+        self.new_topic = False
+        self.task_id = None
+        self.active_task = None
         self.host = one(socket.gethostname().split(".")[0])
         self.generation = 0
         self.bot = None
@@ -77,22 +121,29 @@ class Workbench:
         self.search = TextArea(multiline=False, height=1, prompt="  ⌕  ", style="class:field")
         self.search.buffer.on_text_changed += self.filter_changed
         self.editor = TextArea(multiline=True, height=D(min=1, max=5), dont_extend_height=True,
+                               completer=SlashMenu(self), complete_while_typing=True,
                                prompt=[ink("accent", " ❯  ")], style="class:field", wrap_lines=True)
         self.menu_list = Window(FormattedTextControl(self.menu_rows), always_hide_cursor=True,
-                                width=lambda: self.list_width if self.width >= 82 else D())
+                                width=D(min=1, preferred=1, weight=1))
         self.picker = self.picker_layout()
         self.chat = self.chat_layout()
         shared = HSplit([panel(self.topline, style="class:band"),
                          DynamicContainer(lambda: self.picker if self.bot is None else self.chat)])
-        self.app = Application(layout=Layout(shared, focused_element=self.search), key_bindings=self.bindings(),
-                               style=STYLE, full_screen=True, min_redraw_interval=1/30,
+        self.app = Application(layout=Layout(FloatContainer(DynamicContainer(lambda: self.panels.layout if self.in_dialog else shared), [Float(xcursor=True, ycursor=True,
+                               allow_cover_cursor=False, content=CompletionsMenu(max_height=9, scroll_offset=1))]),
+                               focused_element=self.search), key_bindings=merge_key_bindings([self.bindings(), self.panels.keys]),
+                               style=STYLE, full_screen=True, mouse_support=Condition(lambda: self.bot is None),
+                               style_transformation=ConditionalStyleTransformation(SwapLightAndDarkStyleTransformation(),
+                                   filter=Condition(lambda: self.actions.prefs["contrast"])), min_redraw_interval=1/30,
                                refresh_interval=.5, before_render=self.prepare,
                                color_depth=ColorDepth.DEPTH_1_BIT if "NO_COLOR" in os.environ else None,
                                **terminal)
+        self.app.ttimeoutlen = .25
+        self.app.pre_run_callables.append(self.start_catalog)
 
     @property
     def width(self):
-        return self.app.output.get_size().columns
+        return self.app.output.get_size().columns if hasattr(self, "app") else 80
 
     @property
     def height(self):
@@ -106,29 +157,145 @@ class Workbench:
         self.app.run()
 
     def topline(self):
-        where = "选择 Bot" if self.bot is None else one(self.bot["name"])
+        where = "快速启动" if self.bot is None else one(self.bot["name"])
         left = [ink("accent", "  ✦  CHIVES"), ink("dim", "    /    "), ink("ink", where)]
         host = "●  " + clip(self.host, 24)
         gap = self.width - sum(get_cwidth(s) for _, s in left) - get_cwidth(host) - 2
         return left + ([ink("green", " "*gap + host)] if gap > 2 else [])
 
     def picker_layout(self):
-        wide = Condition(lambda: self.width >= 82)
-        detail = ConditionalContainer(VSplit([Window(width=1, char="│", style="class:line"),
-                                               Window(FormattedTextControl(self.details),
-                                                      wrap_lines=True, width=D(weight=2))]), wide)
+        self.launch_windows = [self.menu_list] + [
+            Window(FormattedTextControl(lambda c=c: self.section_items(c), focusable=True),
+                   width=D(min=1, preferred=1, weight=1), always_hide_cursor=True)
+            for c in (1, 2)]
+        self.launch_columns = VSplit(self.launch_windows, padding=2, padding_char="│", padding_style="class:line")
         return HSplit([
             Window(height=1), panel(lambda: masthead(self.width, self.height, len(self.bots)),
                                     height=lambda: 6 if self.width >= 49 and self.height >= 22 else 1),
-            Window(height=1), panel(lambda: [ink("accent", "  选择 Bot"), ink("dim", f"    {len(self.matches())} 位")]),
+            panel(self.section_tabs),
             Window(char="─", height=1, style="class:line"),
-            VSplit([self.menu_list, detail], padding=1),
-            panel(lambda: [ink("dim", "  " + clip(self.current()["role"], self.width - 4))]
-                  if self.current() and self.width < 82 else []),
-            panel(lambda: [ink("dim", "  查找名称、职责或编号")]),
-            self.search, panel(lambda: [ink("accent", "  ↑ ↓"), ink("dim", " 选择    "),
-                                       ink("accent", "Enter"), ink("dim", " 进入    Esc 退出")]),
+            DynamicContainer(lambda: self.launch_columns if self.width >= 76 else self.launch_windows[self.column]),
+            ConditionalContainer(HSplit([panel(lambda: [ink("dim", "  查找名称、职责或编号")]), self.search]),
+                                 Condition(lambda: self.column == 0)),
+            panel(self.launch_hint),
         ])
+
+    def saved(self, notice):
+        self.saved_notice = notice
+        self.notice_until = time.monotonic()+4
+        self.app.invalidate()
+
+    def launch_hint(self):
+        if self.notice_until > time.monotonic():
+            return [ink("strong", "  ✓ " + self.saved_notice)]
+        return [ink("accent", "  ↑ ↓"), ink("dim", " 选择    Tab 切栏    "),
+                ink("accent", "Enter"), ink("dim", " 打开或切换    Esc 退出")]
+
+    def launch_click(self, column, row=None):
+        def select(event):
+            if event.event_type != MouseEventType.MOUSE_UP:
+                return NotImplemented
+            self.switch_column(column)
+            self.section_row = row or 0
+            if row is not None:
+                if column == 0:
+                    self.selected = row
+                self.open_selected()
+        return select
+
+    def start_catalog(self):
+        async def refresh_boards():
+            while True:
+                try:
+                    await self.load_boards()
+                except (OSError, RuntimeError, ValueError):
+                    self.board_status = "暂未取得榜单 · 回车重试"
+                self.app.invalidate()
+                await asyncio.sleep(60)
+        async def load_model():
+            try:
+                items = await self.actions.api(DESK+"models")
+                self.default_model = next((r.get("displayName") or r["model"] for r in items if r.get("active")), "待配置")
+                self.app.invalidate()
+            except (OSError, RuntimeError, ValueError):
+                pass
+        self.app.create_background_task(refresh_boards())
+        self.app.create_background_task(load_model())
+
+    async def load_boards(self):
+        payload = await self.actions.api(DESK+"hotspots")
+        boards = (payload.get("snapshot") or {}).get("boards") or {}
+        old_key = self.page_items()[self.section_row][0] if self.column == 1 else None
+        self.boards = [("board/"+key, one(board["title"])) for key, board in boards.items()]
+        self.board_status = "等待首版榜单 · 回车刷新"
+        if old_key is not None:
+            self.section_row = next((i for i,(key,_) in enumerate(self.page_items()) if key == old_key), 0)
+
+    def page_items(self):
+        return (self.boards or [("trends", self.board_status)]) + [(key, label) for label,key in PAGES if key != "trends"]
+
+    def switch_column(self, column):
+        self.column = column
+        self.section_row = 0
+        self.app.layout.focus(self.launch_windows[column] if column else self.search)
+
+    def open_selected(self):
+        if self.column == 1:
+            key, title = self.page_items()[self.section_row]
+            action = self.load_boards() if key == "trends" else self.actions.browse(key)
+            self.dialog(action, title, read_only=True)
+        elif self.column == 2:
+            key, title = self.actions.primary_settings()[self.section_row]
+            self.dialog(self.actions.settings(key), title)
+        elif self.current():
+            self.enter(self.current())
+
+    def section_tabs(self):
+        result = []
+        wide = self.width >= 76
+        for i, title in enumerate(("选 Bot", "工作台", "设置")):
+            label = "  " + title + "  "
+            if wide and i < 2:
+                label += " " * max(0, (self.width-4)//3 + 2 - get_cwidth(label))
+            result.append((*ink("selected" if self.column == i else "accent", label), self.launch_click(i)))
+        return result
+
+    def section_items(self, column):
+        options = self.page_items() if column == 1 else self.actions.primary_settings()
+        width = (self.width-4)//3 if self.width >= 76 else self.width
+        spans = [ink("title", "  热门榜单"), ("", "\n")] if column == 1 else []
+        for i,(key, label) in enumerate(options):
+            active = self.column == column and i == self.section_row
+            if i:
+                spans.append(("", "\n"))
+            child = column == 1 and (key.startswith("board/") or key == "trends")
+            prefix = ("    " if child else " ") + ("▸ " if active else "  ")
+            if active:
+                spans.append(("[SetCursorPosition]", ""))
+            spans.append((*ink("selected" if active else "ink", prefix + clip(label, max(1,width-get_cwidth(prefix)))),
+                          self.launch_click(column, i)))
+        return spans
+
+    def dialog(self, operation, title="工作台", read_only=False):
+        if self.in_dialog:
+            operation.close()
+            return
+        self.in_dialog = True
+        self.panels.loading(title)
+
+        async def run():
+            try:
+                await operation
+            except Exception as exc:
+                await self.panels.info("操作未完成", str(exc) or type(exc).__name__)
+            finally:
+                self.in_dialog = False
+                self.read_task = None
+                self.app.layout.focus(self.editor if self.bot else self.launch_windows[self.column] if self.column else self.search)
+                self.app.invalidate()
+        task = self.app.create_background_task(run())
+        if read_only:
+            self.read_task = task
 
     def chat_layout(self):
         return HSplit([
@@ -160,17 +327,17 @@ class Workbench:
             return [ink("dim", "  没有匹配的 Bot，删减关键词再试。")]
         spans = []
         for j, (i, b) in enumerate(items):
-            active = j == self.selected
+            active = self.column == 0 and j == self.selected
             if j:
                 spacious = len(items) * 3 <= self.height - 15
                 spans.append(("", "\n\n" if spacious else "\n"))
             if active:
                 spans.append(("[SetCursorPosition]", ""))
             sel = "selected" if active else "ink"
-            limit = self.list_width if self.width >= 82 else self.width-1
+            limit = max(18, (self.width-4)//3) if self.width >= 76 else self.width-1
             name = clip(f"{i:02}   {b['name']}" + ("  · 默认" if b["id"] == "expert" else ""), limit-7)
             row = f"  {'▸' if active else ' '}  " + name
-            spans.extend([ink(sel, row + " "*max(0, limit-get_cwidth(row))),
+            spans.extend([(*ink(sel, row + " "*max(0, limit-get_cwidth(row))), self.launch_click(0, j)),
                           ink("dim", "\n          " + clip(b["id"], limit - 11))])
         return spans
 
@@ -219,20 +386,38 @@ class Workbench:
 
     def bindings(self):
         kb = KeyBindings()
-        picking = Condition(lambda: self.bot is None)
-        chatting = ~picking
+        picking = Condition(lambda: self.bot is None and not self.in_dialog)
+        chatting = Condition(lambda: self.bot is not None and not self.in_dialog)
+        @kb.add("tab", filter=picking)
+        @kb.add("right", filter=picking)
+        def next_column(e):
+            self.switch_column((self.column + 1) % 3)
+        @kb.add("s-tab", filter=picking)
+        @kb.add("left", filter=picking)
+        def previous_column(e):
+            self.switch_column((self.column - 1) % 3)
         @kb.add("up", filter=picking)
         def up(e):
-            self.selected = max(0, self.selected-1)
+            if self.column:
+                self.section_row = max(0, self.section_row-1)
+            else:
+                self.selected = max(0, self.selected-1)
         @kb.add("down", filter=picking)
         def down(e):
-            self.selected = max(0, min(len(self.matches())-1, self.selected+1))
+            if self.column:
+                count = len(self.page_items() if self.column == 1 else self.actions.primary_settings())
+                self.section_row = min(count-1, self.section_row+1)
+            else:
+                self.selected = max(0, min(len(self.matches())-1, self.selected+1))
         @kb.add("enter", filter=picking)
         def choose(e):
-            if self.current():
-                self.enter(self.current())
+            self.open_selected()
         @kb.add("enter", filter=chatting)
         def send(e):
+            buffer = self.editor.buffer
+            state = buffer.complete_state
+            if state and state.completions:
+                buffer.apply_completion(state.current_completion or state.completions[0])
             self.submit()
         @kb.add("escape", "enter", filter=chatting)
         @kb.add("c-j", filter=chatting)
@@ -244,10 +429,10 @@ class Workbench:
         @kb.add("pagedown", filter=chatting)
         def newer(e):
             self.scroll(1)
-        @kb.add("escape", filter=picking)
+        @kb.add("escape", filter=picking, eager=True)
         def exit_menu(e):
             self.app.exit()
-        @kb.add("c-c")
+        @kb.add("c-c", filter=picking|chatting)
         def clear(e):
             if e.current_buffer.text:
                 e.current_buffer.reset()
@@ -255,7 +440,7 @@ class Workbench:
                 self.pick()
             else:
                 self.leave()
-        @kb.add("c-d")
+        @kb.add("c-d", filter=picking|chatting)
         def exit_now(e):
             self.leave()
         return kb
@@ -301,13 +486,15 @@ class Workbench:
 
     def pick(self):
         self.bot = None
+        self.column = 0
         self.search.text = ""
         self.app.layout.focus(self.search)
 
     def enter(self, bot):
         self.generation += 1
         self.bot = bot
-        self.used = self.size = self.previous = None
+        self.used = self.size = self.previous = self.task_id = None
+        self.new_topic = False
         self.message = self.activity = ""
         self.rows, self.history_rows, self.live = [], [], []
         self.logged_tools = set()
@@ -337,10 +524,11 @@ class Workbench:
                         entries.append((t["startedAt"], float("inf"), t))
                 for _, _, entry in sorted(entries, key=lambda x: x[:2]):
                     if "role" not in entry:
-                        rows.append(tool_line(entry))
+                        if self.actions.prefs["tools"]:
+                            rows.append(tool_line(entry))
                     elif entry["role"] in ("user","bot") and entry["kind"] == "text":
                         user = entry["role"] == "user"
-                        title = ("你" if user else bot["name"])+"   "+timestamp(entry["createdAt"])
+                        title = ("你" if user else bot["name"])+"   "+(timestamp(entry["createdAt"]) if self.actions.prefs["timestamps"] else "")
                         rows.extend(body_lines("user" if user else "agent", title, entry["content"]))
                     elif entry["kind"] == "notice":
                         rows.extend(body_lines("dim", "服务记录", entry["content"]))
@@ -348,6 +536,7 @@ class Workbench:
                 self.dirty = True
                 if first:
                     tid = next((m["taskId"] for m in reversed(page["messages"]) if m.get("taskId")), None)
+                    self.task_id = tid
                     task = next((t for t in page["tasks"] if t["id"] == tid), {})
                     self.usage(task.get("lastContextUsed"), task.get("lastContextSize"))
                 else:
@@ -377,6 +566,8 @@ class Workbench:
         if not rows:
             rows = [("accent", "  ✦  " + one(self.bot["name"])), ("dim", ""),
                     ("ink", "  " + one(self.bot["role"]))]
+        if self.actions.prefs["compact"]:
+            rows = [row for row in rows if row[1]]
         self.lexer.rows = rows
         text = "\n".join(s for _, s in rows)
         pos = len(text) if self.follow else min(len(text), self.transcript.buffer.cursor_position)
@@ -403,6 +594,13 @@ class Workbench:
         if text in ("/exit","/quit"):
             self.leave()
             return
+        if text.startswith("/") and text not in COMMANDS:
+            self.note("未识别的命令，输入 / 查看可用操作")
+            return
+        if text == "/stop":
+            self.editor.text = ""
+            self.dialog(self.actions.command(text))
+            return
         if self.busy or self.loading:
             self.note("等待本轮结束后发送，草稿已保留" if not self.pending else "请先输入 /allow 或 /deny")
             return
@@ -410,14 +608,11 @@ class Workbench:
         self.editor.text = ""
         if text == "/bot":
             self.pick()
-        elif text == "/history":
-            if self.previous is not None:
-                self.load_history()
-            else:
-                self.note("已显示全部历史记录")
-        elif text == "/help":
-            self.rows.extend(body_lines("dim", "快捷操作", "/bot 选择 Bot    /history 载入更早记录    /exit 退出\nEnter 发送    Alt+Enter 或 Ctrl+J 换行    PgUp/PgDn 翻阅"))
-            self.follow = self.dirty = True
+        elif text == "/new":
+            self.new_topic = True
+            self.note("下一条问题将另开研究")
+        elif text.startswith("/"):
+            self.dialog(self.actions.command(text))
         else:
             self.start_turn(text)
 
@@ -429,10 +624,11 @@ class Workbench:
         self.live = []
         view = TurnView(self, asyncio.get_running_loop())
         bot = self.bot
+        new_topic = self.new_topic
         def work():
             error = None
             try:
-                self.reply(self.api, bot, text, view=view)
+                self.reply(self.api, bot, "新问题：" + text if new_topic else text, view=view)
             except Exception as exc:
                 error = str(exc)
             finally:
@@ -446,11 +642,19 @@ class Workbench:
         self.dirty = True
         self.note("等待你的决定 · /allow 或 /deny")
 
+    def accepted(self, task_id):
+        self.active_task = self.task_id = task_id
+        self.new_topic = False
+
     def handle_event(self, event):
         kind = event["type"]
         if kind == "draft.delta":
             reason = event["kind"] == "reasoning"
             style, title = ("reason","思考摘要") if reason else ("agent",self.bot["name"])
+            if reason and not self.actions.prefs["reasoning"]:
+                self.activity = "正在分析"
+                self.app.invalidate()
+                return
             if not self.live or self.live[-1][0] != style:
                 self.live.append([style, title, ""])
             self.live[-1][2] += clean(event["text"])
@@ -470,6 +674,8 @@ class Workbench:
             else:
                 self.live.append(["tool", tool])
             self.activity = one(tool["title"]) if kind == "tool.started" else "正在整理"
+            if not self.actions.prefs["tools"]:
+                self.live = [block for block in self.live if block[0] != "tool"]
         elif kind == "usage":
             self.usage(event["usage"]["used"], event["usage"]["size"])
         elif kind == "task.started":
@@ -498,6 +704,7 @@ class Workbench:
             self.rows.extend(body_lines("error", "本轮提示", error))
         self.rows.append(("dim", f"     ─  {time.monotonic()-self.started:.1f}s"))
         self.busy = False
+        self.active_task = None
         self.message = self.activity = ""
         self.dirty = True
         self.app.invalidate()

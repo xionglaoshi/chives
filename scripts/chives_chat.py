@@ -96,12 +96,14 @@ class LocalAPI:
             raise ValueError("CHIVES_PORT 超出范围")
 
     @contextmanager
-    def open(self, path, body=None):
-        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=60)
+    def open(self, path, body=None, method=None):
+        # The news edition is published by the web workbench as a static JSON file.
+        port = 8888 if path == "/market-news.json" else self.port
+        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=60)
         try:
             data = None if body is None else json.dumps(body, ensure_ascii=False).encode()
-            conn.request("GET" if body is None else "POST", path, data,
-                         {"Content-Type": "application/json"} if data is not None else {})
+            conn.request(method or ("GET" if body is None else "POST"), path, data,
+                         {"Content-Type": "application/json", "X-Chives-Kernel-Manager": "local"})
             res = conn.getresponse()
             if res.status >= 400:
                 raw = res.read()
@@ -117,8 +119,8 @@ class LocalAPI:
         finally:
             conn.close()
 
-    def json(self, path, body=None):
-        with self.open(path, body) as res:
+    def json(self, path, body=None, method=None):
+        with self.open(path, body, method) as res:
             return json.load(res)
 
 
@@ -225,6 +227,8 @@ def reply(api, bot, text, view=None):
         except NETWORK_ERRORS as error:
             raise RuntimeError("发送时连接中断，提交状态待确认。请查看该 Bot 的最近对话后再决定是否重发。") from error
         task_id, message_id = accepted["taskId"], accepted["messageId"]
+        if view is not None:
+            view.accepted(task_id)
         own_turn = False
         draft = ""
         interactive = view is None and sys.stderr.isatty() and sys.stdout.isatty()
@@ -288,7 +292,7 @@ def reply(api, bot, text, view=None):
         time.sleep(1)
 
 
-def run(args, start_service):
+def run(args, start_service, stop_service=None):
     command = args[0]
     parser = argparse.ArgumentParser(prog="chives " + command)
     if command == "ask":
@@ -300,7 +304,7 @@ def run(args, start_service):
         if not question and not sys.stdin.isatty():
             question = sys.stdin.read().strip()
         if not question:
-            parser.error('请输入问题，例如 chives ask "这家公司靠什么赚钱？"')
+            parser.error('请输入问题，例如 echo "这家公司靠什么赚钱？" | chives')
     api = LocalAPI()
     if command != "ask" and api.port == 8880:
         start_service()
@@ -318,7 +322,7 @@ def run(args, start_service):
         return
     if sys.stdin.isatty() and sys.stdout.isatty() and os.environ.get("TERM") != "dumb":
         from chives_terminal.workbench import Workbench
-        Workbench(api, bots, reply).run()
+        Workbench(api, bots, reply, stop_service=stop_service).run()
         return
     bot = menu(bots)
     if bot is None:

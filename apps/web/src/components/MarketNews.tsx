@@ -1,3 +1,4 @@
+import content from '../../../../packages/chives-terminal/chives_terminal/workbench-content.json';
 import {useEffect,useState,type ReactNode} from 'react';
 import {appPath} from '../appPath';
 import './market-news.css';
@@ -50,7 +51,7 @@ export function MarketNews({ask}:{ask:AskButton}){
     return ()=>{controller.abort();window.clearInterval(timer);};
   },[]);
   return <>
-    <NewsCard title="A股热点资讯" edition={data?.domestic??null} failed={failed||data!==null} ask={ask}/>
-    <NewsCard title="全球股市热点资讯" edition={data?.global??null} failed={failed||data!==null} ask={ask}/>
+    <NewsCard title={content.market.domestic} edition={data?.domestic??null} failed={failed||data!==null} ask={ask}/>
+    <NewsCard title={content.market.global} edition={data?.global??null} failed={failed||data!==null} ask={ask}/>
   </>;
 }

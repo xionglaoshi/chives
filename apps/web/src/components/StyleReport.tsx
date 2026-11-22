@@ -1,3 +1,4 @@
+import content from '../../../../packages/chives-terminal/chives_terminal/workbench-content.json';
 import {useExpertAttachment,type AskExpert} from './useExpertAttachment';
 import {appPath} from '../appPath';
 import {InvestorSurveyComparison} from './InvestorSurveyComparison';
@@ -15,14 +16,14 @@ function PositionBar({position}:{position:CardPosition|null|undefined}){
  {compare&&<p>在{compare.peerGroup}中约处于第 {compare.percentile} 百分位。<a href={compare.source} target="_blank" rel="noreferrer">{compare.period} · {compare.n} 人</a></p>}</div>;
 }
 export type Report={investmentStyle?:string;styleCards?:{featured:string[];items:{id:string;title:string;reading:string;position?:CardPosition|null}[];clarify:string[]};answered:number;risk:{grade:number|null;flags:string[]};dimensions:Dimension[];match:{kind:string;reason:string;people:Person[]}};
-const official='https://www.amac.org.cn/xwfb/hydt/202005/t20200513_18820.html';
+const official=content.risk.url;
 function RiskMap({dimensions}:{dimensions:Dimension[]}) {
   const will=dimensions.find(d=>d.id==='riskAppetite')?.value;
   const room=dimensions.find(d=>d.id==='capitalFlexibility')?.value;
   if(will==null||room==null)return null;
-  const note=will-room>=20?'你愿意承担的波动，比这笔钱的条件允许的更高。可以先标出最早的用款日，再判断自己能等多久。':
-    room-will>=20?'资金给你留了余地，但你对回撤更敏感。可把心理上能守住的边界也写进计划。':
-    '这笔钱的条件与你对波动的接受度较接近。下一次明显回撤时，可以用真实感受复核这次判断。';
+  const note=will-room>=20?content.risk.higher:
+    room-will>=20?content.risk.lower:
+    content.risk.similar;
   return <figure className="ir-risk-map"><figcaption><h5>敢冒的险，和承担得起的险</h5><p>{note}</p></figcaption>
     <div role="img" aria-label={'资金余地 '+room+'，波动接受度 '+will+'，两轴满分均为100'}><small>资金余地大 ↑</small>
     <div className="ir-plane"><i style={{left:will+'%',bottom:room+'%'}}/></div><div className="ir-ends"><span>余地小</span><span>更敢冒险 →</span></div></div></figure>;
@@ -90,7 +91,7 @@ export function StyleReport({report,overview,example=false,updated,onAskExpert}:
     {askError&&<p role="alert">{askError}</p>}
     <section className="ir-overview">{heading('综合解读')}
     <div className="ir-conclusions"><details><summary>风险承受能力：{risk.grade?'C'+risk.grade:'待补充'}</summary>
-      <p>这是 Chives 根据您的资金条件、用款期限和亏损接受度给出的研究参考。正式适当性评估由相应募集机构完成。</p>
+      <p>{content.risk.explanation}</p>
       {risk.flags.map(f=><p key={f}>{f}</p>)}<a href={official} target="_blank" rel="noreferrer">中基协《基金募集机构投资者适当性管理实施指引（试行）》 ↗</a>
     </details><div>投资风格：{report.investmentStyle??'无明确风格'}</div></div>
     {overviewParagraphs(overview).map((p,i)=><p key={i}>{p}</p>)}</section>

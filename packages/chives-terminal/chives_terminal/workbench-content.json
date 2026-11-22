@@ -1,0 +1,34 @@
+{
+  "market": {
+    "market": "大盘走势",
+    "breadth": "市场宽度",
+    "world": "外围市场",
+    "sectors": "行业热图",
+    "gainers": "涨幅榜",
+    "active": "成交额榜",
+    "domestic": "A股热点资讯",
+    "global": "全球股市热点资讯",
+    "portfolio": "我的持仓"
+  },
+  "hotspots": {
+    "changeField": {
+      "global": "shareChange",
+      "emerging": "r5",
+      "popular": "r5",
+      "in": "r5",
+      "out": "r5"
+    },
+    "defaultChangeField": "r30"
+  },
+  "survey": {
+    "text": "深交所 2016 年调查的 5,628 名个人投资者中，42.8% 偏向追涨，57.2% 偏向抄底。",
+    "url": "https://investor.szse.cn/institute/bookshelf/report/P020180703407851145112.pdf"
+  },
+  "risk": {
+    "explanation": "这是 Chives 根据您的资金条件、用款期限和亏损接受度给出的研究参考。正式适当性评估由相应募集机构完成。",
+    "url": "https://www.amac.org.cn/xwfb/hydt/202005/t20200513_18820.html",
+    "higher": "你愿意承担的波动，比这笔钱的条件允许的更高。可以先标出最早的用款日，再判断自己能等多久。",
+    "lower": "资金给你留了余地，但你对回撤更敏感。可把心理上能守住的边界也写进计划。",
+    "similar": "这笔钱的条件与你对波动的接受度较接近。下一次明显回撤时，可以用真实感受复核这次判断。"
+  }
+}

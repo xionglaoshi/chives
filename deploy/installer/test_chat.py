@@ -16,18 +16,16 @@ def message(mid, role, content):
 
 
 class SharedTurns(unittest.TestCase):
-    def test_all_four_entries_start_the_service_and_select_a_bot(self):
-        bots = [{"id": "expert", "name": "投资专家"}]
-        for args in ([], ["bot"], ["chat"], ["cli"]):
-            with self.subTest(args=args), patch.object(chives_cli, "control") as start, \
-                    patch.object(chat, "LocalAPI") as api, patch.object(chat, "menu", return_value=None) as menu, \
-                    patch("sys.stdin", StringIO()), patch("webbrowser.open") as browser:
-                api.return_value.port = 8880
-                api.return_value.json.return_value = bots
+    def test_only_documented_shell_commands_remain(self):
+        for args in (["bot"], ["chat"], ["cli"], ["ask"], ["stop"]):
+            with self.subTest(args=args), self.assertRaises(SystemExit), patch.object(chives_cli, "control") as service:
                 chives_cli.main("release", args)
-                start.assert_called_once_with("release")
-                menu.assert_called_once_with(bots)
-                browser.assert_not_called()
+                service.assert_not_called()
+
+    def test_bare_command_uses_stdin_for_script_queries(self):
+        with patch.object(chat, "run") as run, patch("sys.stdin", StringIO("question")):
+            chives_cli.main("release", [])
+            self.assertEqual(run.call_args.args[0], ["ask"])
 
     def test_stream_disconnect_reads_only_accepted_turn(self):
         api = Mock()
