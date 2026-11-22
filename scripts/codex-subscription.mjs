@@ -2,7 +2,8 @@
 import {createRequire} from 'node:module';
 import {join,dirname} from 'node:path';
 import {homedir} from 'node:os';
-import {readdirSync,readFileSync} from 'node:fs';
+import {pathToFileURL} from 'node:url';
+import {existsSync,readdirSync,readFileSync} from 'node:fs';
 const [home,version,action,model]=process.argv.slice(2);
 const id='openai-codex';
 const cache=join(process.env.npm_config_cache||join(homedir(),'.agents/state/chives-npm'),'_npx');
@@ -46,11 +47,17 @@ function subscriptionCatalog(models, getSupportedThinkingLevels) {
 }
 
 async function main(){
- const manifest=readdirSync(cache).map(dir=>join(cache,dir,'node_modules/@deepseek-ai/dsh/package.json')).find(file=>{
-  try{return JSON.parse(readFileSync(file)).version===version;}catch{return false;}
+ const installed=process.env.CHIVES_DSH_JS;
+ const candidates=installed?[join(dirname(installed),'..','package.json')]:[];
+ if(existsSync(cache))candidates.push(...readdirSync(cache).map(dir=>join(cache,dir,'node_modules/@deepseek-ai/dsh/package.json')));
+ const manifest=candidates.find(file=>{
+  try{const pkg=JSON.parse(readFileSync(file));return pkg.name==='@deepseek-ai/dsh' && pkg.version===version;}catch{return false;}
  });
  if(!manifest)throw Error('kernel');
- const req=createRequire(manifest),load=name=>import(name.startsWith("@earendil-works/pi-ai/")?join(dirname(manifest),"../../",name.replace("pi-ai/","pi-ai/dist/")+".js"):req.resolve(name));
+ const req=createRequire(manifest);
+ const load=name=>import(pathToFileURL(name.startsWith('@earendil-works/pi-ai/')
+  ?join(dirname(manifest),'../../',name.replace('pi-ai/','pi-ai/dist/')+'.js')
+  :req.resolve(name)).href);
  const [{Context,Service},{LocalCredentialProvider},{credentialKey},{createModels,getSupportedThinkingLevels},{openaiCodexProvider}]=await Promise.all([
   '@deepseek-ai/cordis','@deepseek-ai/dsh-credentials-local','@deepseek-ai/dsh-credentials','@earendil-works/pi-ai/models','@earendil-works/pi-ai/providers/openai-codex'
  ].map(load));
