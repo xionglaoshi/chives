@@ -3,21 +3,38 @@ import re
 from datetime import datetime
 
 from prompt_toolkit.lexers import Lexer
-from prompt_toolkit.styles import Style
+from prompt_toolkit.styles import Style, StyleTransformation
 from prompt_toolkit.utils import get_cwidth
 
-# The README brand swatch anchors the selected row and the shadow of the wordmark.
-FOREST = "#145337"
+# Named ANSI colors use the user's terminal palette on both light and dark themes.
 STYLE = Style.from_dict({
-    "": "bg:#101a15 #e1ebe4",
-    "band": "bg:#142e21 #d6e8dc", "field": "bg:#17291f #eff6f0",
-    "title": "#86c6a1 bold", "accent": "#65b28a", "leaf": "#38885e",
-    "brand-shadow": FOREST, "up": "#f29489 bold", "down": "#78ca9a bold",
-    "green": "#a0c9ac", "ink": "#e8efe9", "dim": "#a3b4a8", "line": "#547462",
-    "selected": f"bg:{FOREST} #e3f2e6 bold", "number": "#90b89e",
-    "reason": "#b5c3c5", "error": "#f2a095", "user": "#85c79f bold",
-    "agent": "#b3dfbd bold", "strong": "#b1dfc0 bold", "code": "#acd6c9",
+    "title": "ansigreen bold", "accent": "ansigreen", "leaf": "ansigreen",
+    "brand-shadow": "ansigreen", "green": "ansigreen",
+    "up": "ansired bold", "down": "ansigreen bold", "error": "ansired bold",
+    "selected": "ansigreen bold noreverse", "user": "ansigreen bold",
+    "agent": "ansigreen bold", "strong": "bold",
+    "completion-menu.completion.current": "ansigreen bold underline noreverse",
+    "completion-menu.meta.completion.current": "ansigreen bold noreverse",
 })
+
+
+class TerminalTheme(StyleTransformation):
+    """Apply the host palette after prompt-toolkit merges its own widget styles."""
+    def __init__(self, high_contrast):
+        self.high_contrast = high_contrast
+
+    def invalidation_hash(self):
+        return self.high_contrast()
+
+    def transform_attrs(self, attrs):
+        # Built-in completions, scrollbars and text selections have their own fills.
+        color = attrs.color if attrs.color in ("ansigreen", "ansired") else ""
+        strong = self.high_contrast() and bool(color)
+        return attrs._replace(color=color, bgcolor="", reverse=False,
+                              bold=attrs.bold or attrs.reverse or strong,
+                              underline=attrs.underline or attrs.reverse)
+
+
 CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]|[\u202a-\u202e\u2066-\u2069]")
 
 

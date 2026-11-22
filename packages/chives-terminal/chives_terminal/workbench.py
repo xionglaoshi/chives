@@ -13,7 +13,6 @@ from prompt_toolkit.document import Document
 from prompt_toolkit.completion import Completer, Completion
 from prompt_toolkit.layout.menus import CompletionsMenu
 from prompt_toolkit.layout.containers import Float, FloatContainer
-from prompt_toolkit.styles import ConditionalStyleTransformation, SwapLightAndDarkStyleTransformation
 from .actions import Actions, COMMANDS, PAGES
 from .panels import Panels
 from .pages import DESK
@@ -28,7 +27,7 @@ from prompt_toolkit.mouse_events import MouseEventType
 from prompt_toolkit.utils import get_cwidth
 from prompt_toolkit.widgets import TextArea
 
-from .screen import STYLE, TranscriptLexer, body_lines, clean, clip, context_label, ink, masthead, one, timestamp, tool_line
+from .screen import STYLE, TerminalTheme, TranscriptLexer, body_lines, clean, clip, context_label, ink, masthead, one, timestamp, tool_line
 
 
 def panel(content, height=1, style="", **kwargs):
@@ -130,11 +129,11 @@ class Workbench:
         shared = HSplit([panel(self.topline, style="class:band"),
                          DynamicContainer(lambda: self.picker if self.bot is None else self.chat)])
         self.app = Application(layout=Layout(FloatContainer(DynamicContainer(lambda: self.panels.layout if self.in_dialog else shared), [Float(xcursor=True, ycursor=True,
-                               allow_cover_cursor=False, content=CompletionsMenu(max_height=9, scroll_offset=1))]),
+                               allow_cover_cursor=False, content=CompletionsMenu(max_height=9, scroll_offset=1, display_arrows=True))]),
                                focused_element=self.search), key_bindings=merge_key_bindings([self.bindings(), self.panels.keys]),
                                style=STYLE, full_screen=True, mouse_support=Condition(lambda: self.bot is None),
-                               style_transformation=ConditionalStyleTransformation(SwapLightAndDarkStyleTransformation(),
-                                   filter=Condition(lambda: self.actions.prefs["contrast"])), min_redraw_interval=1/30,
+                               style_transformation=TerminalTheme(lambda: self.actions.prefs["contrast"]),
+                               min_redraw_interval=1/30,
                                refresh_interval=.5, before_render=self.prepare,
                                color_depth=ColorDepth.DEPTH_1_BIT if "NO_COLOR" in os.environ else None,
                                **terminal)

@@ -29,13 +29,9 @@ def colored(text, tone="accent", stream=None):
     stream = sys.stderr if stream is None else stream
     if not stream.isatty() or "NO_COLOR" in os.environ or os.environ.get("TERM") == "dumb":
         return clean(text)
-    if os.environ.get("COLORTERM", "").lower() in ("truecolor", "24bit"):
-        green = "38;2;101;178;138"
-    elif "256color" in os.environ.get("TERM", ""):
-        green = "38;5;72"
-    else:
-        green = "32"
-    colors = {"accent": "1;" + green, "emphasis": green, "muted": "2", "failed": "31"}
+    if tone == "muted":
+        return clean(text)
+    colors = {"accent": "1;32", "emphasis": "32", "failed": "31"}
     return f"\033[{colors[tone]}m{clean(text)}\033[0m"
 
 

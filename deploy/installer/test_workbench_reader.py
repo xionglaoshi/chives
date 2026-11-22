@@ -148,3 +148,30 @@ class Reader(unittest.TestCase):
         for fact in ("综合甲","风险提示甲","匹配依据","投资人甲","生平甲","理由甲","证据甲","差异甲","风格甲","解读甲","尺度甲","待澄清甲","37 / 100"):
             self.assertIn(fact, text)
         self.assertNotIn("omit-image-path", text)
+
+
+class TerminalColors(unittest.TestCase):
+    def test_host_theme_owns_background_and_reading_text(self):
+        from prompt_toolkit.styles import default_ui_style, merge_styles
+        from chives_terminal.screen import STYLE, TerminalTheme
+
+        merged = merge_styles([default_ui_style(), STYLE])
+        for contrast in (False, True):
+            theme = TerminalTheme(lambda: contrast)
+
+            def rendered(role):
+                return theme.transform_attrs(merged.get_attrs_for_style_str("class:" + role))
+
+            for role in ("ink", "dim", "reason", "line", "band", "text-area", "field",
+                         "completion-menu", "completion-menu.meta.completion", "scrollbar.background"):
+                attrs = rendered(role)
+                self.assertFalse(attrs.color, role)
+                self.assertFalse(attrs.bgcolor, role)
+                self.assertFalse(attrs.reverse, role)
+            for role, tone in (("up", "ansired"), ("down", "ansigreen"), ("selected", "ansigreen"),
+                               ("completion-menu.completion.current", "ansigreen")):
+                attrs = rendered(role)
+                self.assertEqual(attrs.color, tone)
+                self.assertFalse(attrs.bgcolor)
+                self.assertFalse(attrs.reverse)
+                self.assertTrue(attrs.bold)
