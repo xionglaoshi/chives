@@ -1,5 +1,5 @@
 import content from '../../../../packages/chives-terminal/chives_terminal/workbench-content.json';
-import {useExpertAttachment,type AskExpert} from './useExpertAttachment';
+import type {AskExpert} from './askExpert';
 import {appPath} from '../appPath';
 import {InvestorSurveyComparison} from './InvestorSurveyComparison';
 import './style-report.css';
@@ -75,20 +75,18 @@ function sectionText(section:Section,report:Report,overview:string){
 }
 export function StyleReport({report,overview,example=false,updated,onAskExpert}:{report:Report;overview:string;example?:boolean;updated?:string;onAskExpert:AskExpert}){
   const {risk,match}=report;
-  const {asking,askError,attach}=useExpertAttachment(onAskExpert);
   function heading(section:Section){
     function ask(){
       const kind=example?'示例报告（虚构答卷）':'个人评估报告';
       const text=['# '+section,kind,updated?'评估时间：'+updated:'','作答题数：'+report.answered,...sectionText(section,report,overview)].filter(Boolean).join('\n\n');
       const evidence=example?'这是虚构示例。请仅使用附件中示例答题者的材料，以下“我”均指示例人物。请注明示例，缺少的原答标为未知，不读取我的个人资料。':personalEvidence;
       const prompt=evidence+'\n\n'+questions[section];
-      void attach(section,new File([text+'\n'],kind+'-'+section+'.md',{type:'text/markdown'}),prompt);
+      onAskExpert(prompt,new File([text+'\n'],kind+'-'+section+'.md',{type:'text/markdown'}));
     }
-    return <div className="ir-section-heading"><h4>{section}</h4><button type="button" disabled={asking!==null} onClick={ask}>{asking===section?'准备中…':'问AI'}</button></div>;
+    return <div className="ir-section-heading"><h4>{section}</h4><button type="button" onClick={ask}>问AI</button></div>;
   }
   return <article className="investor-report">
     <header><small>{example?'示例报告 · 虚构答卷':'个人评估报告 · '+report.answered+' 题作答'}</small><h3>{example?'一份风格评估是什么样的':'您的投资风格'}</h3></header>
-    {askError&&<p role="alert">{askError}</p>}
     <section className="ir-overview">{heading('综合解读')}
     <div className="ir-conclusions"><details><summary>风险承受能力：{risk.grade?'C'+risk.grade:'待补充'}</summary>
       <p>{content.risk.explanation}</p>

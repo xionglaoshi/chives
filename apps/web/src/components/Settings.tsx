@@ -1,7 +1,7 @@
 import { ResponsiveNavigation } from './ResponsiveNavigation';
 import {CapabilitiesDesk} from './CapabilitiesDesk';
 import {TaskManagement} from './TaskManagement';
-import type {AskExpert} from './useExpertAttachment';
+import type {AskExpert} from './askExpert';
 import {StyleAssessment} from './StyleAssessment';
 import {settingsEnglish,groupNames} from './deskLanguage';
 import { appPath } from '../appPath';

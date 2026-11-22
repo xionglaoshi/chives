@@ -33,6 +33,7 @@ export interface ComposerProps {
   onAddFiles?: (files: File[]) => void;
   onRemoveAttachment?: (path: string) => void;
   uploading?: boolean;
+  suggesting?: boolean;
   uploadNotice?: string | null;
 }
 
@@ -116,6 +117,7 @@ export function Composer({
   onAddFiles,
   onRemoveAttachment,
   uploading = false,
+  suggesting = false,
   uploadNotice = null
 }: ComposerProps): ReactElement {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -145,7 +147,7 @@ export function Composer({
 
   const submit = (): void => {
     const text = value.trim();
-    if ((text === '' && attachments.length === 0) || sending || disabled) return;
+    if ((text === '' && attachments.length === 0) || sending || uploading || disabled) return;
     onSend(text);
   };
 
@@ -176,7 +178,7 @@ export function Composer({
     onAddFiles?.(files);
   };
 
-  const sendDisabled = (value.trim() === '' && attachments.length === 0) || sending || disabled;
+  const sendDisabled = (value.trim() === '' && attachments.length === 0) || sending || uploading || disabled;
 
   return (
     <div className="composer">
@@ -227,10 +229,10 @@ export function Composer({
         <textarea
           id="chives-composer"
           ref={textareaRef}
-          className="composer__input"
+          className={suggesting ? "composer__input composer__input--suggesting" : "composer__input"}
           rows={1}
           value={value}
-          placeholder={placeholder}
+          placeholder={suggesting ? "Chives正在思考您可能想问什么……" : placeholder}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}

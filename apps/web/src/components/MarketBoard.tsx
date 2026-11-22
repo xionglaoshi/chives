@@ -1,6 +1,6 @@
 import content from '../../../../packages/chives-terminal/chives_terminal/workbench-content.json';
 import {useEffect,useState,type ReactNode} from 'react';
-import {useExpertAttachment,type AskExpert} from './useExpertAttachment';
+import type {AskExpert} from './askExpert';
 import {appPath} from '../appPath';
 import {useExpertSidebarData} from './ExpertSidebarData';
 import {ExpertSidebarSparkline} from './ExpertSidebarSparkline';
@@ -47,13 +47,12 @@ function table(headers:string[],rows:(string|number|null|undefined)[][]){
   return [headers,headers.map(()=>'---'),...rows].map(row=>'| '+row.map(x=>String(x??'暂无').replaceAll('|','｜').replace(/[\r\n]+/g,' ')).join(' | ')+' |').join('\n');
 }
 export function MarketBoard({onAskExpert}:{onAskExpert:AskExpert}){
-  const {asking,askError,attach}=useExpertAttachment(onAskExpert);
   function ask(title:string,ready:boolean,prompt:string,markdown:()=>string){
-    return <button className="mb-ask" disabled={!ready||asking!==null} onClick={()=>{
+    return <button className="mb-ask" disabled={!ready} onClick={()=>{
       const captured=new Date().toISOString();
       const file=new File(['# '+title+'\n\n截取时间（UTC）：'+captured+'\n\n'+markdown()+'\n'],title+'-'+captured.slice(0,10)+'.md',{type:'text/markdown'});
-      void attach(title,file,prompt);
-    }}>{asking===title?'准备中…':'问AI'}</button>;
+      onAskExpert(prompt,file);
+    }}>问AI</button>;
   }
   const market=useExpertSidebarData('market',0).market, portfolio=useExpertSidebarData('portfolio',0).portfolio;
   const [idx,selectIdx]=useState(''),[sector,selectSector]=useState(''),[rank,setRank]=useState('gainers');
@@ -68,7 +67,6 @@ export function MarketBoard({onAskExpert}:{onAskExpert:AskExpert}){
   return <article className="market-board">
     <div className="mb-title"><div><small>工作台</small><h1>行情看板</h1></div><small>{m?SESSION_TEXT[m.session]+' · '+stamp(m.asOf)+' 北京时间':'A 股市场'}</small></div>
     {p&&!p.empty&&<button className="mb-account-strip" onClick={()=>document.querySelector('.mb-summary')?.scrollIntoView({block:'center',behavior:'smooth'})}><span>我的持仓 <strong>{p.summary.positionCount} 只</strong></span><span>今日估算盈亏 <b className={'mb-'+priceDirection(p.summary.todayPnl)}>{amount(p.summary.todayPnl)} 元</b></span><span>查看贡献 ↓</span></button>}
-    {askError&&<p role="alert">{askError}</p>}
     <div className="mb-grid">
     <Panel title={content.market.market} cls="mb-major" ask={ask('大盘走势',!!i,'请解读'+(i?.name??'当前指数')+'的盘中走势，指出最明显的转折，再比较其他指数是否同步。哪些变化值得继续观察？',()=>[
         '数据时间：'+m?.asOf+' · '+SESSION_TEXT[m!.session]+(m?.stale||market.status==='error'?' · 缓存快照':''),

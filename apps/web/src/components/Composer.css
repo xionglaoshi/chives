@@ -242,3 +242,18 @@
   .composer__send, .composer__stop { margin-inline-start: auto; }
   .composer__send + .composer__stop { margin-inline-start: 0; }
 }
+
+.composer__input--suggesting::placeholder {
+  color: var(--color-text-secondary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .composer__input--suggesting::placeholder {
+    animation: composer-suggesting 0.9s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes composer-suggesting {
+  from { opacity: 0.55; }
+  to { opacity: 1; }
+}

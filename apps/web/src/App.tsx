@@ -149,7 +149,7 @@ interface ConversationTarget {
   messageId?: string;
   taskId?: string;
   draft?: string;
-  attachment?: MessageAttachmentDto;
+  askFile?: File;
 }
 
 const GlobalSearch = lazy(() => import('./components/GlobalSearch'));
@@ -158,6 +158,7 @@ export function App(): ReactElement {
   const { bots, loading, error: serverError, setBots, setBotStatus, reload } = useBots();
   const [route, setRoute] = useState<AppRoute>(() => readRoute(window.location.hash));
   const [composerText, setComposerText] = useState('');
+  const [askFile, setAskFile] = useState<File | null>(null);
   const [askDraft, setAskDraft] = useState<{prompt: string; source: string} | null>(null);
   const editComposer = useCallback((text: string) => {
     setAskDraft(null);
@@ -302,10 +303,11 @@ export function App(): ReactElement {
     if (target.messageId) setLocateTarget(target.messageId);
     if (target.taskId) setLocateTaskId(target.taskId);
     if (target.draft !== undefined) {
-      setComposerText(target.draft);
-      if (target.attachment) {
-        setAttachments([target.attachment]);
-        setAskDraft({prompt: target.draft, source: target.attachment.name});
+      setComposerText(target.askFile ? '' : target.draft);
+      if (target.askFile) {
+        setAttachments([]);
+        setAskFile(target.askFile);
+        setAskDraft({prompt: target.draft, source: target.askFile.name});
         setNotice(null);
         setUploadNotice(null);
         setContinuation(null);
@@ -319,12 +321,13 @@ export function App(): ReactElement {
   useEffect(() => {
     const target = pendingTarget.current?.botId === selectedId ? pendingTarget.current : null;
     pendingTarget.current = null;
-    setComposerText(target?.draft ?? '');
+    setComposerText(target?.askFile ? '' : target?.draft ?? '');
     if (target?.draft !== undefined) setComposerFocusToken(value => value + 1);
     setNotice(null);
-    setAttachments(target?.attachment ? [target.attachment] : []);
-    setAskDraft(target?.attachment && target.draft !== undefined
-      ? {prompt: target.draft, source: target.attachment.name} : null);
+    setAttachments([]);
+    setAskFile(target?.askFile ?? null);
+    setAskDraft(target?.askFile && target.draft !== undefined
+      ? {prompt: target.draft, source: target.askFile.name} : null);
     setUploadNotice(null);
     setDragActive(false);
     setPreview(null);
@@ -340,14 +343,35 @@ export function App(): ReactElement {
     if (askDraft === null || route.name !== 'conversation' || selectedId !== 'operator') return;
     const signal = AbortSignal.timeout(12000);
     const request = new AbortController();
-    void suggestOperatorDraft(askDraft.prompt, askDraft.source, AbortSignal.any([request.signal, signal]))
-      .then(({draft}) => {
-        if (draft && !request.signal.aborted && !signal.aborted) {
-          setComposerText(current => current === askDraft.prompt ? draft : current);
-        }
-      }).catch(() => { /* The editable template is already available. */ });
+    async function fillDraft(template: string, source: string) {
+      let text = template;
+      try {
+        const {draft} = await suggestOperatorDraft(template, source, AbortSignal.any([request.signal, signal]));
+        if (draft && !signal.aborted) text = draft;
+      } catch { /* Use the original template. */ }
+      if (request.signal.aborted) return;
+      setComposerText(current => current === '' ? text : current);
+      setAskDraft(null);
+    }
+    void fillDraft(askDraft.prompt, askDraft.source);
     return () => request.abort();
   }, [askDraft, route.name, selectedId]);
+
+  useEffect(() => {
+    if (!askFile || route.name !== 'conversation' || selectedId !== 'operator') return;
+    const request = new AbortController();
+    void uploadBotFile('operator', askFile, request.signal)
+      .then(attachment => {
+        if (!request.signal.aborted) setAttachments(current => [...current, attachment]);
+      })
+      .catch(() => {
+        if (!request.signal.aborted) setUploadNotice('附件未上传，请返回原页面重新点击「问AI」。');
+      })
+      .finally(() => {
+        if (!request.signal.aborted) setAskFile(null);
+      });
+    return () => request.abort();
+  }, [askFile, route.name, selectedId]);
 
   const removePending = useCallback((botId: string, pendingId: string) => {
     setPendingByBot((current) => {
@@ -645,13 +669,14 @@ export function App(): ReactElement {
     [addPending, markPending, removePending, running, selectedId]
   );
 
-  function askOperator(prompt: string, attachment: MessageAttachmentDto) {
-    openConversationTarget({botId: 'operator', draft: prompt, attachment});
+  function askOperator(prompt: string, askFile: File) {
+    const draft = prompt + '\n\n请在对话中直接写出完整解读，附件仅供参考，无需另做文档。';
+    openConversationTarget({botId: 'operator', draft, askFile});
   }
 
   const handleSend = useCallback(
     (text: string): void => {
-      if (selectedBot === null || selectedBot.hired === false) return;
+      if (selectedBot === null || selectedBot.hired === false || askFile !== null) return;
       if (text.trim() === '' && attachments.length === 0) return;
       const outgoing = [...attachments];
       setAskDraft(null);
@@ -661,7 +686,7 @@ export function App(): ReactElement {
       setNotice(null);
       void send(selectedBot.id, text, undefined, outgoing);
     },
-    [attachments, selectedBot, send]
+    [askFile, attachments, selectedBot, send]
   );
 
   const handleSearchReopen = useCallback(async (group: SearchTaskGroup): Promise<void> => {
@@ -993,7 +1018,8 @@ export function App(): ReactElement {
                     attachments={attachments}
                     onAddFiles={(files) => void addFiles(files)}
                     onRemoveAttachment={removeAttachment}
-                    uploading={uploading}
+                    uploading={uploading || askFile !== null}
+                    suggesting={askDraft !== null}
                     uploadNotice={uploadNotice}
                   />
                 ) : null}
@@ -1065,7 +1091,8 @@ export function App(): ReactElement {
                           attachments={attachments}
                           onAddFiles={(files) => void addFiles(files)}
                           onRemoveAttachment={removeAttachment}
-                          uploading={uploading}
+                          uploading={uploading || askFile !== null}
+                          suggesting={askDraft !== null}
                           uploadNotice={uploadNotice}
                         />
                       </div>

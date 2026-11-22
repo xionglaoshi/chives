@@ -62,6 +62,7 @@ export interface WelcomeProps {
   onAddFiles?: (files: File[]) => void;
   onRemoveAttachment?: (path: string) => void;
   uploading?: boolean;
+  suggesting?: boolean;
   uploadNotice?: string | null;
 }
 
@@ -85,6 +86,7 @@ export function Welcome({
   onAddFiles,
   onRemoveAttachment,
   uploading = false,
+  suggesting = false,
   uploadNotice = null
 }: WelcomeProps): ReactElement {
   const copy = welcomeCopy(botId, botName, botRole);
@@ -116,6 +118,7 @@ export function Welcome({
           {...(onAddFiles === undefined ? {} : { onAddFiles })}
           {...(onRemoveAttachment === undefined ? {} : { onRemoveAttachment })}
           uploading={uploading}
+          suggesting={suggesting}
           uploadNotice={uploadNotice}
         />
 

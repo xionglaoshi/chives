@@ -1,5 +1,5 @@
 import {useEffect,useState} from 'react';
-import type {AskExpert} from './useExpertAttachment';
+import type {AskExpert} from './askExpert';
 import {desk} from './deskApi';
 
 import type {InterviewQuestion,InterviewAnswers as Answers} from './InterviewForm';
