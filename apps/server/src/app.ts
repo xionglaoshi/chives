@@ -4,7 +4,7 @@ import {ProfileService} from './settings/profile-service.js';
 import {StyleAssessment, summarize} from './settings/style-assessment.js';
 import {previewExcerpt} from './settings/profile-excerpt.js';
 import { BotEmployment } from './bots/employment.js';
-import { coordinatorId, retireBot, writeExpert } from './bots/coordinator.js';
+import { DEFAULT_ENTRY_BOT_ID as coordinatorId } from './bots/registry.js';
 import {preferences,parsePreferences,preferenceKey} from './settings/workbench.js';
 import {backupPersonal,restorePersonal} from './settings/personal-backup.js';
 import {ModelLibrary, tuningOf, type BotModelPick} from './settings/model-library.js';
@@ -1454,22 +1454,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
         const origin=request.headers.origin;
         if(request.headers['x-chives-kernel-manager']!=='local'||request.headers['sec-fetch-site']==='cross-site'||(origin&&!/^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:[0-9]+)?$/.test(origin)))throw new AppError(403,'local_only','请从 Mac 本机设置访问个人设置');
         let result:unknown;
-        if(section==='staff' && method==='POST'){
-          const {action,...input}=await readJsonObject(request);
-          if (typeof input.id!=='string') throw new AppError(400,'invalid_bot','请提供 Bot ID。');
-          const id=input.id, catalog=buildCatalog(config.repoRoot);
-          if(action==='create') {
-            if (store.tasks.latestForBot(id)) throw new AppError(409,'id_in_use','此 ID 有历史记录，请选择新的 ID。');
-            writeExpert('create',input,config.botsDir,config.dataDir,registry,catalog,botId=>!!store.tasks.findRunning(botId));
-          } else if(action==='delete') {
-            if (id===coordinatorId) throw new AppError(403,'permanent_bot','总调度为常驻成员。');
-            if (store.tasks.findRunning(id) || store.tasks.listRunningDelegated(id).length)
-              throw new AppError(409,'bot_busy','请等该成员完成当前任务。');
-            retireBot(id,config.botsDir,registry,catalog);
-          } else throw new AppError(400,'invalid_action','未知的人事操作。');
-          bus.publish({type:'roster.changed',botId:id});
-          result=employment.list();
-        }else if(section==='employment' && (method==='GET'||method==='PUT')){
+        if(section==='employment' && (method==='GET'||method==='PUT')){
           if(method==='PUT'){
             const changed = employment.update(await readJsonObject(request));
             const pending = orchestrator.pendingApprovalCounts();

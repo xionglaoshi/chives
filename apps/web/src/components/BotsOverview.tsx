@@ -38,20 +38,6 @@ export function BotsOverview({
 }: BotsOverviewProps): ReactElement {
   const [saving, setSaving] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
-  const [adding,setAdding]=useState(false);
-  const [staff,setStaff]=useState({id:'',name:'',role:''});
-  async function staffAction(action:'create'|'delete',bot?:BotSummary) {
-    if (saving!==null) return;
-    if (bot && !window.confirm('从名册中删除「'+bot.name+'」？历史记录和工作文件会保留。')) return;
-    setSaving(bot?.id ?? 'new');
-    try {
-      await desk('staff','POST',action==='create'?{action,...staff}:{action,id:bot?.id});
-      setNotice(action==='create'?'成员已创建，可在名册中聘用。':'成员已从名册中移除。');
-      if(action==='create'){setAdding(false);setStaff({id:'',name:'',role:''});}
-      onRetry();
-    }catch(error){setNotice(error instanceof Error?error.message:'操作未完成。');}
-    finally{setSaving(null);}
-  }
   async function changeHire(bot: BotSummary) {
     if (saving !== null || (bot.permanent ?? (bot.id === 'operator'))) return;
     setSaving(bot.id);
@@ -98,13 +84,6 @@ export function BotsOverview({
         </div>
       </header>
 
-      <button type="button" className="bots-overview__action" aria-expanded={adding} onClick={()=>setAdding(!adding)}>新建 Bot</button>
-      {adding && <form onSubmit={event=>{event.preventDefault();void staffAction('create');}}>
-        <label>Bot ID <input required pattern="[a-z][a-z0-9\-]{0,47}" value={staff.id} onChange={e=>setStaff({...staff,id:e.target.value})}/></label>
-        <label>名称 <input required maxLength={60} value={staff.name} onChange={e=>setStaff({...staff,name:e.target.value})}/></label>
-        <label>职责 <input required maxLength={2000} value={staff.role} onChange={e=>setStaff({...staff,role:e.target.value})}/></label>
-        <button className="bots-overview__action" disabled={saving!==null}>创建</button>
-      </form>}
       {notice && <p role="status">{notice}</p>}
       {!loading && bots.length > 0 && working === 0 && pending === 0 ? (
         <p className="bots-overview__quiet" role="status">
@@ -197,8 +176,6 @@ export function BotsOverview({
               </dl>
 
               <div className="bots-overview__actions">
-                {!permanent && bot.hired===false && <button type="button" className="bots-overview__action" disabled={saving!==null}
-                  onClick={()=>void staffAction('delete',bot)}>删除成员</button>}
                 <button type="button" className="bots-overview__action" disabled={permanent || saving !== null}
                   aria-label={permanent ? bot.name+' · 常驻' : (bot.hired === false ? '聘用' : '解聘')+bot.name}
                   onClick={() => void changeHire(bot)}>
