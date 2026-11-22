@@ -217,12 +217,28 @@
   text-align: center;
 }
 
-@media (max-width: 720px) {
-  .composer__form {
-    padding: var(--space-1);
-  }
-
+@media (max-width: 720px), (pointer: coarse) and (max-width: 960px) and (max-height: 520px) {
   .composer__hint {
     display: none;
   }
+
+  .composer .composer__form {
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px 5px;
+    padding: 7px;
+    border-radius: 20px;
+  }
+
+  .composer__input {
+    order: -1;
+    flex: 0 0 100%;
+    padding-inline: 8px;
+    font-size: 16px;
+    max-height: min(188px, 23dvh);
+  }
+  .composer__add, .composer__send, .composer__stop { width: 40px; height: 40px; }
+  .composer .composer-model__trigger { height: 40px; max-width: calc(100% - 148px); }
+  .composer__send, .composer__stop { margin-inline-start: auto; }
+  .composer__send + .composer__stop { margin-inline-start: 0; }
 }

@@ -6,6 +6,9 @@ import {HoldingSecurityFields} from './HoldingSecurityFields';
 type Position={note?:string|null;code:string;name:string;qty:number;cost_price:number;available_qty?:number|null};
 type Ledger={positions:Position[];cash:number|null};
 const money=new Intl.NumberFormat('zh-CN',{style:'currency',currency:'CNY'});
+const quantityLabel = '持仓数量';
+const priceLabel = '平均持股成本价（元）';
+const costLabel = '持仓成本';
 const privacyKey='chives.expertSidebar.hideAmounts';
 
 export function Holdings(){
@@ -41,7 +44,45 @@ export function Holdings(){
  {editor&&<form key={current?.code??'new'} onSubmit={save}><h2>{current?'编辑持仓':'添加持仓'}</h2><fieldset disabled={busy}>
  <HoldingSecurityFields current={current} hidden={hidden}/>
  </fieldset><div className="holdings-actions"><button type="button" disabled={busy} onClick={()=>{setEditor(null);setError('');}}>取消</button><button className="holdings-primary" disabled={busy}>保存持仓</button></div></form>}
- <h2>持仓明细</h2>{book.positions.length===0?<p>尚未录入持仓。请输入代码或简称添加证券。</p>:<div className="holdings-table"><table><thead><tr><th>证券</th><th>持仓数量</th><th>平均持股成本价（元）</th><th>持仓成本</th><th>操作</th></tr></thead><tbody>{book.positions.map(p=><tr key={p.code}><td><b>{p.name}</b><small>{p.code}</small>{p.note?.startsWith('模拟持仓')&&<small>模拟持仓</small>}</td><td>{hidden?'••••':p.qty.toLocaleString('zh-CN')}</td><td>{hidden?'••••':p.cost_price}</td><td>{amount(p.qty*p.cost_price)}</td><td><button disabled={busy||!!editor} onClick={()=>{setError('');setEditor(p);}}>编辑</button> <button disabled={busy||!!editor} onClick={()=>{if(window.confirm('从个人持仓账本移除 '+p.name+'（'+p.code+'）？'))void change({action:'remove',original:p});}}>移除</button></td></tr>)}</tbody></table></div>}</>}
+ <h2>持仓明细</h2>
+ {book.positions.length === 0 ? <p>尚未录入持仓。请输入代码或简称添加证券。</p> : (
+   <div className="holdings-table">
+     <table role="table">
+       <thead role="rowgroup">
+         <tr role="row">{['证券', quantityLabel, priceLabel, costLabel, '操作'].map(label =>
+           <th key={label} role="columnheader" scope="col">{label}</th>
+         )}</tr>
+       </thead>
+       <tbody role="rowgroup">{book.positions.map(position => {
+         const metrics = [
+           [quantityLabel, hidden ? '••••' : position.qty.toLocaleString('zh-CN')],
+           [priceLabel, hidden ? '••••' : position.cost_price],
+           [costLabel, amount(position.qty * position.cost_price)]
+         ] as const;
+         return <tr role="row" key={position.code}>
+           <td role="cell">
+             <b>{position.name}</b><small>{position.code}</small>
+             {position.note?.startsWith('模拟持仓') && <small>模拟持仓</small>}
+           </td>
+           {metrics.map(([label, value]) =>
+             <td role="cell" key={label}>
+               <span className="holding-mobile-label" aria-hidden="true">{label}</span>{value}
+             </td>
+           )}
+           <td role="cell">
+             <button disabled={busy || !!editor} onClick={() => { setError(''); setEditor(position); }}>编辑</button>{' '}
+             <button disabled={busy || !!editor} onClick={() => {
+               if (window.confirm('从个人持仓账本移除 '+position.name+'（'+position.code+'）？')) {
+                 void change({action:'remove', original:position});
+               }
+             }}>移除</button>
+           </td>
+         </tr>;
+       })}</tbody>
+     </table>
+   </div>
+ )}
+ </>}
  {!book&&busy&&<p role="status">正在读取持仓…</p>}
  </section>;
 }

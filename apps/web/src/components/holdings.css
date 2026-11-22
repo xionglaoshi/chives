@@ -16,3 +16,53 @@
 .holding-valuation{grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--border,#8884);padding-top:16px}
 .holding-valuation output{display:block;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .holding-gain{color:#c54240}.holding-loss{color:#297753}
+
+.holding-mobile-label { display: none; }
+
+@media (max-width: 720px), (pointer: coarse) and (max-width: 960px) and (max-height: 520px) {
+  .holdings-totals {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: start;
+    gap: 12px;
+    margin: 18px 0 24px;
+    padding: 16px;
+  }
+  .holdings-totals > div:first-child { grid-column: 1 / -1; }
+  .holdings-totals > div:first-child strong { font-size: 1.6rem; overflow-wrap: anywhere; }
+  .holdings-totals button { align-self: end; }
+  .holdings-table { overflow: visible; }
+  .holdings-table table, .holdings-table tbody { display: block; }
+  .holdings-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .holdings-table tbody tr {
+    display: grid;
+    gap: 8px;
+    margin-bottom: 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--color-line);
+    border-radius: 14px;
+  }
+  .holdings-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 8px;
+    padding: 0;
+    border: 0;
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+  .holdings-table td:first-child { justify-content: start; flex-wrap: wrap; padding-bottom: 4px; }
+  .holdings-table td:last-child { justify-content: end; margin-top: 2px; }
+  .holding-mobile-label { display: inline; color: var(--color-text-secondary); font-size: .85em; }
+  .holdings button { min-height: 40px; }
+  .holdings form { padding: 14px; }
+  .holding-form-row { grid-template-columns: minmax(0, 1fr); }
+  .holding-valuation { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); }
+}

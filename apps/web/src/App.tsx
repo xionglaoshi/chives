@@ -39,6 +39,7 @@ import {
 } from './api/client';
 import { BotProfile } from './components/BotProfile';
 import { BotsOverview } from './components/BotsOverview';
+import { ResponsiveNavigation } from './components/ResponsiveNavigation';
 import { ChatHeader } from './components/ChatHeader';
 import { Composer } from './components/Composer';
 import { DeliverablePreview } from './components/DeliverablePreview';
@@ -832,20 +833,23 @@ export function App(): ReactElement {
         openPanels={sidePanel.open} onTogglePanel={sidePanel.toggle}
       />
       <div className={`app__body${preview === null ? '' : ' app__body--preview'}`}>
-        {route.name!=='settings'&&<Sidebar
-          bots={hiredBots}
-          selectedId={selectedId}
-          loading={loading}
-          compact={preview !== null}
-          activeTool={route.name==='workspace'?route.tool:null}
-          onTool={tool=>navigate({name:'workspace',tool})}
-          onMove={(a,b)=>void moveDot(a,b)}
-          allBotsActive={route.name === 'overview'}
-          settingsActive={false}
-          onSelect={(botId) => navigate({ name: 'conversation', botId })}
-          onShowAll={() => navigate({ name: 'overview' })}
-          onOpenSettings={() => navigate({ name: 'settings' })}
-        />}
+        {route.name !== 'settings' && (
+          <ResponsiveNavigation label="工作台导航" shortLabel="导航" closeLabel="关闭导航">
+            {(close, phone) => <Sidebar
+              bots={hiredBots} selectedId={selectedId} loading={loading}
+              compact={preview !== null} phone={phone}
+              activeTool={route.name === 'workspace' ? route.tool : null}
+              onTool={tool => { close(); navigate({name: 'workspace', tool}); }}
+              onMove={(a,b) => void moveDot(a,b)}
+              allBotsActive={route.name === 'overview'}
+              settingsActive={false}
+              onSelect={botId => { close(); navigate({name: 'conversation', botId}); }}
+              onShowAll={() => { close(); navigate({name: 'overview'}); }}
+              onOpenSettings={() => { close(); navigate({name: 'settings'}); }}
+              onHome={close}
+            />}
+          </ResponsiveNavigation>
+        )}
 
         <main className="main">
           {orderError && <p role="alert">{orderError}</p>}

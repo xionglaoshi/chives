@@ -50,41 +50,6 @@
   border-radius: var(--radius-xs);
 }
 
-@media (max-width: 720px) {
-  .sidebar {
-    flex-direction: row;
-    align-items: center;
-    gap: var(--space-6);
-    width: 100%;
-    padding: var(--space-4) var(--space-6);
-    overflow: visible;
-    border-right: 0;
-    border-bottom: 1px solid var(--color-line);
-  }
-
-  .sidebar__brand {
-    flex: none;
-    padding: 0;
-  }
-
-  .sidebar__wordmark {
-    display: none;
-  }
-
-  .sidebar__skeleton {
-    flex-direction: row;
-    padding: 0;
-  }
-
-  .sidebar__skeleton-row {
-    padding: 0;
-  }
-
-  .sidebar__skeleton-line {
-    display: none;
-  }
-}
-
 .sidebar--compact {
   width: 72px;
   align-items: center;
@@ -174,17 +139,6 @@
   font-weight: var(--weight-bold);
 }
 
-@media (max-width: 720px) {
-  .sidebar--compact {
-    width: 100%;
-    padding: var(--space-4) var(--space-6);
-  }
-
-  .bot-rail {
-    flex-direction: row;
-  }
-}
-
 .sidebar__footer {
   display: flex;
   flex-direction: column;
@@ -217,23 +171,6 @@
 
 .sidebar__all-label {
   flex: 1;
-}
-
-@media (max-width: 720px) {
-  .sidebar__footer {
-    flex-direction: row;
-    margin-top: 0;
-    padding-top: 0;
-    padding-left: var(--space-3);
-    border-top: 0;
-    border-left: 1px solid var(--color-line);
-  }
-
-  .sidebar__all {
-    width: auto;
-    padding: 0 var(--space-3);
-    white-space: nowrap;
-  }
 }
 
 .sidebar--compact .sidebar__footer {
@@ -269,21 +206,6 @@
 .workbench-placeholder h1 { font-size: var(--text-xl); }
 .workbench-placeholder p { color: var(--color-text-secondary); }
 .sidebar--compact .desk-shortcuts span,.sidebar--compact .desk-shortcuts h2,.sidebar--compact .sidebar__hint { display:none; }
-@media (max-width: 720px) {
-  .sidebar,.sidebar--compact { display: grid; grid-template-columns: minmax(0,1fr) auto; gap: 5px 8px; width: 100%; padding: 6px 8px; align-items: center; }
-  .sidebar .sidebar__brand { display: none; }
-  .sidebar .sidebar__footer { grid-column: 2; grid-row: auto; justify-self: end; margin: 0; padding: 0; border: 0; }
-  .sidebar__hint { display: none; }
-  .sidebar .desk-shortcuts { display: flex; grid-column: 1/-1; gap: 4px; }
-  .sidebar .desk-shortcuts h2 { display: none; }
-  .sidebar .desk-shortcuts span { display: inline; }
-  .sidebar .desk-shortcuts button { padding: 3px 7px; font-size: 12px; }
-  .sidebar .bot-list,.sidebar .bot-rail { grid-column: 1/-1; overflow-x: auto; }
-  .sidebar .bot-list__list { width: max-content; }
-  .sidebar .bot-row { padding: 3px 7px; }
-  .sidebar .dot-grip { opacity: .65; font-size: 12px; }
-}
-
 @media (min-width: 721px) {
   .sidebar .bot-list { min-height: 0; }
   .sidebar .bot-list__list { overflow-y: auto; min-height: 0; scrollbar-width: thin; }
@@ -316,20 +238,12 @@
 .sidebar .sidebar-menu-link { display:block; padding:7px 9px; text-align:left; border:none; border-radius:6px; background:transparent; color:inherit; font-size:var(--text-sm); }
 .sidebar-menu-link:hover { background:var(--color-raised); }
 .sidebar--compact .sidebar-more > button span { display:none; }
-@media(max-width:720px) { .sidebar .desk-shortcuts { flex-wrap:wrap; } .sidebar > .sidebar-more { grid-column:1; } }
-
 .sidebar__brand { justify-content:space-between; }
 .sidebar__home { display:inline-flex; align-items:center; gap:8px; color:inherit; text-decoration:none; border-radius:5px; }
 .sidebar__toggle { display:grid; place-items:center; width:30px; height:30px; padding:0; flex:none; background:transparent; color:var(--color-text-secondary); border:0; border-radius:6px; }
 .sidebar__toggle:is(:hover,:focus-visible) { color:var(--color-text); background:var(--color-raised); }
 .sidebar--compact .sidebar__brand { flex-direction:column; align-items:center; gap:4px; }
 .sidebar--compact .desk-shortcuts > .sidebar-pin-row > .sidebar-pin { display:none; }
-@media(max-width:720px) {
-  .sidebar .sidebar__brand { display:flex; grid-row:1; grid-column:1; flex-direction:row; justify-content:flex-start; }
-  .sidebar--compact .desk-shortcuts > .sidebar-pin-row span { display:none; }
-}
-
 .sidebar .bot-row .bot-row__name { font-weight:700; }
 .sidebar .bot-row__role { font-family:inherit; font-size:var(--text-sm); }
 @media(min-width:721px) { .sidebar .bot-row__role { display:block; } }
-@media(max-width:720px) { .sidebar .bot-row__role { font-size:12px; } }

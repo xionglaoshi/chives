@@ -30,6 +30,8 @@ export interface SidebarProps {
   loading: boolean;
   /** Collapse the list to an avatar rail while a deliverable preview is open. */
   compact?: boolean;
+  phone?: boolean;
+  onHome?: () => void;
   /** True while the all-bots overview is the current route. */
   allBotsActive?: boolean;
   /** True while the settings page is the current route. */
@@ -60,6 +62,7 @@ export function Sidebar({
   selectedId,
   loading,
   compact: previewOpen = false,
+  phone = false, onHome,
   allBotsActive = false,
   settingsActive = false,
   activeTool, onTool, onMove,
@@ -72,7 +75,7 @@ export function Sidebar({
   });
   const [previewExpanded, setPreviewExpanded] = useState(false);
   useEffect(() => { if (!previewOpen) setPreviewExpanded(false); }, [previewOpen]);
-  const compact = previewOpen ? !previewExpanded : collapsed;
+  const compact = !phone && (previewOpen ? !previewExpanded : collapsed);
   const toggleLabel = compact ? '展开侧边栏' : '收起侧边栏';
   function toggleSidebar() {
     if (previewOpen) { setPreviewExpanded(!previewExpanded); return; }
@@ -102,17 +105,17 @@ export function Sidebar({
   return (
     <nav className={`sidebar${compact ? ' sidebar--compact' : ''}`} aria-label="Bot 列表">
       <div className="sidebar__brand">
-        <a className="sidebar__home" href="#/workspace/trends" aria-label="老韭菜 · Chives，打开热门榜单" title="热门榜单">
+        <a className="sidebar__home" onClick={onHome} href="#/workspace/trends" aria-label="老韭菜 · Chives，打开热门榜单" title="热门榜单">
           <Logo size={40} title="Chives" />
           <span className="sidebar__wordmark">老韭菜 · Chives</span>
         </a>
-        <button type="button" className="sidebar__toggle" aria-expanded={!compact}
+        {!phone && <button type="button" className="sidebar__toggle" aria-expanded={!compact}
           aria-label={toggleLabel} title={toggleLabel} onClick={toggleSidebar}>
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <rect x="2.5" y="4" width="19" height="16" rx="3"/><path d="M8.5 4v16"/>
             <path d={compact ? 'm13 9 3 3-3 3' : 'm16 9-3 3 3 3'}/>
           </svg>
-        </button>
+        </button>}
       </div>
       <section className="desk-shortcuts" aria-label="工作台">
         <h2 className="bot-list__heading">工作台</h2>

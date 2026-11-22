@@ -1,0 +1,74 @@
+@media (max-width: 720px), (pointer: coarse) and (max-width: 960px) and (max-height: 520px) {
+  .app {
+    --mobile-nav-left: max(8px, env(safe-area-inset-left, 0px));
+    --mobile-nav-width: 72px;
+  }
+  .app .mobile-nav-trigger, .app .mobile-nav-sheet__close {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 44px;
+    height: 44px;
+    border-radius: var(--radius-pill);
+    background: var(--color-panel);
+    color: var(--color-text);
+  }
+
+  .app .mobile-nav-trigger {
+    position: absolute;
+    z-index: 17;
+    top: calc(6px + env(safe-area-inset-top, 0px));
+    left: var(--mobile-nav-left);
+    width: var(--mobile-nav-width);
+    gap: 6px;
+    padding: 0 5px;
+    border: 1px solid var(--color-line);
+    box-shadow: 0 2px 8px rgb(0 0 0 / 7%);
+    font-size: var(--text-sm);
+    font-weight: var(--weight-semibold);
+  }
+
+  .mobile-nav-sheet {
+    position: fixed;
+    inset: 0 auto 0 0;
+    margin: 0;
+    width: min(340px, calc(100% - 32px));
+    height: 100%;
+    max-width: none;
+    max-height: none;
+    padding: 0;
+    border: 0;
+    background: var(--color-nav);
+    color: var(--color-text);
+    overscroll-behavior: contain;
+  }
+  .mobile-nav-sheet::backdrop { background: rgb(0 0 0 / 34%); }
+  .mobile-nav-sheet__body { position: relative; min-height: 100%; }
+  .app .mobile-nav-sheet__close {
+    position: absolute;
+    z-index: 1;
+    top: max(10px, env(safe-area-inset-top, 0px));
+    right: 12px;
+    border: 0;
+    background: transparent;
+  }
+  .mobile-nav-sheet :is(.sidebar, .desk-nav) {
+    width: 100%;
+    min-height: 100dvh;
+    padding: max(12px, env(safe-area-inset-top, 0px)) 16px max(16px, env(safe-area-inset-bottom, 0px));
+    border: 0;
+  }
+  .mobile-nav-sheet .sidebar__brand { padding-right: 40px; }
+  .mobile-nav-sheet .sidebar__wordmark { font-size: 18px; }
+  .mobile-nav-sheet .desk-shortcuts button, .mobile-nav-sheet .sidebar-more > button,
+  .mobile-nav-sheet .desk-nav-item, .mobile-nav-sheet .sidebar-pin { min-height: 44px; }
+  .mobile-nav-sheet .sidebar-pin { min-width: 40px; }
+  .mobile-nav-sheet .sidebar__hint { display: none; }
+  .mobile-nav-sheet .desk-nav { padding-top: max(22px, env(safe-area-inset-top, 0px)); }
+  .mobile-nav-sheet .desk-nav-item { font-size: 15px; gap: 12px; }
+}
+
+@media (max-width: 365px) {
+  .app { --mobile-nav-width: 44px; }
+  .mobile-nav-trigger span { display: none; }
+}

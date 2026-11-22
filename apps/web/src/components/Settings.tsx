@@ -1,3 +1,4 @@
+import { ResponsiveNavigation } from './ResponsiveNavigation';
 import {CapabilitiesDesk} from './CapabilitiesDesk';
 import {TaskManagement} from './TaskManagement';
 import type {AskExpert} from './useExpertAttachment';
@@ -169,7 +170,10 @@ export function Settings({ onOpenProfile,onAskExpert }: SettingsProps): ReactEle
 
   const english=prefs?.locale==='en-US';
   return (
-    <div className="desk-settings"><SettingsNav page={page} go={go} english={english}/>
+    <div className="desk-settings">
+    <ResponsiveNavigation label={english ? 'Settings navigation' : '设置目录'} shortLabel={english ? 'Menu' : '目录'} closeLabel={english ? 'Close menu' : '关闭目录'}>
+      {close => <SettingsNav page={page} english={english} go={id => { close(); go(id); }}/>}
+    </ResponsiveNavigation>
     <section className="desk-content" key={page}><div className="desk-page"><header className="desk-header"><p>{english?groupNames[group.label]:group.label}</p><h2>{english?settingsEnglish[item[0]!]![0]:item[1]}</h2><p>{english?settingsEnglish[item[0]!]![1]:item[2]}</p></header>
     {deskError&&<p role="alert">{deskError}</p>}
     {page==='account'&&prefs&&<ProfileCard p={prefs} save={save}/>}
