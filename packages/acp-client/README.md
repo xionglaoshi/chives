@@ -78,7 +78,7 @@ throws `AcpTimeoutError`.
 dsh only publishes committed messages. `plugin/chives-stream.plugin.mjs` listens
 to `agent/assistant-stream` and forwards `start`, `end`, `text-delta`, and
 `reasoning-delta` frames as NDJSON. With `CHIVES_STREAM_SOCKET` set it connects to
-that Unix socket; otherwise it writes `@@chives-stream {...}` lines to stderr.
+that local IPC endpoint (a Windows named pipe or a Unix socket); otherwise it writes `@@chives-stream {...}` lines to stderr.
 
 ```ts
 import { StreamChannel, DraftTracker, pluginPath, streamPatchYaml } from '@chives/acp-client';

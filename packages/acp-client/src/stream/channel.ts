@@ -1,5 +1,6 @@
-/** Unix-domain-socket server receiving the plugin's newline-delimited frames. */
+/** Local IPC server receiving the plugin's newline-delimited frames. */
 
+import { randomUUID } from 'node:crypto';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { createServer, type Server, type Socket } from 'node:net';
 import { tmpdir } from 'node:os';
@@ -35,7 +36,7 @@ function parseFrame(line: string): StreamFrame | undefined {
 }
 
 /**
- * Listens on a private Unix socket under the OS temp directory. Malformed
+ * Listens on a unique Windows named pipe or a private Unix socket. Malformed
  * lines and client disconnects are ignored; a broken side channel must never
  * affect a conversation.
  */
@@ -68,26 +69,34 @@ export class StreamChannel {
   }
 
   private async startOnce(): Promise<string> {
-    const directory = await mkdtemp(join(tmpdir(), 'chives-acp-stream-'));
-    const path = join(directory, 'stream.sock');
-    if (path.length > UNIX_SOCKET_PATH_LIMIT) {
-      await rm(directory, { recursive: true, force: true });
-      throw new Error(`stream socket path is too long: ${path}`);
-    }
+    const directory = process.platform === 'win32'
+      ? undefined
+      : await mkdtemp(join(tmpdir(), 'chives-acp-stream-'));
+    const path = directory === undefined
+      ? `\\\\.\\pipe\\chives-acp-stream-${randomUUID()}`
+      : join(directory, 'stream.sock');
     const server = createServer((socket) => this.accept(socket));
-    await new Promise<void>((resolve, reject) => {
-      const onError = (error: Error): void => {
-        server.removeListener('listening', onListening);
-        reject(error);
-      };
-      const onListening = (): void => {
-        server.removeListener('error', onError);
-        resolve();
-      };
-      server.once('error', onError);
-      server.once('listening', onListening);
-      server.listen(path);
-    });
+    try {
+      if (directory !== undefined && Buffer.byteLength(path) > UNIX_SOCKET_PATH_LIMIT) {
+        throw new Error(`stream socket path is too long: ${path}`);
+      }
+      await new Promise<void>((resolve, reject) => {
+        const onError = (error: Error): void => {
+          server.removeListener('listening', onListening);
+          reject(error);
+        };
+        const onListening = (): void => {
+          server.removeListener('error', onError);
+          resolve();
+        };
+        server.once('error', onError);
+        server.once('listening', onListening);
+        server.listen(path);
+      });
+    } catch (error) {
+      if (directory !== undefined) await rm(directory, { recursive: true, force: true });
+      throw error;
+    }
     server.on('error', () => {
       // Post-listen errors only affect the optional side channel.
     });
