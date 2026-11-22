@@ -1,3 +1,4 @@
+import { isSampleStyleReport, sampleReportSegment, styleReportAttachment } from './settings/style-report-turn.js';
 /** One conversation turn: select a task, drive the harness, persist and publish events. */
 
 import { randomUUID } from 'node:crypto';
@@ -129,6 +130,7 @@ interface PendingApproval {
 }
 
 export interface OrchestratorOptions {
+  styleReportTurn?: (botId: string, text: string, attachment: MessageAttachmentDto, messageId: string, sink: HarnessSink) => Promise<string>;
   profileCommand?: (botId:string,text:string)=>Promise<string|null>;
   profileNotice?: (botId:string,text:string) => Promise<string>;
   profileForTurn?: (botId:string,text:string) => string;
@@ -212,12 +214,14 @@ export class Orchestrator {
   /** Last UTC day a per-bot scratch cleanup ran in this process. */
   private readonly scratchCleanupDays = new Map<string, string>();
 
+  private readonly styleReportTurn: OrchestratorOptions['styleReportTurn'];
   private readonly profileCommand: OrchestratorOptions['profileCommand'];
   private readonly profileNotice: OrchestratorOptions['profileNotice'];
   private readonly profileForTurn: OrchestratorOptions['profileForTurn'];
   private readonly executionFor: OrchestratorOptions['executionFor'];
 
   constructor(options: OrchestratorOptions) {
+    this.styleReportTurn=options.styleReportTurn;
     this.profileCommand=options.profileCommand;
     this.profileNotice=options.profileNotice;
     this.profileForTurn=options.profileForTurn;
@@ -343,7 +347,15 @@ export class Orchestrator {
     const botId = bot.id;
     const now = this.now();
     const latest = this.store.tasks.latestForBot(botId);
-    const decision = await this.segmentation.decide(botId, text, now);
+    const report = this.styleReportTurn && styleReportAttachment(attachments);
+    if (report && attachments.length !== 1) {
+      throw new AppError(400, 'report_attachments', '风格报告解读每轮只接受当前章节附件。');
+    }
+    const decision = report
+      ? {kind:'new' as const, reason:isSampleStyleReport(report) ? sampleReportSegment : 'style_report'}
+      : latest?.segmentReason === sampleReportSegment
+        ? {kind:'new' as const, reason:'after_style_report_sample'}
+        : await this.segmentation.decide(botId, text, now);
     this.requireHired(botId);
     const continuing = decision.kind === 'continue' && decision.previous !== undefined;
     const fallbackTitle =
@@ -366,7 +378,8 @@ export class Orchestrator {
 
     // Closing the previous segment is asynchronous; `closed_at` is written
     // before the first await inside closeTask, so the new injection sees it.
-    if (!continuing && latest !== undefined && latest.id !== task.id && (latest.closedAt ?? null) === null) {
+    if (!continuing && decision.reason !== sampleReportSegment && latest !== undefined &&
+        latest.segmentReason !== sampleReportSegment && latest.id !== task.id && (latest.closedAt ?? null) === null) {
       void this.segmentation.closeTask(latest.id, 'new_task').catch(() => undefined);
     }
 
@@ -380,16 +393,16 @@ export class Orchestrator {
       meta: attachments.length === 0 ? null : { attachments: [...attachments] },
       createdAt: now.toISOString(),
     });
-    this.segmentation.recordUserSymbols(task.id, text);
+    if (!report) this.segmentation.recordUserSymbols(task.id, text);
 
     let promptText = text;
     let contextMeta: JsonRecord | null = task.contextMeta ?? null;
-    if (!continuing) {
+    if (!report && !continuing) {
       const injection = this.segmentation.buildInjection(botId, message);
       promptText = injection.text;
       contextMeta = { ...injection.meta };
     }
-    if (this.memory !== undefined) {
+    if (!report && this.memory !== undefined) {
       const cursor = contextMeta?.['memoryAuditCursor'];
       const changes = this.memory.consumeChanges(
         botId,
@@ -403,7 +416,7 @@ export class Orchestrator {
         contextMeta = { ...(contextMeta ?? {}), memoryAuditCursor: nextCursor };
       }
     }
-    const watchNotices = this.consumeWatchNotices(botId);
+    const watchNotices = report ? '' : this.consumeWatchNotices(botId);
     if (watchNotices !== '') promptText = `${watchNotices}\n\n${promptText}`;
     // A follow-up queued for this very task is folded into the user's turn
     // instead of running as a separate one.
@@ -455,7 +468,7 @@ export class Orchestrator {
     });
     this.setStatus(botId, 'starting');
 
-    this.launchTurn(bot, task.id, promptText, turn,text);
+    this.launchTurn(bot, task.id, promptText, turn,text, report ? {attachment:report,messageId:message.id} : undefined);
     return { messageId: message.id, taskId: task.id };
   }
 
@@ -725,7 +738,10 @@ export class Orchestrator {
         task: toTaskDto(restarted),
       });
       this.setStatus(bot.id, 'starting');
-      this.launchTurn(bot, taskId, lastUser.content, turn);
+      const recorded = lastUser.meta?.['attachments'];
+      const report = this.styleReportTurn && Array.isArray(recorded) && styleReportAttachment(recorded);
+      this.launchTurn(bot, taskId, lastUser.content, turn, undefined,
+        report ? {attachment:report,messageId:lastUser.id} : undefined);
       return { messageId: lastUser.id, taskId };
     } finally {
       this.submitting.delete(bot.id);
@@ -904,6 +920,7 @@ export class Orchestrator {
     text: string,
     turn: ActiveTurn,
     userText?:string,
+    report?: {attachment: MessageAttachmentDto; messageId: string},
   ): Promise<void> {
     const workspace =
       this.dataDir === undefined ? null : join(this.dataDir, 'bots', bot.id, 'workspace');
@@ -961,6 +978,14 @@ export class Orchestrator {
       if (!turn.delegated) this.setStatus(bot.id, 'starting');
       const task = this.store.tasks.get(taskId);
       if (task === undefined) throw new AppError(500, 'task_missing', `task "${taskId}" disappeared`);
+      if (report && this.styleReportTurn) {
+        phase = 'prompt';
+        this.setStatus(bot.id, 'working');
+        const answer = await this.styleReportTurn(bot.id, userText ?? text, report.attachment, report.messageId, sink);
+        if (!turn.cancelled) this.appendBotMessage(bot.id, taskId, turn.eventBotId, answer);
+        finish(turn.cancelled ? 'cancelled' : 'done');
+        return;
+      }
       if(userText!==undefined&&this.profileCommand){
         const receipt=await this.profileCommand(bot.id,userText);
         if(receipt!==null){

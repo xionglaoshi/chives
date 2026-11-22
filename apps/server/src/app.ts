@@ -1,3 +1,4 @@
+import { runStyleReportTurn, sampleReportSegment } from './settings/style-report-turn.js';
 import {z, ZodError} from 'zod';
 import {readProfile} from './settings/interview-profile.js';
 import {ProfileService} from './settings/profile-service.js';
@@ -521,6 +522,18 @@ export function createApp(options: CreateAppOptions): ChivesApp {
     options.driver ?? (config.harness === 'fake' ? new FakeDriver() : undefined);
   const orchestrator = new Orchestrator({
     executionFor: effectiveModel,
+    styleReportTurn: (botId, text, attachment, messageId, sink) => {
+      const prefs = preferences(store);
+      const current = store.messages.get(messageId);
+      return runStyleReportTurn({
+        text, attachment, workspace:botWorkspace(config.dataDir, botId), dataDir:config.dataDir,
+        attachmentsAllowed:prefs.attachmentsRead, userAllowed:mayReadUser(botId), portfolioAllowed:prefs.portfolioAccess,
+        history:()=>current ? store.messages.listPage(botId,current.seq,12).messages
+          .filter(message=>message.role==='user'||message.role==='bot')
+          .map(({role,content})=>({role,text:content.slice(0,1200)})) : [],
+        provider:modelProvider, model:profileModel(), sink
+      });
+    },
     profileCommand: async (botId,text) => {
       if (!mayReadUser(botId)) return null;
       const receipt=await assessment.chatCommand(botId,text);
@@ -2431,6 +2444,10 @@ export function createApp(options: CreateAppOptions): ChivesApp {
         if (action === 'followup-suggestion') {
           if (method !== 'POST') { methodNotAllowed(response, 'POST'); return; }
           await readJsonObject(request);
+          if (store.tasks.latestForBot(botId)?.segmentReason === sampleReportSegment) {
+            sendJson(response, 200, {draft:null});
+            return;
+          }
           const recent = store.messages.listPage(botId, null, 12).messages
             .filter(message => message.role === 'user' || message.role === 'bot')
             .map(({role, content}) => ({role, text: content.slice(0, 1200)}));

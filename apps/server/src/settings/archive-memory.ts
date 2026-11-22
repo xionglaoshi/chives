@@ -1,3 +1,4 @@
+import { sampleReportSegment } from './style-report-turn.js';
 import { createHash, randomUUID } from 'node:crypto';
 import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -112,7 +113,7 @@ export class ArchiveMemory {
       for(let count=0;count<8 && !this.stopping;count++) {
         const item=this.store.db.prepare(`SELECT m.rowid AS n,m.id,m.task_id,m.bot_id,m.seq,m.content,m.created_at,t.status
           FROM messages m JOIN tasks t ON t.id=m.task_id WHERE m.rowid>? AND m.role='user' AND m.kind='text'
-          AND t.depth=0 AND t.delegated=0 AND t.origin IS NULL ORDER BY m.rowid LIMIT 1`).get(this.progress('cursor'));
+          AND t.depth=0 AND t.delegated=0 AND t.origin IS NULL AND COALESCE(t.segment_reason,'')<>? ORDER BY m.rowid LIMIT 1`).get(this.progress('cursor'),sampleReportSegment);
         if (!item || item.status==='running') break;
         const bot=String(item.bot_id),id=String(item.id);
         if (item.status==='done' && this.enabled(bot)) {
