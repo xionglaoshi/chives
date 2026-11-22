@@ -5,7 +5,7 @@ import { afterAll, afterEach, describe, expect, it } from 'vitest';
 import { parse } from 'yaml';
 
 import { createApp, type ChivesApp } from '../src/app.js';
-import type { ModelProviderDto } from '../src/api/protocol.js';
+import type { ComposerModelMenu, ModelProviderDto } from '../src/api/protocol.js';
 import { FakeDriver } from '../src/harness/fake.js';
 import { dshPatchPath, dshSpawnSpec } from '../src/harness/index.js';
 import { buildCatalog, loadBots, type BotManifest } from '../src/bots/index.js';
@@ -63,7 +63,8 @@ describe('buildModelPatch', () => {
     const doc = parse(
       buildModelPatch(parseModelProvider({ ...FLASH, contextWindow: 1_000_000, maxTokens: 65_536 })),
     ) as Array<{ id: string; config: { providers: Record<string, Record<string, unknown>> } }>;
-    expect(doc).toHaveLength(1);
+    expect(doc.filter(item => item.id === 'llm-pi-ai')).toHaveLength(1);
+    expect(doc[1]).toMatchObject({insert:[{id:'chives-model-settings',config:{provider:'chives',model:FLASH.model,fastMode:false}}]});
     expect(doc[0]?.id).toBe('llm-pi-ai');
     const route = doc[0]?.config.providers['chives'];
     expect(route).toMatchObject({
@@ -198,5 +199,27 @@ describe('/api/settings/model-provider', () => {
       await fetch(`${baseUrl}/api/settings/model-provider`, { method: 'DELETE' })
     ).json()) as ModelProviderDto;
     expect(cleared).toMatchObject({ active: false, keyConfigured: false });
+  });
+
+  it('saves a composer selection for one bot and restores global inheritance', async () => {
+    app=createApp({config:testConfig(tempDir()),driver:new FakeDriver()});
+    const base=await listen(app.server);
+    const put=(path:string,body:unknown)=>fetch(base+path,{
+      method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(body)
+    });
+    await put('/api/settings/model-provider',{...FLASH,apiKey:'fixture-only'});
+    const path='/api/bots/expert/composer-model';
+    const menu=await (await fetch(base+path)).json() as ComposerModelMenu;
+    expect(menu.current.followsGlobal).toBe(true);
+    expect(JSON.stringify(menu)).not.toContain('fixture-only');
+    const {connection,model}=menu.choices[0]!;
+    const selection=await put(path,{connection,model,tuning:{reasoningEffort:'max'}});
+    expect(await selection.json()).toMatchObject({followsGlobal:false,model,tuning:{reasoningEffort:'max'}});
+    expect((await put(path,{connection,model,tuning:{fastMode:true}})).status).toBe(400);
+    const saved=await (await fetch(base+path+'?view=current')).json();
+    expect(saved.current.tuning.reasoningEffort).toBe('max');
+    const peer=await (await fetch(base+'/api/bots/research/composer-model?view=current')).json();
+    expect(peer.current).toMatchObject({followsGlobal:true,tuning:{}});
+    expect(await (await put(path,{followGlobal:true})).json()).toEqual(menu.global);
   });
 });

@@ -326,6 +326,28 @@ export interface ModelReceipt {
 }
 export interface ModelCapabilities { efforts: ReasoningEffort[]; fast: boolean }
 
+/** A saved connection may expose multiple models through the signed-in dsh subscription. */
+export interface ComposerModelChoice extends ModelCapabilities {
+  subscription: boolean;
+  connection: string;
+  label: string;
+  model: string;
+  defaults: ModelTuning;
+}
+export interface ComposerModelState {
+  model: string;
+  connection: string;
+  followsGlobal: boolean;
+  tuning: ModelTuning;
+}
+export interface ComposerModelMenu {
+  current: ComposerModelState;
+  global: ComposerModelState;
+  choices: ComposerModelChoice[];
+  subscriptionUnavailable: boolean;
+  receipt: ModelReceipt | null;
+}
+
 /** The settings-page model endpoint. The API key is write-only and never appears here. */
 export interface ModelProviderDto extends ModelTuning {
   baseURL: string;

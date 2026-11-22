@@ -1,3 +1,4 @@
+import {effortNames} from "./modelTuning";
 import {useState,useEffect} from 'react';
 import {readModelFile,type ImportedModel} from './importModel';
 import {desk} from './deskApi';
@@ -7,7 +8,6 @@ import {Row} from './DeskPanels';
 type Config=ModelTuning&{baseURL:string;model:string;displayName:string;api:string;deepseekThinking:boolean;contextWindow?:number;maxTokens?:number};
 type Entry=Config&{id:string;active:boolean;keyConfigured:boolean};
 const blank:Config={baseURL:'https://api.deepseek.com/v1',model:'deepseek-flash',displayName:'',api:'openai-completions',deepseekThinking:true};
-const effortNames:Record<ReasoningEffort,string>={minimal:'极低',low:'低',medium:'中',high:'高',xhigh:'很高',max:'最高'};
 function tuningOf(c:ModelTuning):ModelTuning {
  return {...(c.reasoningEffort?{reasoningEffort:c.reasoningEffort}:{}),...(c.fastMode?{fastMode:true}:{})};
 }

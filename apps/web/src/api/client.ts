@@ -20,6 +20,7 @@ import type {
   ActiveRoutineDto,
   AppearanceSettingsDto,
   DataLocationDto,
+  ComposerModelMenu, ComposerModelState, ModelTuning,
   ModelProviderDto,
   ModelSettingsDto,
   ProactiveSettingsDto,
@@ -72,6 +73,20 @@ async function request<T>(url: string, init?: RequestInit): Promise<T> {
 
 export function listBots(signal?: AbortSignal): Promise<BotSummary[]> {
   return request<BotSummary[]>('/api/bots', signal === undefined ? undefined : { signal });
+}
+
+export function readComposerSelection(id:string, signal:AbortSignal) {
+  return request<{current:ComposerModelState}>(`/api/bots/${encodeURIComponent(id)}/composer-model?view=current`, {signal});
+}
+
+export function readComposerMenu(id:string, signal:AbortSignal) {
+  return request<ComposerModelMenu>(`/api/bots/${encodeURIComponent(id)}/composer-model`, {signal});
+}
+
+export function saveComposerModel(id:string, selection:{followGlobal:true} | {connection:string; model:string; tuning?:ModelTuning}) {
+  return request<ComposerModelState>(`/api/bots/${encodeURIComponent(id)}/composer-model`, {
+    method:'PUT', body:JSON.stringify(selection)
+  });
 }
 
 export function fetchBotProfile(botId: string, signal?: AbortSignal): Promise<BotProfile> {

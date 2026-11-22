@@ -1,9 +1,26 @@
+import type {ComposerModelChoice, ModelTuning} from '../api/protocol.js';
 import {randomUUID} from 'node:crypto';
 import {mkdirSync,existsSync,readFileSync,writeFileSync,renameSync,rmSync} from 'node:fs';
 import {join} from 'node:path';
 import type {Store} from '../store/index.js';
 import {AppError} from '../errors.js';
 import {ModelProviderStore, parseModelProvider, type ModelProviderConfig} from './model-provider.js';
+
+export interface BotModelPick {model:string; tuning?:ModelTuning}
+
+export function tuningOf(config:ModelTuning):ModelTuning {
+  return {...(config.reasoningEffort ? {reasoningEffort:config.reasoningEffort} : {}),
+          ...(config.fastMode ? {fastMode:true} : {})};
+}
+
+function selectedConfig(entry:ModelProviderConfig, pick?:BotModelPick):ModelProviderConfig {
+  if (!pick || (entry.api!=='openai-codex-subscription' && pick.model!==entry.model)) return entry;
+  const {reasoningEffort, fastMode, ...base}=entry;
+  const tuning=pick.tuning ?? (pick.model===entry.model ? tuningOf(entry) : {});
+  if(entry.api!=='openai-codex-subscription' && !(entry.api==='openai-completions' && entry.deepseekThinking))
+    return {...base, model:pick.model};
+  return {...base,model:pick.model,...tuning};
+}
 
 interface Entry extends ModelProviderConfig {id:string}
 const catalogKey='provider.library.v1', selectedKey='provider.selected.v1';
@@ -15,11 +32,11 @@ export class ModelLibrary {
     const current=this.provider.read();
     return current?[{...current,id:'original'}]:[];
   }
-  private active(){return this.store.settings.get<string>(selectedKey)??'original';}
+  activeId(){return this.store.settings.get<string>(selectedKey)??'original';}
   private file(id:string){return join(this.data,'secrets','providers',id);}
   private key(id:string){
     if(existsSync(this.file(id)))return readFileSync(this.file(id),'utf8');
-    if(id==='original'&&this.active()===id)return this.provider.currentKey();
+    if(id==='original'&&this.activeId()===id)return this.provider.currentKey();
     return '';
   }
   private putKey(id:string,key:string){
@@ -30,7 +47,7 @@ export class ModelLibrary {
   synchronizeLegacy(){
     const saved=this.store.settings.get<Entry[]>(catalogKey);
     if(!saved)return;
-    const id=this.active()||'original',config=this.provider.read(),key=this.provider.currentKey();
+    const id=this.activeId()||'original',config=this.provider.read(),key=this.provider.currentKey();
     const records=saved.filter(r=>r.id!==id);
     if(config){records.push({...config,id});if(key)this.putKey(id,key);else rmSync(this.file(id),{force:true});}
     else rmSync(this.file(id),{force:true});
@@ -38,12 +55,60 @@ export class ModelLibrary {
     this.store.settings.set(selectedKey,config?id:'');
   }
   entry(id: string){return this.records().find(row=>row.id===id);}
-  runtime(id:string,botId:string){
-    const cfg=this.entry(id), key=cfg && this.key(id);
+  configFor(id:string, pick?:BotModelPick) {
+    const entry=this.entry(id);
+    return entry && selectedConfig(entry,pick);
+  }
+  async composerChoices() {
+    const needsSubscription=this.records().some(entry=>entry.api==='openai-codex-subscription');
+    const status=needsSubscription ? await this.provider.subscription.status().catch(()=>null) : null;
+    const choices:ComposerModelChoice[]=[];
+    for (const entry of this.list()) {
+      if (entry.api==='openai-codex-subscription') {
+        if (!status?.authorized) continue;
+        for (const model of status.models) choices.push({
+          model, subscription:true, connection:entry.id, label:entry.displayName || 'Codex 订阅',
+          defaults:model===entry.model ? tuningOf(entry) : {}, ...(status.capabilities[model] ?? {efforts:[],fast:false})
+        });
+      } else if (entry.keyConfigured) {
+        choices.push({model:entry.model, subscription:false, connection:entry.id, label:entry.displayName || entry.model,
+          defaults:tuningOf(entry), ...await this.provider.capabilities(entry)});
+      }
+    }
+    return {choices, subscriptionUnavailable:needsSubscription && !status?.authorized};
+  }
+  async composerPreference(input:Record<string,unknown>) {
+    let preference:{kernel:'dsh';connection:string;model:string;pick?:BotModelPick}={kernel:'dsh',connection:'',model:''};
+    if (input.followGlobal===true) {
+      if(Object.keys(input).length!==1) throw new AppError(400,'invalid_selection','跟随全局时无需另选参数');
+    } else {
+      if (Object.keys(input).some(k=>!['connection','model','tuning'].includes(k)))
+        throw new AppError(400,'invalid_selection','无法识别模型选择参数');
+      const {choices}=await this.composerChoices();
+      const choice=choices.find(c=>c.connection===input.connection && c.model===input.model);
+      if(!choice) throw new AppError(409,'unavailable_model','该模型当前不可用，请刷新模型列表');
+      const pick:BotModelPick={model:choice.model};
+      if(input.tuning!==undefined) {
+        const t=input.tuning;
+        if(!t || typeof t!=='object' || Array.isArray(t) || Object.keys(t).some(k=>k!=='fastMode' && k!=='reasoningEffort'))
+          throw new AppError(400,'invalid_tuning','无法识别模型参数');
+        const {reasoningEffort,fastMode}=t as Record<string,unknown>;
+        const effort=choice.efforts.find(e=>e===reasoningEffort);
+        if(reasoningEffort!==undefined && !effort) throw new AppError(400,'invalid_effort','此模型不支持所选思考强度');
+        if(fastMode!==undefined && (typeof fastMode!=='boolean' || (fastMode && !choice.fast)))
+          throw new AppError(400,'invalid_speed','此模型不支持所选速度');
+        pick.tuning={...(effort ? {reasoningEffort:effort} : {}), ...(fastMode ? {fastMode:true} : {})};
+      }
+      preference={...preference,connection:choice.connection,pick};
+    }
+    return preference;
+  }
+  runtime(id:string,botId:string,pick?:BotModelPick){
+    const cfg=this.configFor(id,pick), key=cfg && this.key(id);
     if(!cfg || (!key && cfg.api!=='openai-codex-subscription'))throw new AppError(409,'missing_connection','请在 Bot 档案中重新选择有效模型连接');
     return this.provider.runtimeFor(cfg,key||'',botId);
   }
-  list(){return this.records().map(r=>({...r,active:r.id===this.active(),keyConfigured:!!this.key(r.id)}));}
+  list(){return this.records().map(r=>({...r,active:r.id===this.activeId(),keyConfigured:!!this.key(r.id)}));}
   async perform(action:unknown,body:Record<string,unknown>){
     if(action==='subscription-status')return this.provider.subscription.status();
     if(action==='subscription-cancel'){this.provider.subscription.cancel();return {};}
@@ -51,13 +116,13 @@ export class ModelLibrary {
     const records=this.records(),id=String(body.id??''),old=records.find(x=>x.id===id);
     if(action==='activate'||action==='delete'){
       if(!old)throw new AppError(404,'missing','找不到这个模型');
-      if(this.active()==='original'&&this.key('original'))this.putKey('original',this.key('original'));
+      if(this.activeId()==='original'&&this.key('original'))this.putKey('original',this.key('original'));
       if(action==='activate'){
         const {id:_,...cfg}=old;
         this.provider.write(cfg,this.key(id)||null);this.store.settings.set(selectedKey,id);
       }else{
         this.store.settings.set(catalogKey,records.filter(r=>r.id!==id));
-        if(id===this.active()){this.provider.clear();this.store.settings.set(selectedKey,'');}
+        if(id===this.activeId()){this.provider.clear();this.store.settings.set(selectedKey,'');}
         rmSync(this.file(id),{force:true});
       }
       return this.list();
@@ -87,7 +152,7 @@ export class ModelLibrary {
       const current=this.records();
       const target=old?.id??current.find(r=>r.api===cfg.api&&r.model===cfg.model)?.id??randomUUID();
       this.store.settings.set(catalogKey,[...current.filter(r=>r.id!==target),{...cfg,id:target}]);
-      if(target===this.active()||!this.provider.read()){this.provider.write(cfg,null);this.store.settings.set(selectedKey,target);}
+      if(target===this.activeId()||!this.provider.read()){this.provider.write(cfg,null);this.store.settings.set(selectedKey,target);}
       return this.list();
     }
     await this.provider.validateTuning(cfg);
@@ -97,7 +162,7 @@ export class ModelLibrary {
       const target=old?.id??randomUUID();
       this.putKey(target,key);
       this.store.settings.set(catalogKey,[...this.records().filter(x=>x.id!==target),{...cfg,id:target}]);
-      if(target===this.active()||!this.provider.read()){
+      if(target===this.activeId()||!this.provider.read()){
         this.provider.write(cfg,key);this.store.settings.set(selectedKey,target);
       }
       return this.list();

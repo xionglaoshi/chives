@@ -2,7 +2,7 @@ import {useState,useEffect} from 'react';
 import {appPath} from '../appPath';
 import {BotAssets} from './BotAssets';
 import './KernelSettings.css';
-interface ModelSettings {connection:string;model:string;defaultModel:string;models:{id:string;label:string;model:string}[]}
+interface ModelSettings {current?:{model:string};connection:string;model:string;defaultModel:string;models:{id:string;label:string;model:string}[]}
 export function KernelSettings({id,onSave}:{id:string;onSave:()=>void}){
   const url=appPath('/api/bots/'+encodeURIComponent(id)+'/model');
   const [config,setConfig]=useState<ModelSettings|null>(null);
@@ -23,14 +23,14 @@ export function KernelSettings({id,onSave}:{id:string;onSave:()=>void}){
       const response=await fetch(url,{method:'PUT',headers:{'Content-Type':'application/json'},
         body:JSON.stringify({connection:choice==='custom'?'':choice,model:choice==='custom'?model.trim():''})});
       if(!response.ok)throw Error((await response.json()).error?.message||'保存失败');
-      note('已保存，下次任务生效');onSave();
+      const saved:ModelSettings=await response.json();setConfig(saved);note('已保存，下次任务生效');onSave();
     }catch(e){note(e instanceof Error?e.message:'连接失败');}
   }
   return <section aria-label="Bot 模型与资产">{config&&<><label>Bot 模型 <select aria-label="Bot 模型" value={choice} onChange={e=>select(e.target.value)}>
     <option value="">跟随全局默认 · {config.defaultModel}</option>
-    {config.models.map(m=><option value={m.id} key={m.id}>{m.label} · {m.model}</option>)}
+    {config.models.map(m=><option value={m.id} key={m.id}>{m.label} · {m.id===config.connection ? config.current?.model ?? m.model : m.model}</option>)}
     <option value="custom">指定当前供应商的模型 ID</option></select></label>
     {choice==='custom'&&<label>模型 ID <input value={model} onChange={e=>setModel(e.target.value)}/></label>}
-    <button disabled={choice==='custom'&&!model.trim()} onClick={()=>void save()}>保存模型</button></>}
+    <button disabled={(choice==='custom'&&!model.trim()) || (choice===(config.connection || (config.model?'custom':'')) && (choice!=='custom'||model.trim()===config.model))} onClick={()=>void save()}>保存模型</button></>}
     <span role="status">{notice}</span><BotAssets id={id} onSave={onSave}/></section>;
 }

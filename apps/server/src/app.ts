@@ -7,7 +7,8 @@ import { BotEmployment } from './bots/employment.js';
 import { coordinatorId, retireBot, writeExpert } from './bots/coordinator.js';
 import {preferences,parsePreferences,preferenceKey} from './settings/workbench.js';
 import {backupPersonal,restorePersonal} from './settings/personal-backup.js';
-import {ModelLibrary} from './settings/model-library.js';
+import {ModelLibrary, tuningOf, type BotModelPick} from './settings/model-library.js';
+import type { ComposerModelState } from './api/protocol.js';
 import {Updates} from './settings/updates.js';
 import {Channels} from './settings/channels.js';
 /** Wires storage, events, orchestrator, and the node:http API into one app. */
@@ -493,18 +494,26 @@ export function createApp(options: CreateAppOptions): ChivesApp {
     if(legacy && legacy.kernel!=='dsh')store.settings.set(key,{kernel:'dsh',model:legacy.model??'',connection:legacy.connection??''});
   }
   const preferenceFor = (id: string) => {
-    const saved = store.settings.get<{model?:string; connection?:string}>('kernel/' + id);
-    return {model: saved?.model ?? '', connection: saved?.connection ?? ''};
+    const saved = store.settings.get<{model?:string; connection?:string; pick?:BotModelPick}>('kernel/' + id);
+    return {model: saved?.model ?? '', connection: saved?.connection ?? '', pick:saved?.pick};
   };
   const effectiveModel = (id: string) => {
-    const {connection, model} = preferenceFor(id);
-    const entry = connection ? library.entry(connection) : undefined;
+    const {connection, model, pick} = preferenceFor(id);
+    const entry = connection ? library.configFor(connection,pick) : undefined;
     const provider = entry ?? modelProvider.dto();
     const defaultId = settings.defaultModel()?.replace(/^chives\//,'');
     return {kernel:'dsh' as const, model: entry?.model || model || defaultId ||
       modelDisplayName(registry.get(id)?.model ?? 'default',config,modelProvider.dto().active ? provider.model : undefined),
       endpoint:provider.baseURL, protocol:provider.api};
   };
+  function composerState(id:string, global=false):ComposerModelState {
+    const pref=global ? {connection:'',model:'',pick:undefined} : preferenceFor(id);
+    const selected=pref.connection ? library.configFor(pref.connection,pref.pick) : modelProvider.read();
+    const model=global ? settings.defaultModel()?.replace(/^chives\//,'') ||
+      modelDisplayName(registry.get(id)?.model ?? 'default',config,selected?.model) : effectiveModel(id).model;
+    return {model,connection:pref.connection || (selected ? library.activeId() : ''),
+      followsGlobal:!pref.connection && !pref.model, tuning:selected?.model===model ? tuningOf(selected) : {}};
+  }
   const routes =
     config.defaultRoute === undefined ? undefined : { default: config.defaultRoute };
   const preferencesForTools=()=>{const p=preferences(store);return {workspaceWrite:p.workspaceWrite,memoryWrite:p.memoryWrite,databaseRead:p.databaseRead};};
@@ -559,8 +568,8 @@ export function createApp(options: CreateAppOptions): ChivesApp {
             dshHome: config.dshHome,
             modelOverlay: config.dshOverlay,
             modelRuntime: (bot) => {
-              const {connection} = preferenceFor(bot.id);
-              return connection ? library.runtime(connection,bot.id) :
+              const {connection,pick} = preferenceFor(bot.id);
+              return connection ? library.runtime(connection,bot.id,pick) :
                 modelProvider.runtime(effectiveModel(bot.id).model,bot.id);
             },
             repoRoot: config.repoRoot,
@@ -1659,6 +1668,25 @@ export function createApp(options: CreateAppOptions): ChivesApp {
         } else if(method!=='GET'){methodNotAllowed(response,'GET, PUT');return;}
         sendJson(response,200,{profile:assets(config.dataDir,bot),options});return;
       }
+      const composerRoute=/^\/api\/bots\/([a-z0-9_-]+)\/composer-model$/.exec(path);
+      if (composerRoute) {
+        const id=composerRoute[1]!, bot=registry.get(id);
+        if (!bot) throw new AppError(404,'not_found','Bot 不存在');
+        if (method==='GET') {
+          if(url.searchParams.get('view')==='current') {sendJson(response,200,{current:composerState(id)});return;}
+          const catalog=await library.composerChoices();
+          sendJson(response,200,{current:composerState(id),global:composerState(id,true),receipt:modelProvider.receipt(id),...catalog});
+          return;
+        }
+        if (method!=='PUT') {methodNotAllowed(response,'GET, PUT');return;}
+        const input=await readJsonObject(request);
+        const preference=await library.composerPreference(input);
+        if(store.tasks.findRunning(id)) throw new AppError(409,'bot_busy','请等当前任务结束再更换模型');
+        store.settings.set('kernel/'+id,preference);
+        await orchestrator.reloadModel(id);
+        bus.publish({type:'bot.updated',botId:id,bot:summaryFor(bot,store.bots.get(id),orchestrator.pendingApprovalCounts())});
+        sendJson(response,200,composerState(id));return;
+      }
       if (modelRoute) {
         const id=modelRoute[1]!;
         if(!registry.get(id)) throw new AppError(404,'not_found','Bot 不存在');
@@ -1675,7 +1703,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           store.settings.set('kernel/'+id,{kernel:'dsh',model,connection});
           await orchestrator.reloadModel(id);
         } else if(method!=='GET'){methodNotAllowed(response,'GET, PUT');return;}
-        sendJson(response,200,{kernel:'dsh',...preferenceFor(id), models:library.list().map(e=>({id:e.id,label:e.displayName||e.model,model:e.model})), defaultModel: settings.defaultModel()?.replace(/^chives\//,'') || modelProvider.dto().model});return;
+        sendJson(response,200,{kernel:'dsh',...preferenceFor(id),current:composerState(id), models:library.list().map(e=>({id:e.id,label:e.displayName||e.model,model:e.model})), defaultModel: settings.defaultModel()?.replace(/^chives\//,'') || modelProvider.dto().model});return;
       }
       if (path === '/api/settings/model-provider') {
         if (method === 'GET') {
