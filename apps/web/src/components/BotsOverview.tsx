@@ -66,7 +66,7 @@ export function BotsOverview({
     <div className="bots-overview">
       <header className="bots-overview__header">
         <div className="bots-overview__intro">
-          <h1 className="bots-overview__title">人才市场</h1>
+          <h1 className="bots-overview__title">Bot市场</h1>
           <p className="bots-overview__subtitle">
             聘用需要的 Bot，它们会出现在终端和网页的对话名册中。
           </p>

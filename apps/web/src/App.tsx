@@ -924,7 +924,7 @@ export function App(): ReactElement {
                 <div className="conversation__chat">
                 {selectedBot.hired === false ? (
                   <div className="bots-overview__quiet" role="status">这位 Bot 待聘，历史记录可继续查看。
-                    <button type="button" className="bots-overview__action" onClick={() => navigate({name:'overview'})}>去人才市场聘用</button>
+                    <button type="button" className="bots-overview__action" onClick={() => navigate({name:'overview'})}>去Bot市场聘用</button>
                   </div>
                 ) : null}
                 {selectedBot.status === 'error' && selectedBot.hired !== false ? (

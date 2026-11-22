@@ -55,7 +55,7 @@ const catalog: SearchEntry[] = [
     destination:{hash:'#/settings?tab='+id}
   }))),
   ...Object.entries(workbenchTools).map(([tool, title]): SearchEntry => ({group:'工作台', title, summary:'打开工作台页面', destination:{hash:'#/workspace/'+tool}})),
-  {group:'工作台',title:'人才市场',summary:'查看、聘用与解聘 Bot',destination:{hash:'#/bots'}},
+  {group:'工作台',title:'Bot市场',summary:'查看、聘用与解聘 Bot',destination:{hash:'#/bots'}},
   ...[commands.chat, commands.shell].flatMap((items, i) => Object.entries(items).map(([command, description]): SearchEntry => ({
     group:'命令',title:command,summary:description, keywords: i ? '终端 shell CLI' : '终端会话 斜杠 slash CLI',
     destination:{command,terminal:i === 1}
