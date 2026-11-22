@@ -260,15 +260,15 @@ export function App(): ReactElement {
   const orderSaving = useRef(false);
   const [orderError,setOrderError] = useState('');
   const moveDot = async (source:string,target:string) => {
-    if(orderSaving.current || source===target || source==='chives' || target==='chives') return;
-    const ids=bots.filter(b=>b.id!=='chives').map(b=>b.id);
+    if(orderSaving.current || source===target || source==='operator' || target==='operator') return;
+    const ids=bots.filter(b=>b.id!=='operator').map(b=>b.id);
     const from=ids.indexOf(source), to=ids.indexOf(target);
     if(from<0 || to<0) return;
     ids.splice(from,1);ids.splice(to,0,source);
     orderSaving.current=true;
     try {
       await saveBotOrder(ids);
-      const ranks=new Map(['chives',...ids].map((id,i)=>[id,i]));
+      const ranks=new Map(['operator',...ids].map((id,i)=>[id,i]));
       setBots(list=>[...list].sort((a,b)=>(ranks.get(a.id)??ranks.size)-(ranks.get(b.id)??ranks.size)));
       setOrderError('');
     } catch {setOrderError('排序未保存，请重试。');reload();}
@@ -282,19 +282,11 @@ export function App(): ReactElement {
       navigate({name:'conversation',botId:hit.botId});
     }
   };
-  const expertDraft=useRef<{prompt:string;attachment:MessageAttachmentDto}|null>(null);
-  function openExpertDraft(prompt:string,attachment:MessageAttachmentDto){
-    expertDraft.current={prompt,attachment};
-    navigate({name:'conversation',botId:'expert'});
-  }
   const currentRouteKey = routeKey(route);
   useEffect(() => {
-    const draft=selectedId==='expert'?expertDraft.current:null;
-    expertDraft.current=null;
-    setComposerText(draft?.prompt??'');
+    setComposerText('');
     setNotice(null);
-    setAttachments(draft?[draft.attachment]:[]);
-    if(draft)setComposerFocusToken(value=>value+1);
+    setAttachments([]);
     setUploadNotice(null);
     setDragActive(false);
     setPreview(null);
@@ -407,7 +399,7 @@ export function App(): ReactElement {
         setBotStatus(event.botId, { status: event.status, runningTaskId: event.runningTaskId });
         // Idle is when a report-back child count becomes visible in the bot list.
         if (event.status === 'idle') reload();
-      } else if (event.type === 'delegation.updated') {
+      } else if (event.type === 'delegation.updated' || event.type === 'roster.changed') {
         reload();
       } else if (event.type === 'bot.updated') {
         applyBotUpdate(event.bot);
@@ -582,7 +574,7 @@ export function App(): ReactElement {
       if (existingPendingId !== undefined) markPending(botId, pendingId, 'sending');
       setSending(true);
       try {
-        const result=await postMessage(botId, text, attachmentList, running);
+        const result=await postMessage(botId, text, attachmentList, botId !== selectedId || running);
         removePending(botId, pendingId);
         setContinuation(null);
         setNotice(result.queued?"消息已进入待处理队列":null);
@@ -600,8 +592,13 @@ export function App(): ReactElement {
         setSending(false);
       }
     },
-    [addPending, markPending, removePending, running]
+    [addPending, markPending, removePending, running, selectedId]
   );
+
+  function askOperator(prompt: string, attachment: MessageAttachmentDto) {
+    navigate({name:'conversation',botId:'operator'});
+    void send('operator', prompt, undefined, [attachment]);
+  }
 
   const handleSend = useCallback(
     (text: string): void => {
@@ -838,13 +835,13 @@ export function App(): ReactElement {
           {route.name==='workspace' && route.tool==='holdings' && <Holdings/>}
           {route.name==='workspace' && route.tool==='portrait' && <section className="desk-settings desk-workspace-portrait"><div className="desk-content"><div className="desk-page">
             <header className="desk-header"><p>工作台</p><h2>用户画像</h2><p>{portraitDescription}</p></header>
-            <StyleAssessment onAskExpert={openExpertDraft} interviewReturn="workspace"/>
+            <StyleAssessment onAskExpert={askOperator} interviewReturn="workspace"/>
           </div></div></section>}
-          {route.name==='workspace' && route.tool==='trends' && <Hotspots onAskExpert={openExpertDraft} />}
-          {route.name==='workspace' && route.tool==='market' && <MarketBoard onAskExpert={openExpertDraft} />}
+          {route.name==='workspace' && route.tool==='trends' && <Hotspots onAskExpert={askOperator} />}
+          {route.name==='workspace' && route.tool==='market' && <MarketBoard onAskExpert={askOperator} />}
           {route.name==='workspace' && route.tool!=='market' && route.tool!=='holdings' && route.tool!=='portrait' && route.tool!=='trends' && <section className="workbench-placeholder"><h1>{workbenchTools[route.tool]}</h1><p>功能开发中</p></section>}
           {route.name === 'settings' ? (
-            <Settings onAskExpert={openExpertDraft}
+            <Settings onAskExpert={askOperator}
               onOpenProfile={(botId) => navigate({ name: 'profile', botId })}
             />
           ) : null}

@@ -42,6 +42,7 @@ export interface BotAvatar {
 export interface BotSummary {
   /** Older workbenches have no employment preference. */
   hired?: boolean;
+  permanent?: boolean;
   headline?: string;
   id: string;
   name: string;
@@ -808,6 +809,7 @@ export type ServerEvent =
   | DraftCommitEvent
   | UsageEvent
   | BotStatusEvent
+  | (EventBase & {type:'roster.changed'})
   | BotUpdatedEvent
   | ApprovalRequestedEvent
   | ApprovalDecidedEvent

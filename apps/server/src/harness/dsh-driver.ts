@@ -235,7 +235,7 @@ export class DshDriver implements HarnessDriver, TemporaryPromptDriver, HiddenPr
     );
     const extra = this.options.extraServers?.(bot,chives.api,issued ?? '') ?? [];
     const bridge = extra.find(server => server.name === 'bot_assets');
-    if (bot.id !== 'chives' || !bridge || !('env' in bridge)) return servers.concat(extra);
+    if (bot.id !== 'operator' || !bridge || !('env' in bridge)) return servers.concat(extra);
     // Research providers are independent and stateless. Discover them on demand so an
     // offline feed cannot prevent a conversation. The broker retains its native approval path.
     const research = new Set(['cn_market','cn_data','cn_extra','cn_research','tavily','scrape','strategy']);

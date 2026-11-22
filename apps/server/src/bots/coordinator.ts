@@ -1,13 +1,13 @@
-import { existsSync, lstatSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
 import { stringify } from 'yaml';
 import { z } from 'zod';
 import { AppError } from '../errors.js';
-import { loadBots, type BotRegistry } from './registry.js';
+import { DEFAULT_ENTRY_BOT_ID, loadBots, type BotRegistry } from './registry.js';
 import type { BotCatalog, BotManifest } from './types.js';
 
-export const coordinatorId = 'chives';
+export { DEFAULT_ENTRY_BOT_ID as coordinatorId } from './registry.js';
 export const specialistPersona = 'bots/_shared/specialist.md';
 
 const edit = z.object({
@@ -21,7 +21,7 @@ export function writeExpert(action: 'create' | 'edit', input: unknown, root: str
   const parsed = edit.safeParse(input);
   if (!parsed.success) throw new AppError(400, 'invalid_expert', '请提供有效的 Bot ID、名称或职责');
   const { id, name, role } = parsed.data;
-  if (id === coordinatorId) throw new AppError(403, 'protected_expert', '此工具用于管理其他 Bot');
+  if (id === DEFAULT_ENTRY_BOT_ID) throw new AppError(403, 'protected_expert', '此工具用于管理其他 Bot');
   const current = registry.get(id);
   const dir = join(root, id);
   const file = join(dir, 'bot.yaml');
@@ -56,4 +56,19 @@ export function writeExpert(action: 'create' | 'edit', input: unknown, root: str
   } finally {
     rmSync(temp,{force:true,recursive:true});
   }
+}
+
+/** Remove a dismissed manifest from discovery; the owner's files remain recoverable. */
+export function retireBot(id:string, root:string, registry:BotRegistry, catalog:BotCatalog) {
+  if (id === DEFAULT_ENTRY_BOT_ID) throw new AppError(403,'permanent_bot','总调度为常驻成员。');
+  if (!/^[a-z][a-z0-9-]{0,47}$/.test(id) || !registry.get(id)) throw new AppError(404,'unknown_bot','未找到成员。');
+  if (registry.isHired(id)) throw new AppError(409,'bot_hired','请先解聘该成员。');
+  const dependants=registry.list().filter(bot=>bot.id!==DEFAULT_ENTRY_BOT_ID && bot.can_delegate_to.includes(id));
+  if (dependants.length) throw new AppError(409,'delegation_in_use','请先调整以下成员的委派名单：'+dependants.map(bot=>bot.name).join('、'));
+  const src=join(root,id), archive=join(root,'_retired');
+  mkdirSync(archive,{recursive:true,mode:0o700});
+  const dest=join(archive,id+'-'+randomUUID());
+  renameSync(src,dest);
+  try { registry.replaceWith(loadBots(root,catalog)); }
+  catch (err) { renameSync(dest,src); throw err; }
 }

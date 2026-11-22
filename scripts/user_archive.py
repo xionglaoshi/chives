@@ -216,7 +216,7 @@ def snapshot(user, db, fields):
 def apply(user, db, fields, packet):
     # Only the local owner/importer invokes this writer. No Bot API calls it.
     ref=packet["source_id"]
-    if not re.fullmatch(r"[A-Za-z0-9_-]{1,100}",ref) or packet["origin"] not in ("questionnaire","owner","review","provisional"):
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,100}",ref) or packet["origin"] not in ("questionnaire","owner","review","provisional","operator"):
         raise ValueError("来源无效")
     stamp=packet["effective_at"]
     if datetime.fromisoformat(stamp.replace("Z","+00:00")).tzinfo is None:

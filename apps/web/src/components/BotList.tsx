@@ -40,9 +40,9 @@ export function BotRow({ bot, selected, onSelect, onKeyDown, buttonRef, onMove, 
 
   return (
     <li className="bot-list__item" data-dot-id={bot.id}
-      draggable={Boolean(onMove) && bot.id!=='chives'}
+      draggable={Boolean(onMove) && bot.id!=='operator'}
       onDragStart={e=>{e.dataTransfer.setData('text/chives-dot',bot.id);e.dataTransfer.effectAllowed='move';}}
-      onDragOver={e=>{if(bot.id!=='chives' && e.dataTransfer.types.includes('text/chives-dot')) e.preventDefault();}}
+      onDragOver={e=>{if(bot.id!=='operator' && e.dataTransfer.types.includes('text/chives-dot')) e.preventDefault();}}
       onDrop={e=>{e.preventDefault(); const id=e.dataTransfer.getData('text/chives-dot');if(id) onMove?.(id,bot.id);}}>
       <button
         ref={buttonRef}
@@ -82,14 +82,14 @@ export function BotRow({ bot, selected, onSelect, onKeyDown, buttonRef, onMove, 
         ) : null}
       </button>
       <div className="bot-row-actions">
-      {onMove && bot.id!=='chives' && <span className="dot-grip" title="拖动调整顺序，键盘可按 Alt 加上下方向键" aria-hidden="true"
+      {onMove && bot.id!=='operator' && <span className="dot-grip" title="拖动调整顺序，键盘可按 Alt 加上下方向键" aria-hidden="true"
         onPointerDown={e=>{if(e.pointerType!=='mouse') e.currentTarget.setPointerCapture(e.pointerId);}}
         onPointerUp={e=>{
           if(e.pointerType==='mouse') return;
           const target=document.elementFromPoint(e.clientX,e.clientY)?.closest<HTMLElement>('[data-dot-id]')?.dataset.dotId;
           if(target) onMove(bot.id,target);
         }}>⠿</span>}
-      {onPin && <Pin name={bot.name} pinned onClick={() => onPin(bot.id)}/>}
+      {onPin && !bot.permanent && <Pin name={bot.name} pinned onClick={() => onPin(bot.id)}/>}
       </div>
     </li>
   );
@@ -103,7 +103,7 @@ export interface BotListProps {
 
 export function BotList({ bots, selectedId, onSelect, onMove, onPin }: BotListProps & {onPin?:(id:string)=>void;onMove?:(source:string,target:string)=>void}): ReactElement {
   const refs = useRef(new Map<string, HTMLButtonElement>());
-  const ordered = [...bots.filter(bot=>bot.id==='chives'),...bots.filter(bot=>bot.id!=='chives')];
+  const ordered = [...bots.filter(bot=>bot.id==='operator'),...bots.filter(bot=>bot.id!=='operator')];
 
   const move = (botId: string, offset: number): void => {
     const index = ordered.findIndex((bot) => bot.id === botId);
@@ -118,7 +118,7 @@ export function BotList({ bots, selectedId, onSelect, onMove, onPin }: BotListPr
     if (event.altKey && (event.key==='ArrowUp' || event.key==='ArrowDown')) {
       event.preventDefault();
       const target=ordered[ordered.findIndex(bot=>bot.id===botId)+(event.key==='ArrowUp' ? -1 : 1)];
-      if (onMove && target && target.id!=='chives' && botId!=='chives') onMove(botId,target.id);
+      if (onMove && target && target.id!=='operator' && botId!=='operator') onMove(botId,target.id);
       return;
     }
     if (event.key === 'ArrowDown') {

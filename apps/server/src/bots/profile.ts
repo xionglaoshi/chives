@@ -33,7 +33,7 @@ export function buildBotProfile(input: BotProfileInput): BotProfile {
   const { bot, summary } = input;
   const workspacePath = botWorkspace(input.dataDir, bot.id);
   const stats = workspaceStats(workspacePath);
-  const canDelegateTo: BotDelegateInfo[] = bot.can_delegate_to.map((id) => ({
+  const canDelegateTo: BotDelegateInfo[] = summary.canDelegateTo.map((id) => ({
     id,
     name: input.delegateNames.get(id) ?? id,
   }));

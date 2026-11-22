@@ -12,7 +12,7 @@ export function useExpertAttachment(open:AskExpert){
     const ctrl=new AbortController();
     transfer.current=ctrl;setAsking(id);setAskError('');
     try{
-      const attachment=await uploadBotFile('expert',file,ctrl.signal);
+      const attachment=await uploadBotFile('operator',file,ctrl.signal);
       if(!ctrl.signal.aborted)open(prompt+'\n\n请在对话中直接写出完整解读，附件仅供参考，无需另做文档。',attachment);
     }catch{if(!ctrl.signal.aborted)setAskError('附件上传失败，请再点一次“问AI”。');}
     finally{transfer.current=null;if(!ctrl.signal.aborted)setAsking(null);}

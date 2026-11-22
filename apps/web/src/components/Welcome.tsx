@@ -27,18 +27,7 @@ const EXPERT_COPY: WelcomeCopy = {
 
 /** Bots with their own first-run copy; others fall back to their name and role. */
 const COPY_BY_BOT: Record<string, WelcomeCopy> = {
-  chives: EXPERT_COPY,
-  expert: {title:"今天想盯哪只股票？", subtitle:"跟踪持仓和自选股，评估机会、风险与调仓条件。",starters:[{title:"看看我的持仓风险",description:"按仓位和集中度逐项检查"},{title:"为自选股设提醒",description:"明确观察信号、触发条件和失效条件"}]},
-  zhushenglang: {
-    title: '今天的主升浪池怎么样？',
-    subtitle: '复盘研究员按策略引擎的收盘结果核对两池：首板观察池、突破确认与主升浪阶段池，每条都能追到 K 线。',
-    starters: [
-      { title: '今天池子有什么变化', description: '新进优先级一、新入主升浪池与移出' },
-      { title: '主升浪池前几名', description: '分数、涨幅、回撤与 MA10 跌破次数' },
-      { title: '看看一只票的轮次', description: '首板、黄金坑、突破线与全部事件' },
-      { title: '把突破线挂成盯盘', description: '上破突破线、下破支撑或 MA10 时唤醒分析' }
-    ]
-  }
+  operator: EXPERT_COPY
 };
 
 function welcomeCopy(botId: string | undefined, botName?: string, botRole?: string): WelcomeCopy {

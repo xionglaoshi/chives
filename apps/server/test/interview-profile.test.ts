@@ -57,10 +57,10 @@ it('persists the same revised profile for the report, continuing chats and every
   delete saved.investmentStyle;delete saved.summary.styleAssessment;
   expect(validProfileFile(JSON.stringify(saved))).toBe(true);
   expect(validProfileFile(read())).toBe(true);expect(JSON.parse(read()).cards).toHaveLength(32);
-  const notice=await chat('expert','我以后首选宽基指数基金。');
+  const notice=await chat('operator','我以后首选宽基指数基金。');
   const code=/确认更新画像 ([0-9a-f]{8})/.exec(notice)?.[1];expect(code).toBeTruthy();
   expect(JSON.parse(read()).answers['57'].choice).toBe(0);
-  expect(await chat('expert','确认更新画像 '+code)).toContain('您的本地画像已经更新');
+  expect(await chat('operator','确认更新画像 '+code)).toContain('您的本地画像已经更新');
   expect(JSON.parse(read()).corrections[0].previous['57'].choice).toBe(0);
   const updated=(await desk()).body.result;expect(updated.answers['57'].choice).toBe(2);expect(updated.updated).not.toBe(first.body.result.updated);
   for(const bot of app.registry.list()){

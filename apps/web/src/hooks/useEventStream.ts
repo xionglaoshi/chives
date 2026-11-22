@@ -16,6 +16,7 @@ export const SERVER_EVENT_TYPES = [
   'usage',
   'bot.status',
   'bot.updated',
+  'roster.changed',
   'delegation.updated',
   'deliverable.created',
   'memory.updated',

@@ -43,17 +43,17 @@ class SharedTurns(unittest.TestCase):
         ]
         output = StringIO()
         with redirect_stdout(output), redirect_stderr(StringIO()):
-            chat.reply(api, {"id": "expert", "name": "投资专家"}, "terminal question")
+            chat.reply(api, {"id": "operator", "name": "总调度"}, "terminal question")
         self.assertEqual(output.getvalue(), "answer to terminal\n")
         self.assertEqual([c.args[0] for c in api.json.call_args_list],
-                         ["/api/bots/expert/messages", "/api/tasks/same-task"])
+                         ["/api/bots/operator/messages", "/api/tasks/same-task"])
 
     def test_uncertain_submission_is_never_retried(self):
         api = Mock()
         api.open.return_value = nullcontext(iter(()))
         api.json.side_effect = ConnectionResetError()
         with self.assertRaisesRegex(RuntimeError, "提交状态待确认"):
-            chat.reply(api, {"id": "expert", "name": "投资专家"}, "test")
+            chat.reply(api, {"id": "operator", "name": "总调度"}, "test")
         api.json.assert_called_once()
 
     def test_failed_followup_does_not_print_previous_answer(self):
@@ -63,7 +63,7 @@ class SharedTurns(unittest.TestCase):
                                               message("cli", "user", "new question")]}
         output = StringIO()
         with redirect_stdout(output), self.assertRaisesRegex(RuntimeError, "model_auth"):
-            chat.persisted_result(api, "same-task", "cli", "投资专家")
+            chat.persisted_result(api, "same-task", "cli", "总调度")
         self.assertEqual(output.getvalue(), "")
 
 
@@ -73,7 +73,7 @@ class TerminalView(unittest.TestCase):
         from prompt_toolkit.output import DummyOutput
         from chives_terminal.workbench import Workbench
         from chives_terminal.screen import context_label
-        bot = {"id":"expert", "name":"投资专家", "role":"分析", "model":"fixture"}
+        bot = {"id":"operator", "name":"总调度", "role":"分析", "model":"fixture"}
         with create_pipe_input() as inp:
             desk = Workbench(Mock(), [bot], Mock(), input=inp, output=DummyOutput())
             desk.bot = bot

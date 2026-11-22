@@ -90,12 +90,19 @@ def recall_memory(query: str = '') -> dict:
 
 
 def inspect_database(database: str, table: str = '', limit: int = 10) -> dict:
-    """List allowed SQLite tables or read a bounded sample from a selected table."""
-    if database not in profile.get('databases',['bot-library']):
+    """列出 SQLite 表或抽样读表。总调度传 chives-databases 枚举全部业务数据库，再传返回的数据库名。"""
+    selected_dbs = profile.get('databases',['bot-library'])
+    stores = {}
+    if bot == 'operator' and 'chives-databases' in selected_dbs:
+        from operator_documents import databases
+        stores = databases(data, data.parent/'runtime')
+        if database in ('','chives-databases'):
+            return {'databases':sorted(stores)}
+    if database not in selected_dbs and database not in stores:
         raise ValueError('本 Bot 未选择此库')
     folder=data/'library'
     installed=Path(__file__).resolve().parents[1]
-    stores={'bot-library':library}
+    stores['bot-library']=library
     if data==installed/'data':
         stores.update({'strategy-results':installed/'runtime/strategy-hub/strategy.sqlite',
                        'market-monitor':installed/'runtime/market/market.db'})
@@ -123,7 +130,7 @@ def research_library() -> Path:
 
 def publish_research(topic: str, conclusion: str, as_of: str, source_url: str, method: str) -> dict:
     """发布行业或市场研究，保留日期、方法、结论和可追溯原文。同题同日同源可更新。"""
-    if bot not in ('research', 'chives'):
+    if bot not in ('research', 'operator'):
         raise ValueError('此 Bot 未获发布权限')
     topic, conclusion, method, source_url = (v.strip() for v in (topic, conclusion, method, source_url))
     if not all((topic, conclusion, method)) or len(topic)>300 or max(len(conclusion),len(method))>30000:
@@ -158,7 +165,7 @@ def find_research(query: str = '', limit: int = 10) -> list[dict]:
 
 
 tools=[read_skill,save_report,remember,recall_memory,inspect_database,find_research]
-if bot in ("research","chives"):
+if bot in ("research","operator"):
     tools.append(publish_research)
 repo = Path(__file__).resolve().parent.parent
 catalog = json.loads((repo/'config/equity-tools.json').read_text())
@@ -181,11 +188,37 @@ async def browser_research(url: str, steps: list[BrowserStep] | None = None, scr
     return await asyncio.to_thread(research_page, url, steps or [], directory)
 
 
+if bot == "operator":
+    from operator_documents import read_document, write_document
+
+    def read_local_document(mount: str = "", path: str = "", offset: int = 0) -> dict:
+        """列出本机文档目录、查看条目或分段读取 UTF-8 文件。留空列出目录。"""
+        return read_document(data, mount, path, offset)
+
+    def write_local_document(mount: str, path: str, text: str, expected_sha256: str = "") -> dict:
+        """创建或更新本机文档。覆盖已有文件时传入读取得到的 SHA-256，长期用户知识写 user-wiki。"""
+        import user_archive
+        with user_archive.locked(data):
+            result = write_document(data, mount, path, text, expected_sha256)
+            if mount == "user-wiki":
+                user_archive.reindex(data/"user")
+            return result
+
+    def update_user_attribute(key: str, previous: object, value: object, evidence: str, reason: str) -> dict:
+        """总调度直接更新共享用户属性。提供旧值、新值、证据与理由，保留任务来源和变更历史。"""
+        return internal_call("operator/attribute", dict(key=key,previous=previous,value=value,evidence=evidence,reason=reason))
+
+    tools.append(read_local_document)
+    if policy.get("workspaceWrite") is not False:
+        tools.append(write_local_document)
+    if policy.get("memoryWrite") is not False:
+        tools.append(update_user_attribute)
+
 tools.append(browser_research)
 for tool in tools:
     if tool.__name__ in selected:
         server.tool()(tool)
-if bot == 'chives':
+if bot == 'operator':
     from research_bridge import ResearchBridge
     research = ResearchBridge(json.loads(os.environ.get('CHIVES_RESEARCH_SERVERS', '[]')))
 
@@ -205,22 +238,10 @@ if bot == 'chives':
         return internal_call('experts/roster', {})
 
     @server.tool()
-    def create_expert(id: str, name: str, role: str) -> dict:
-        """按用户要求创建 Bot。ID 用小写英文和连字符，成功后可直接 delegate。用 expert_assets 分配专业能力。"""
-        return internal_call('experts/create', dict(id=id, name=name, role=role))
+    def expert_assets(id: str) -> dict:
+        """查阅一位成员的资产配置与可选资源。"""
+        return internal_call('experts/assets', {'id': id})
 
-    @server.tool()
-    def edit_expert(id: str, name: str | None = None, role: str | None = None) -> dict:
-        """修改指定 Bot 的名称或职责，保留其身份、会话、记忆和既有资产。"""
-        return internal_call('experts/edit', {k:v for k,v in dict(id=id,name=name,role=role).items() if v is not None})
-
-    @server.tool()
-    def expert_assets(id: str, changes: dict | None = None) -> dict:
-        """读取 Bot 的实际与可选配置，可按字段更新 skills、skillMode(all/selected)、mcp、tools、databases、instructions 或 preset。列表为该字段的完整选择。"""
-        payload = {'id':id}
-        if changes is not None:
-            payload['changes'] = changes
-        return internal_call('experts/assets', payload)
 
 @server.tool()
 def read_user_attributes(keys: list[str]) -> list:

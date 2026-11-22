@@ -78,8 +78,24 @@ export class UserArchive {
     } finally { db.close(); }
   }
 
+  async operatorUpdate(input:{key:string;previous?:unknown;value?:unknown;evidence:string;reason:string}, taskId:string, startedAt:string) {
+    const field=this.catalog().find(item=>item.key===input.key || item.id===input.key);
+    if (!field) throw new AppError(400,'invalid_attribute','未知属性');
+    const source='operator-'+createHash('sha256').update(JSON.stringify([taskId,input])).digest('hex');
+    const packet={source_id:source,origin:'operator',effective_at:startedAt,evidence:{session:{bot:'operator',task:taskId,text:input.evidence}},
+      decisions:{[field.key]:{old:input.previous,value:input.value,decision:'applied',refs:['session'],reason:input.reason}}};
+    const python=process.env.CALENDAR_PYTHON ?? join(this.repoRoot,'packages/portfolio-mcp/.venv/bin/python');
+    await new Promise<void>((ok,fail)=>{
+      const child=execFile(python,[join(this.repoRoot,'scripts/user_archive.py'),'--data',this.dataDir,'apply'],{timeout:15000},(err)=>{
+        if(err)fail(new AppError(409,'attribute_not_saved','写入未确认，请重新读取属性并核对原值、类型及允许范围。'));else ok();
+      });
+      child.stdin?.on('error',()=>{});child.stdin?.end(JSON.stringify(packet));
+    });
+    return {source,attribute:this.attributes([field.key])[0]};
+  }
+
   async mergeSupported(id:string) {
-    const python=join(this.repoRoot,'packages/portfolio-mcp/.venv/bin/python');
+    const python=process.env.CALENDAR_PYTHON ?? join(this.repoRoot,'packages/portfolio-mcp/.venv/bin/python');
     const result=await promisify(execFile)(python,[join(this.repoRoot,'scripts/user_archive.py'),'--data',this.dataDir,'merge-supported','--proposal',id],{timeout:10000});
     return JSON.parse(result.stdout).merged===true;
   }

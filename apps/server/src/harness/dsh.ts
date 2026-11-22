@@ -102,6 +102,8 @@ export function buildDshPatch(bot: BotManifest, options: DshPatchOptions): strin
   ];
 
   if (options.dataDir !== undefined) {
+    entries.push({insert:[{id:'chives-staff-boundary',name:join(repoRoot,'overlays/staff-boundary.plugin.mjs'),
+      config:{workspace:resolve(options.dataDir,'bots',bot.id,'workspace')}}]});
     entries.push({
       id: 'skill-filesystem',
       config: {
@@ -250,7 +252,7 @@ export function buildMcpServers(
         : raw;
       if (value !== '') envPairs.push({ name, value });
     }
-    if (serverName === 'strategy' && options.strategies !== undefined) {
+    if (serverName === 'strategy' && bot.id !== 'operator' && options.strategies !== undefined) {
       const kept = envPairs.filter((entry) => entry.name !== 'CHIVES_STRATEGIES');
       envPairs.length = 0;
       envPairs.push(...kept, { name: 'CHIVES_STRATEGIES', value: options.strategies.join(',') });

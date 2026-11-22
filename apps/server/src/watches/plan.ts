@@ -437,7 +437,7 @@ function joinConditions(conditions: readonly JsonRecord[], policy: WatchMatch): 
   return conditions.map(describeCondition).join(policy === 'all' ? ' 且 ' : ' 或 ');
 }
 
-/** One human line such as 「柳工 000528.SZ：跌破 7.71 或站上 8.69 时唤醒投资专家，至 11-27」. */
+/** One human line such as 「柳工 000528.SZ：跌破 7.71 或站上 8.69 时唤醒负责盯盘的 Bot，至 11-27」. */
 export function describeWatch(input: {
   name?: string;
   code: string;
@@ -456,7 +456,7 @@ export function describeWatch(input: {
       ? `${input.name} ${input.code}`
       : input.code;
   const body = parts.length === 0 ? '条件待定' : parts.join(' 且 ');
-  return `${display}：${body} 时唤醒投资专家${expiry === '' ? '' : `，至 ${expiry}`}`;
+  return `${display}：${body} 时唤醒负责盯盘的 Bot${expiry === '' ? '' : `，至 ${expiry}`}`;
 }
 
 export function describeGiveUp(plan: JsonRecord): string {

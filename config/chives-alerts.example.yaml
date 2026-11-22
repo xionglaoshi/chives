@@ -16,8 +16,8 @@ sources:
 # - `card-` 及其他前缀（hub 作战卡）→ 始终跳过，由 hub 处理。
 # 盯盘对账循环默认每 30 秒一次，可用环境变量 CHIVES_WATCH_SYNC_SECONDS 覆盖。
 routes:
-  - {source: cn-watch, rule_id: "*", code: "*", bot: expert}
-  - {source: market-watch, rule_id: "*", code: "*", bot: expert}
+  - {source: cn-watch, rule_id: "*", code: "*", bot: operator}
+  - {source: market-watch, rule_id: "*", code: "*", bot: operator}
 
 # 告警处理规则。自动分析权限在 Agent 设置中管理。
 limits:

@@ -26,12 +26,12 @@ export function assetOptions(data: string, bot: BotManifest, catalog: BotCatalog
   const installed = resolve(data) === resolve(import.meta.dirname,'../../../../data');
   const bundled = installed ? ['strategy-results','market-monitor'].filter(id => existsSync(join(data,'../runtime',
     id==='strategy-results'?'strategy-hub/strategy.sqlite':'market/market.db'))) : [];
-  const selectable = bot.id === 'chives' || bot.persona === 'bots/_shared/specialist.md'
+  const selectable = bot.id === 'operator' || bot.persona === 'bots/_shared/specialist.md'
     ? catalog.mcp.filter(name => name !== 'paper_broker' || bot.trading_guard)
     : [...new Set([...bot.mcp,...researchServers.filter(s=>catalog.mcp.includes(s))])];
   const external=connections(data);
   return {skills:catalog.skills, mcp:[...selectable,...external.map(e=>e.id)],
-    tools:[...localTools,...(bot.id==='chives'||bot.id==='research'?['publish_research']:[]),'browser_research',...Object.keys(equityTools)], toolNames:{...Object.fromEntries(external.map(e=>[e.id,e.name+(e.enabled?'':'（已停用）')])),find_research:'查询团队的市场研究',publish_research:'发布共享市场研究',browser_research:'浏览器自动化（Playwright · Chromium）',...Object.fromEntries(Object.entries(equityTools).map(([k,v])=>[k,v.label]))}, databases:['bot-library',...bundled,...files]};
+    tools:[...localTools,...(bot.id==='operator'?['read_local_document','write_local_document','update_user_attribute']:[]),...(bot.id==='operator'||bot.id==='research'?['publish_research']:[]),'browser_research',...Object.keys(equityTools)], toolNames:{read_local_document:'读取本机文档',write_local_document:'写入本机文档',update_user_attribute:'修改共享用户属性','chives-databases':'全部 Chives 数据库（只读）',...Object.fromEntries(external.map(e=>[e.id,e.name+(e.enabled?'':'（已停用）')])),find_research:'查询团队的市场研究',publish_research:'发布共享市场研究',browser_research:'浏览器自动化（Playwright · Chromium）',...Object.fromEntries(Object.entries(equityTools).map(([k,v])=>[k,v.label]))}, databases:['bot-library',...(bot.id==='operator'?['chives-databases']:[]),...bundled,...files]};
 }
 export function assets(data: string, bot: BotManifest): AssetProfile {
   const p=assetPaths(data,bot.id);
@@ -46,10 +46,10 @@ export function assets(data: string, bot: BotManifest): AssetProfile {
   const saved=existsSync(p.config) ? JSON.parse(readFileSync(p.config,'utf8')) : {};
   const available=new Set(connections(data).map(e=>e.id));
   if(Array.isArray(saved.mcp))saved.mcp=saved.mcp.filter((id:string)=>!id.startsWith('ext_')||available.has(id));
-  if (bot.id === 'chives') {
+  if (bot.id === 'operator') {
     const full = assetOptions(data,bot,{skills:[],mcp:bot.mcp});
-    return {...saved, skillMode:'all', skills:[], mcp:[...bot.mcp,...(saved.mcp??[]).filter((id:string)=>available.has(id))], tools:full.tools, databases:full.databases,
-      preset:saved.preset ?? preset, instructions:readFileSync(p.agents,'utf8')};
+    return {skillMode:'all', skills:[], mcp:full.mcp, tools:full.tools, databases:full.databases,
+      preset, ...saved, instructions:readFileSync(p.agents,'utf8')};
   }
   return {skillMode: bot.persona === 'bots/_shared/specialist.md' || Array.isArray(saved.skills) || bot.skills.length ? 'selected' : 'all', skills:bot.skills, mcp:bot.mcp, tools:[...localTools,...(bot.id==='research'?['publish_research']:[]),...Object.keys(equityTools).filter(k=>equityTools[k]!.bots.includes(bot.id))], databases:['bot-library'], preset, ...saved,
     instructions:readFileSync(p.agents,'utf8')};

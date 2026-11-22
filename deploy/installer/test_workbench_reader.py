@@ -19,7 +19,7 @@ class FixtureAPI:
     def __init__(self):
         self.models = [dict(id="m1", model="first", active=True), dict(id="m2", model="second", active=False)]
         self.writes = []
-        self.bots = [dict(id="expert", name="投资专家", role="研究", model="default")]
+        self.bots = [dict(id="operator", name="总调度", role="研究", model="default")]
         self.snapshot = {"boards":{"in":{"title":"资金流入榜","columns":["净流入占市值","五日涨幅"],
                             "rows":[dict(name="中A公司",code="000001",metric="3.2%",r5=-2.08)]}}}
         self.channels = [dict(id="telegram",enabled=False,configured=False)]
@@ -89,7 +89,7 @@ class KeyFlow(unittest.IsolatedAsyncioTestCase):
     def body(self):
         return "".join(t for _,t in self.desk.panels.render())
 
-    async def test_employment_keyboard_expert_lock_and_cancel(self):
+    async def test_employment_keyboard_operator_lock_and_cancel(self):
         desk = self.desk
         self.api.bots[0]["hired"] = True
         for n in range(1, 20):
@@ -100,8 +100,8 @@ class KeyFlow(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(len(desk.panels.options), 20)
         self.pipe.send_text(" " + "\x1b[B "*2 + "\r")
         await self.until(lambda: not desk.in_dialog)
-        self.assertEqual([b["id"] for b in desk.bots], ["expert"])
-        self.assertEqual(self.api.writes[-1][1]["hiredIds"], ["expert"])
+        self.assertEqual([b["id"] for b in desk.bots], ["operator"])
+        self.assertEqual(self.api.writes[-1][1]["hiredIds"], ["operator"])
         await self.key("\r", lambda: desk.panels.kind=="checklist")
         self.pipe.send_text("\x1b[B \x1b")
         await self.until(lambda: not desk.in_dialog)
@@ -109,7 +109,7 @@ class KeyFlow(unittest.IsolatedAsyncioTestCase):
         await self.key("\r", lambda: desk.panels.kind=="checklist")
         self.pipe.send_text("\x1b[B \r")
         await self.until(lambda: not desk.in_dialog)
-        self.assertEqual([b["id"] for b in desk.bots], ["expert", "b1"])
+        self.assertEqual([b["id"] for b in desk.bots], ["operator", "b1"])
 
     async def test_direct_board_market_holdings_full_profile(self):
         desk = self.desk

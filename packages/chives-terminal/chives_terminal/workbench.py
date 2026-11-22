@@ -103,7 +103,7 @@ class Workbench:
         self.host = one(socket.gethostname().split(".")[0])
         self.generation = 0
         self.bot = None
-        self.selected = next((i for i, b in enumerate(self.bots) if b["id"] == "expert"), 0)
+        self.selected = next((i for i, b in enumerate(self.bots) if b.get("permanent", b["id"] == "operator")), 0)
         self.busy = self.loading = False
         self.pending = None
         self.message = ""
@@ -374,7 +374,7 @@ class Workbench:
                 spans.append(("[SetCursorPosition]", ""))
             sel = "selected" if active else "ink"
             limit = max(18, (self.width-4)//3) if self.width >= 76 else self.width-1
-            name = clip(f"{i:02}   {b['name']}" + ("  · 默认" if b["id"] == "expert" else ""), limit-7)
+            name = clip(f"{i:02}   {b['name']}" + ("  · 默认" if b.get("permanent", b["id"] == "operator") else ""), limit-7)
             row = f"  {'▸' if active else ' '}  " + name
             spans.extend([(*ink(sel, row + " "*max(0, limit-get_cwidth(row))), self.launch_click(0, j)),
                           ink("dim", "\n          " + clip(b["id"], limit - 11))])

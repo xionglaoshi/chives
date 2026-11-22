@@ -8,7 +8,7 @@ import { parseBotManifest } from './manifest.js';
 import type { BotCatalog, BotManifest } from './types.js';
 
 /** The bot users land on first. */
-export const DEFAULT_ENTRY_BOT_ID = 'expert';
+export const DEFAULT_ENTRY_BOT_ID = 'operator';
 
 export class BotRegistry {
   private ordered: readonly BotManifest[];
@@ -30,9 +30,9 @@ export class BotRegistry {
     personas: ReadonlyMap<string, string>,
     sharedRules: string,
   ) {
-    // Display order: the default entry (`expert`) first, then other conversational bots, background colleagues last.
+    // Display order: the default entry (`operator`) first, then other conversational bots, background colleagues last.
     const rank = (manifest: BotManifest): number =>
-      manifest.id === 'chives' ? -1 : manifest.background ? 2 : manifest.id === DEFAULT_ENTRY_BOT_ID ? 0 : 1;
+      manifest.id === DEFAULT_ENTRY_BOT_ID ? 0 : manifest.background ? 2 : 1;
     this.ordered = [...manifests].sort((left, right) => rank(left) - rank(right));
     this.byId = new Map(manifests.map((manifest) => [manifest.id, manifest]));
     this.personas = personas;
@@ -198,7 +198,7 @@ export function loadBots(botsDir: string, catalog: BotCatalog): BotRegistry {
     manifests.push(manifest);
   }
 
-  const coordinator = manifests.find(bot => bot.id === 'chives');
+  const coordinator = manifests.find(bot => bot.id === DEFAULT_ENTRY_BOT_ID);
   if (coordinator) {
     coordinator.skills = [...catalog.skills];
     coordinator.mcp = [...catalog.mcp];

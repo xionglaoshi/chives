@@ -4,7 +4,7 @@ import {ProfileService} from './settings/profile-service.js';
 import {StyleAssessment, summarize} from './settings/style-assessment.js';
 import {previewExcerpt} from './settings/profile-excerpt.js';
 import { BotEmployment } from './bots/employment.js';
-import { coordinatorId, writeExpert } from './bots/coordinator.js';
+import { coordinatorId, retireBot, writeExpert } from './bots/coordinator.js';
 import {preferences,parsePreferences,preferenceKey} from './settings/workbench.js';
 import {backupPersonal,restorePersonal} from './settings/personal-backup.js';
 import {ModelLibrary} from './settings/model-library.js';
@@ -422,6 +422,10 @@ export function createApp(options: CreateAppOptions): ChivesApp {
   const store = Store.open(config.dataDir);
   const registry =
     options.registry ?? loadBots(config.botsDir, buildCatalog(config.repoRoot));
+  if (config.botsDir === joinPath(config.repoRoot,'bots') && !registry.get(coordinatorId)) {
+    store.close();
+    throw new Error('正式安装缺少常驻总调度 operator，请恢复 bots/operator 后启动。');
+  }
   const employment = new BotEmployment(store, registry);
   const configuredBot = (bot: BotManifest) => {
     const selected = assets(config.dataDir,bot);
@@ -434,9 +438,6 @@ export function createApp(options: CreateAppOptions): ChivesApp {
   });
   function saveValidatedAssets(bot: BotManifest, input: Record<string,unknown>) {
     const options = assetOptions(config.dataDir,bot,buildCatalog(config.repoRoot));
-    if (bot.id === coordinatorId && (input.skillMode !== 'all' ||
-      (['tools','mcp','databases'] as const).some(key => !Array.isArray(input[key]) || !options[key].every(id=>(key==='mcp'&&id.startsWith('ext_'))||(input[key] as unknown[]).includes(id)))))
-      throw new AppError(400,'coordinator_assets','总调度员使用全部已登记资产，可修改个人指令和预设提示。');
     if (input.skillMode !== undefined && input.skillMode !== 'all' && input.skillMode !== 'selected')
       throw new AppError(400,'validation_error','未知的技能选择方式');
     for (const key of ['skills','tools','mcp','databases'] as const) {
@@ -714,6 +715,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
       summaryExtras(bot),
     ),
     hired: registry.isHired(bot.id),
+    permanent: bot.id === coordinatorId,
     canDelegateTo: bot.can_delegate_to.filter(id => registry.isHired(id)),
   });
 
@@ -751,6 +753,10 @@ export function createApp(options: CreateAppOptions): ChivesApp {
       const path = url.pathname;
       const method = request.method ?? 'GET';
 
+      if (!path.startsWith('/api/internal/') && request.headers.authorization?.startsWith('Bearer ') &&
+          sessions.verify(request.headers.authorization.slice(7).trim())) {
+        throw new AppError(403,'bot_session','Bot 会话只能使用获授权的内部接口。');
+      }
       const portrait = /^\/api\/(internal\/)?style-portraits\/([a-z0-9-]+\.jpg)$/.exec(path);
       if (portrait) {
         if (method !== 'GET' && method !== 'HEAD') { methodNotAllowed(response,'GET, HEAD'); return; }
@@ -793,6 +799,23 @@ export function createApp(options: CreateAppOptions): ChivesApp {
         }
         if (method !== 'POST') {
           methodNotAllowed(response, 'POST');
+          return;
+        }
+        if (path === '/api/internal/operator/attribute') {
+          const task = store.tasks.get(identity.taskId);
+          const bot = registry.get(identity.botId);
+          if (!bot || bot.id !== coordinatorId || !task || task.status !== 'running' ||
+              task.botId !== bot.id || task.delegated || identity.depth || !preferences(store).memoryWrite ||
+              !assets(config.dataDir,bot).tools.includes('update_user_attribute')) {
+            throw new AppError(403,'forbidden','只有已授权的总调度直接会话可更新用户属性。');
+          }
+          if (!archive.installed()) throw new AppError(404,'no_archive','尚未初始化用户档案。');
+          const body=await readJsonObject(request);
+          const input=z.object({key:z.string().min(1),previous:z.unknown(),value:z.unknown(),
+            evidence:z.string().trim().min(1).max(3000),reason:z.string().trim().min(1).max(1200)}).strict().safeParse(body);
+          if (!input.success || !Object.hasOwn(body,'previous') || !Object.hasOwn(body,'value'))
+            throw new AppError(400,'invalid_attribute','需提供属性编号、原值、新值、证据与理由。');
+          sendJson(response,200,await archive.operatorUpdate(input.data,task.id,task.startedAt));
           return;
         }
         if (path === '/api/internal/user/propose') {
@@ -845,7 +868,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
         }
         if (path.startsWith('/api/internal/experts/')) {
           if (identity.botId !== coordinatorId || identity.depth !== 0 || !registry.get(coordinatorId))
-            throw new AppError(403,'forbidden','仅总调度员的直接会话可以管理 Bot');
+            throw new AppError(403,'forbidden','仅总调度的直接会话可以查阅团队名册');
           const task = store.tasks.get(identity.taskId);
           if (task?.status !== 'running' || task.botId !== coordinatorId || task.delegated)
             throw new AppError(403,'forbidden','需要正在执行的调度员任务');
@@ -857,33 +880,13 @@ export function createApp(options: CreateAppOptions): ChivesApp {
               assets:assetOptions(config.dataDir,registry.get(coordinatorId)!,catalog)});
             return;
           }
-          if (action === 'assets') {
+          if (action === 'assets' && input.changes === undefined) {
             const bot = typeof input.id === 'string' ? registry.get(input.id) : undefined;
-            if (!bot) throw new AppError(404,'unknown_expert','未找到 Bot');
-            if (input.changes !== undefined) {
-              const changes = input.changes;
-              const fields = ['skills','skillMode','mcp','tools','databases','instructions','preset'];
-              if (!changes || typeof changes !== 'object' || Array.isArray(changes) || Object.keys(changes).some(k=>!fields.includes(k)))
-                throw new AppError(400,'validation_error','无效的 Bot 资产字段');
-              if (bot.id === coordinatorId || !preferences(store).workspaceWrite) throw new AppError(403,'forbidden','此会话不可修改该配置');
-              if (store.tasks.findRunning(bot.id)) throw new AppError(409,'bot_busy','请等 Bot 完成当前任务');
-              saveValidatedAssets(bot,{...assets(config.dataDir,bot),...changes});
-              await orchestrator.reloadModel(bot.id);
-            }
+            if (!bot) throw new AppError(404,'unknown_bot','未找到 Bot');
             sendJson(response,200,{profile:assets(config.dataDir,bot),options:assetOptions(config.dataDir,bot,catalog)});
             return;
           }
-          if (action !== 'create' && action !== 'edit') throw new AppError(404,'not_found','未知操作');
-          if (!preferences(store).workspaceWrite) throw new AppError(403,'forbidden','工作区写入已关闭');
-          const bot = writeExpert(action,input,config.botsDir,config.dataDir,registry,catalog,id=>Boolean(store.tasks.findRunning(id)));
-          if (action === 'edit') {
-            if (input.name && store.bots.get(bot.id)?.displayName) store.bots.upsert(bot.id,{displayName:null},now());
-            await orchestrator.reloadModel(bot.id);
-          }
-          const summary = summaryFor(bot,store.bots.get(bot.id),orchestrator.pendingApprovalCounts());
-          bus.publish({type:'bot.updated',botId:bot.id,bot:summary});
-          sendJson(response,action === 'create' ? 201 : 200,summary);
-          return;
+          throw new AppError(403,'owner_only','人事变更由用户在工作台操作。');
         }
         if (path.startsWith('/api/internal/watch-plans/')) {
           const bot = registry.get(identity.botId);
@@ -1321,7 +1324,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           throw new AppError(404, 'not_found', '没有这个 bot');
         }
         const strategyId = decodeSegment(strategyMatch[1] ?? '');
-        if (!(bot.strategies ?? []).includes(strategyId)) {
+        if (bot.id !== coordinatorId && !(bot.strategies ?? []).includes(strategyId)) {
           throw new AppError(403, 'forbidden', '这个 bot 没有订阅该策略');
         }
         const date = url.searchParams.get('date') ?? undefined;
@@ -1395,7 +1398,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
         }
         const overrides = new Map(store.bots.list().map((entry) => [entry.id, entry]));
         const pending = orchestrator.pendingApprovalCounts();
-        const order = store.settings.get<string[]>('sidebar.botOrder') ?? ['expert','equity-analyst','research','zhushenglang','report-builder'];
+        const order = store.settings.get<string[]>('sidebar.botOrder') ?? [];
         const rank = new Map(order.map((id,i)=>[id,i]));
         const position = (id:string) => id === coordinatorId ? -1 : rank.get(id) ?? order.length;
         const ordered = [...registry.list()].sort((a,b)=>position(a.id)-position(b.id));
@@ -1442,7 +1445,22 @@ export function createApp(options: CreateAppOptions): ChivesApp {
         const origin=request.headers.origin;
         if(request.headers['x-chives-kernel-manager']!=='local'||request.headers['sec-fetch-site']==='cross-site'||(origin&&!/^https?:\/\/(127\.0\.0\.1|localhost|\[::1\])(:[0-9]+)?$/.test(origin)))throw new AppError(403,'local_only','请从 Mac 本机设置访问个人设置');
         let result:unknown;
-        if(section==='employment' && (method==='GET'||method==='PUT')){
+        if(section==='staff' && method==='POST'){
+          const {action,...input}=await readJsonObject(request);
+          if (typeof input.id!=='string') throw new AppError(400,'invalid_bot','请提供 Bot ID。');
+          const id=input.id, catalog=buildCatalog(config.repoRoot);
+          if(action==='create') {
+            if (store.tasks.latestForBot(id)) throw new AppError(409,'id_in_use','此 ID 有历史记录，请选择新的 ID。');
+            writeExpert('create',input,config.botsDir,config.dataDir,registry,catalog,botId=>!!store.tasks.findRunning(botId));
+          } else if(action==='delete') {
+            if (id===coordinatorId) throw new AppError(403,'permanent_bot','总调度为常驻成员。');
+            if (store.tasks.findRunning(id) || store.tasks.listRunningDelegated(id).length)
+              throw new AppError(409,'bot_busy','请等该成员完成当前任务。');
+            retireBot(id,config.botsDir,registry,catalog);
+          } else throw new AppError(400,'invalid_action','未知的人事操作。');
+          bus.publish({type:'roster.changed',botId:id});
+          result=employment.list();
+        }else if(section==='employment' && (method==='GET'||method==='PUT')){
           if(method==='PUT'){
             const changed = employment.update(await readJsonObject(request));
             const pending = orchestrator.pendingApprovalCounts();

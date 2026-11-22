@@ -96,10 +96,10 @@ class Actions:
     async def employment(self):
         path = "/api/settings/desk/employment"
         roster = await self.api(path)
-        options = [(b["id"], b["name"] + (" · 常驻" if b["id"] == "expert" else "")) for b in roster]
+        options = [(b["id"], b["name"] + (" · 常驻" if b.get("permanent", b["id"] == "operator") else "")) for b in roster]
         expected = {b["id"]: b["hired"] for b in roster}
         choice = await self.ui.checklist("聘用管理 · 选中即聘用", options,
-                                         [key for key, hired in expected.items() if hired], {"expert"})
+                                         [key for key, hired in expected.items() if hired], {b["id"] for b in roster if b.get("permanent", b["id"] == "operator")})
         if choice is None:
             return
         await self.api(path, {"expected": expected, "hiredIds": choice}, "PUT")

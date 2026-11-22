@@ -14,7 +14,8 @@ export class BotEmployment {
   constructor(private store: Store, private registry: BotRegistry) {
     const ids = registry.list().map(bot => bot.id);
     const prior = store.settings.get<string[]>(key);
-    const hired = prior === undefined ? ids : ids.filter(id => id === DEFAULT_ENTRY_BOT_ID || prior.includes(id));
+    const initial = ids.includes(DEFAULT_ENTRY_BOT_ID) ? [DEFAULT_ENTRY_BOT_ID] : ids;
+    const hired = ids.filter(id => id === DEFAULT_ENTRY_BOT_ID || (prior ?? initial).includes(id));
     if (prior === undefined || hired.length !== prior.length || hired.some(id => !prior.includes(id))) {
       store.settings.set(key, hired);
     }
@@ -24,7 +25,7 @@ export class BotEmployment {
   list() {
     const names = new Map(this.store.bots.list().map(b => [b.id, b.displayName]));
     return this.registry.list().map(b => ({
-      id: b.id, name: names.get(b.id) ?? b.name, hired: this.registry.isHired(b.id),
+      id: b.id, name: names.get(b.id) ?? b.name, permanent: b.id === DEFAULT_ENTRY_BOT_ID, hired: this.registry.isHired(b.id),
     }));
   }
 
@@ -39,7 +40,7 @@ export class BotEmployment {
     }
     const hired = new Set(hiredIds);
     if (!hired.has(DEFAULT_ENTRY_BOT_ID)) {
-      throw new AppError(400, 'expert_required', '投资专家为常驻 Bot，无法解聘。');
+      throw new AppError(400, 'operator_required', '总调度为常驻 Bot，无法解聘。');
     }
     if (hired.size !== hiredIds.length || hiredIds.some(id => !this.registry.get(id))) {
       throw new AppError(400, 'invalid_roster', '聘用名单中有重复或未知的 Bot。');
