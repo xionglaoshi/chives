@@ -1,3 +1,4 @@
+import { askAiPrompts, fillAskPrompt } from '../utils/askAiPrompts';
 import content from '../../../../packages/chives-terminal/chives_terminal/workbench-content.json';
 import {useEffect,useState} from 'react';
 import type {AskExpert} from './askExpert';
@@ -8,6 +9,7 @@ import './hotspots.css';
 type Entry={name:string;code:string;url:string;metric:string;r5?:number;r30?:number;shareChange?:number|null};
 type Board={note:string;url:string;title:string;asOf:string;rows:Entry[];columns:[string,string]};
 type Payload={snapshot:{publishedAt:string;boards:Record<string,Board>;retained:string[]}|null;status:{state:string;startedAt?:string;finishedAt?:string}};
+const boardPrompts: Partial<Record<string, {提示词: string}>> = askAiPrompts['热门榜单'];
 const headers={'x-chives-kernel-manager':'local'};
 const api=appPath('/api/settings/desk/hotspots');
 function changeValue(id:string,r:Entry){
@@ -33,7 +35,7 @@ function stockQuoteUrl(code:string){
 function Ranking({id,b,onAsk}:{id:string;b:Board;onAsk:()=>void}){
   const world=id==='global';
   const primaryColor=id==='out'?'mb-down':id==='in'||id==='private'?'mb-up':'';
-  return <section className="mb-panel hs-panel"><header><h2>{b.title}</h2><button className="hs-ask" onClick={onAsk}>问AI</button></header>
+  return <section className="mb-panel hs-panel"><header><h2>{b.title}</h2><button className="hs-ask" disabled={!Object.hasOwn(boardPrompts, id)} onClick={onAsk}>问AI</button></header>
     <table><thead><tr><th scope="col">{world?'板块':'股票'}</th>{b.columns?.map(label=><th key={label} scope="col">{label}</th>)}</tr></thead>
     <tbody>{b.rows.map(r=>{
       const change=changeValue(id,r);
@@ -45,7 +47,8 @@ export function Hotspots({onAskExpert}:{onAskExpert:AskExpert}){
   function ask(id:string,b:Board){
     if(!data?.snapshot)return;
     const file=boardFile(id,b,data.snapshot.publishedAt,data.snapshot.retained.includes(id));
-    return onAskExpert('请帮我解读《'+b.title+'》。哪些变化最值得我关注？请结合榜单里的具体数据说明原因，并指出还需要核实什么。',file);
+    const template = boardPrompts[id]?.提示词;
+    if (template !== undefined) onAskExpert(fillAskPrompt(template, {榜单名: b.title}), file);
   }
   const [data,setData]=useState<Payload|null>(null),[error,setError]=useState(''),[pending,setPending]=useState(false);
   const running=pending||data?.status.state==='running';

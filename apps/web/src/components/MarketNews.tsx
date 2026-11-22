@@ -1,3 +1,4 @@
+import { askAiPrompts, fillAskPrompt } from '../utils/askAiPrompts';
 import content from '../../../../packages/chives-terminal/chives_terminal/workbench-content.json';
 import {useEffect,useState,type ReactNode} from 'react';
 import {appPath} from '../appPath';
@@ -10,9 +11,9 @@ const clock = new Intl.DateTimeFormat('zh-CN',{timeZone:'Asia/Shanghai',month:'2
 
 type AskButton = (title:string,ready:boolean,prompt:string,markdown:()=>string)=>ReactNode;
 
-function NewsCard({title,edition,failed,ask}:{title:string;edition:Edition|null;failed:boolean;ask:AskButton}){
+function NewsCard({title,promptKey,edition,failed,ask}:{title:string;promptKey:'国内资讯'|'国际资讯';edition:Edition|null;failed:boolean;ask:AskButton}){
   const entries=edition?.entries.slice(0,20)??[];
-  const prompt='请先读取 USER.md，了解我的投资偏好和风险承受能力；然后读取我的最新持仓数据；再逐条打开附件中的 '+entries.length+' 条新闻原文。结合最新热点、我的实际持仓和投资偏好，告诉我哪些信息最值得关注、有哪些值得进一步研究的投资机会，以及应留意哪些风险。引用关键新闻链接，区分报道事实与推断；原文或持仓无法读取时说明缺口。';
+  const prompt = fillAskPrompt(askAiPrompts['行情看板'][promptKey], {新闻条数: entries.length});
   const markdown=()=>[
     '榜单更新时间（北京时间）：'+clock.format(new Date(edition!.updatedAt)),
     ...entries.map((entry,index)=>[
@@ -51,7 +52,7 @@ export function MarketNews({ask}:{ask:AskButton}){
     return ()=>{controller.abort();window.clearInterval(timer);};
   },[]);
   return <>
-    <NewsCard title={content.market.domestic} edition={data?.domestic??null} failed={failed||data!==null} ask={ask}/>
-    <NewsCard title={content.market.global} edition={data?.global??null} failed={failed||data!==null} ask={ask}/>
+    <NewsCard title={content.market.domestic} promptKey="国内资讯" edition={data?.domestic??null} failed={failed||data!==null} ask={ask}/>
+    <NewsCard title={content.market.global} promptKey="国际资讯" edition={data?.global??null} failed={failed||data!==null} ask={ask}/>
   </>;
 }

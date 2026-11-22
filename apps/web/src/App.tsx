@@ -641,8 +641,7 @@ export function App(): ReactElement {
   );
 
   function askOperator(prompt: string, askFile: File) {
-    const draft = prompt + '\n\n请在对话中直接写出完整解读，附件仅供参考，无需另做文档。';
-    openConversationTarget({botId: 'operator', draft, askFile});
+    openConversationTarget({botId: 'operator', draft: prompt, askFile});
   }
 
   const handleSend = useCallback(

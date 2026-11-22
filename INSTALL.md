@@ -127,3 +127,5 @@ bash scripts/install-chives.sh
 ```
 
 重新打开终端，输入 `chives`。如果只需重新注册已有检出的命令，可在仓库根目录执行 `"$HOME/.agents/venvs/chives/bin/python" scripts/chives_cli.py source --register`。
+
+「问AI」的预设集中在 [config/ask-ai-prompts.json](config/ask-ai-prompts.json)。每张榜单、卡片与报告段落有自己的条目，金额显示等分支也可分别修改。保留需要的双花括号变量，例如 `{{榜单名}}`，修改后刷新本机开发网页或重建静态网页使之生效。

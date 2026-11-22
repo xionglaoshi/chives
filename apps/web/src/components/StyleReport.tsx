@@ -1,3 +1,4 @@
+import { askAiPrompts } from '../utils/askAiPrompts';
 import content from '../../../../packages/chives-terminal/chives_terminal/workbench-content.json';
 import type {AskExpert} from './askExpert';
 import {appPath} from '../appPath';
@@ -52,12 +53,6 @@ function overviewParagraphs(text:string){
  return [...paragraphs,parts.join('')];
 }
 type Section='综合解读'|'您像谁'|'风格解读';
-const personalEvidence='请先读我的用户画像 USER.md，按其中的资料地图查阅本次已提交问卷的原答（investor.json 的 answers），对照题干、选项文字和我的备注。结合相关自述、补充资料及后续更正，再解读附件。引用时简述题意和我的实际回答；遇到矛盾就指出来。原答缺失或读不到时，请说明哪项判断缺依据，不要替我补答。';
-const questions:Record<Section,string>={
-  综合解读:'请从资金用途、最早用款时间、可承担的亏损、下跌时的实际反应中挑出关键回答，分别解释我的财务承受能力和心理接受度。用这些依据说明报告为何给出这个风险等级和投资风格，最后指出一个最值得我复核的问题。',
-  您像谁:'请逐一介绍附件中三位投资人的代表经历与投资方法，生平事实请核对可靠来源。每人选取我在估值、选股、卖出或处理回撤时的一条相关原答，说明 Chives 为什么认为我们相似、哪一点还有差距，以及我可以借鉴的一种做法。区分我说过的偏好和有实际经历印证的行为。',
-  风格解读:'请挑出最影响我决策的三张风格卡，逐张写清“我怎么答、卡片怎么解释、实际投资时可能怎样表现”。用买入、持有或遇到下跌的具体情境，说明哪些倾向相互支持、哪些可能冲突，最后整理成三条下次交易前能自问的问题。'
-};
 function peerNote(c:Comparison|null|undefined){
   return c?'对照：'+c.peerGroup+'，第 '+c.percentile+' 百分位（'+c.period+'，'+c.n+' 人）。来源：'+c.source:'';
 }
@@ -79,8 +74,7 @@ export function StyleReport({report,overview,example=false,updated,onAskExpert}:
     function ask(){
       const kind=example?'示例报告（虚构答卷）':'个人评估报告';
       const text=['# '+section,kind,updated?'评估时间：'+updated:'','作答题数：'+report.answered,...sectionText(section,report,overview)].filter(Boolean).join('\n\n');
-      const evidence=example?'这是虚构示例。请仅使用附件中示例答题者的材料，以下“我”均指示例人物。请注明示例，缺少的原答标为未知，不读取我的个人资料。':personalEvidence;
-      const prompt=evidence+'\n\n'+questions[section];
+      const prompt = askAiPrompts['风格评估'][section][example ? '示例报告' : '个人报告'];
       onAskExpert(prompt,new File([text+'\n'],kind+'-'+section+'.md',{type:'text/markdown'}));
     }
     return <div className="ir-section-heading"><h4>{section}</h4><button type="button" onClick={ask}>问AI</button></div>;
