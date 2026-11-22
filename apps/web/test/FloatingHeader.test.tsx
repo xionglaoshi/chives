@@ -17,35 +17,23 @@ const runningTask: TaskDto = {
 };
 
 describe('floating ChatHeader', () => {
-  it('centers a name pill that opens the profile and shows the running dot and timer', () => {
-    const onOpenProfile = vi.fn();
+  it('centers a name pill that opens the operator conversation and shows the running dot and timer', () => {
+    const onOpenOperator = vi.fn();
     render(
       <ChatHeader
-        bot={makeBot({ name: '投资专家', status: 'working' })}
+        operator={makeBot({ name: '总调度', status: 'working' })}
         runningTask={runningTask}
         turnStartedAt="2026-11-17T08:00:00.000Z"
-        onOpenProfile={onOpenProfile}
+        onOpenOperator={onOpenOperator}
       />
     );
-    const pill = screen.getByRole('button', { name: '打开 投资专家 资料' });
+    const pill = screen.getByRole('button', { name: '与总调度对话' });
     expect(pill.closest('header')?.className).toContain('chat-header');
     expect(pill.querySelector('.chat-header__pill-dot')).not.toBeNull();
     expect(pill.querySelector('.chat-header__pill-time')).not.toBeNull();
     fireEvent.click(pill);
-    expect(onOpenProfile).toHaveBeenCalledTimes(1);
-    expect(screen.getAllByText('投资专家').length).toBeGreaterThan(0);
-  });
-
-  it('renders the first six characters for narrow screens', () => {
-    render(
-      <ChatHeader
-        bot={makeBot({ name: '投资专家助手长名' })}
-        runningTask={null}
-        onOpenProfile={() => undefined}
-      />
-    );
-    const short = document.querySelector('.chat-header__pill-name--short');
-    expect(short?.textContent).toBe('投资专家助手');
+    expect(onOpenOperator).toHaveBeenCalledTimes(1);
+    expect(screen.getAllByText('总调度').length).toBeGreaterThan(0);
   });
 
   it('keeps the bell, search and panel buttons in the floating action group', () => {
@@ -53,23 +41,25 @@ describe('floating ChatHeader', () => {
     const onTogglePanel = vi.fn();
     render(
       <ChatHeader
-        bot={makeBot({ name: '投资专家', panels: ['market', 'watches'], watchCount: 2 })}
+        operator={makeBot({ name: '总调度', panels: ['market', 'watches'], watchCount: 2 })}
         runningTask={null}
         onSearch={onSearch}
+        onOpenOperator={() => undefined}
         onTogglePanel={onTogglePanel}
       />
     );
-    const actions = document.querySelector('.chat-header__actions');
-    expect(actions?.querySelectorAll('button')).toHaveLength(4);
-    fireEvent.click(screen.getByRole('button', { name: '搜索与投资专家的时间线' }));
+    const actions = screen.getByRole('group',{name:'右侧面板快捷按钮'});
+    expect(actions?.querySelectorAll('button')).toHaveLength(3);
+    fireEvent.click(screen.getByRole('button', { name: '全局搜索' }));
     expect(onSearch).toHaveBeenCalledTimes(1);
     fireEvent.click(screen.getByRole('button', { name: '盯盘' }));
     expect(onTogglePanel).toHaveBeenCalledWith('watches');
   });
 
-  it('uses a non-interactive pill when no profile handler is given', () => {
-    render(<ChatHeader bot={makeBot({ name: '投资专家' })} runningTask={null} />);
-    expect(screen.queryByRole('button', { name: '打开 投资专家 资料' })).toBeNull();
-    expect(document.querySelector('.chat-header__pill')?.tagName).toBe('DIV');
+  it('opens the operator conversation even while the roster is loading', () => {
+    const open = vi.fn();
+    render(<ChatHeader operator={undefined} runningTask={null} onOpenOperator={open}/>);
+    fireEvent.click(screen.getByRole('button', {name:'与总调度对话'}));
+    expect(open).toHaveBeenCalledOnce();
   });
 });

@@ -137,10 +137,8 @@ function appFetch(bot: BotSummary, watches: WatchDto[] = []) {
 beforeEach(() => {
   resetEventSources();
   vi.stubGlobal('EventSource', MockEventSource);
-  window.history.replaceState(null, '', '/');
+  window.history.replaceState(null, '', '/#/bot/expert');
   window.localStorage.clear();
-  // A returning user who closed every panel; the first-visit default is tested separately.
-  for (const bot of ['expert', 'research', 'zhushenglang']) window.localStorage.setItem(`chives.panel.v2.${bot}`, '');
   window.innerWidth = 1400;
 });
 
@@ -183,7 +181,7 @@ describe('WatchesPanel', () => {
   it('fills the modify prompt without sending', async () => {
     const { onEditWatch } = renderWatches([watchDto()]);
     fireEvent.click(await screen.findByRole('button', { name: '修改' }));
-    expect(onEditWatch).toHaveBeenCalledWith('柳工回踩');
+    expect(onEditWatch).toHaveBeenCalledWith('柳工回踩', 'expert');
   });
 
   it('lists recent triggers and jumps to their analysis task', async () => {
@@ -200,7 +198,7 @@ describe('WatchesPanel', () => {
     expect(await screen.findByText('最近触发')).toBeTruthy();
     expect(screen.getByText('达到执行条件')).toBeTruthy();
     fireEvent.click(screen.getByRole('button', { name: /柳工回踩/ }));
-    expect(onLocateTask).toHaveBeenCalledWith('task-9');
+    expect(onLocateTask).toHaveBeenCalledWith('task-9', 'expert');
   });
 
   it('refreshes when a watch SSE revision arrives', async () => {
@@ -225,7 +223,7 @@ describe('WatchesPanel', () => {
 });
 
 describe('App side panels', () => {
-  it('renders one header button per panel, opens several at once and remembers per bot', { timeout: 20000 }, async () => {
+  it('renders one header button per panel, opens several at once in toolbar order', { timeout: 20000 }, async () => {
     vi.stubGlobal(
       'fetch',
       appFetch(makeBot({ panels: ['market', 'portfolio', 'watches'] }))
@@ -240,12 +238,11 @@ describe('App side panels', () => {
     fireEvent.click(marketButton);
     expect(await screen.findByLabelText('行情面板', {}, { timeout: 5000 })).toBeTruthy();
     expect(await screen.findByText('上证指数', {}, { timeout: 5000 })).toBeTruthy();
-    expect(window.localStorage.getItem('chives.panel.v2.expert')).toBe('market');
 
     fireEvent.click(screen.getByRole('button', { name: '持仓' }));
     expect(await screen.findByLabelText('持仓面板', {}, { timeout: 5000 })).toBeTruthy();
     expect(screen.getByLabelText('行情面板')).toBeTruthy();
-    expect(window.localStorage.getItem('chives.panel.v2.expert')).toBe('market,portfolio');
+    expect(Array.from(document.querySelectorAll('.expert-sidebar__title'), node=>node.textContent)).toEqual(['持仓','行情']);
 
     fireEvent.click(screen.getByRole('button', { name: '行情' }));
     expect(screen.queryByLabelText('行情面板')).toBeNull();
@@ -255,12 +252,12 @@ describe('App side panels', () => {
     expect(window.localStorage.getItem('chives.panel.v2.expert')).toBeNull();
   });
 
-  it('opens the remembered panel for that bot', async () => {
+  it('ignores the remembered panel for that bot', async () => {
     window.localStorage.setItem('chives.panel.v2.expert', 'portfolio');
     vi.stubGlobal('fetch', appFetch(makeBot({ panels: ['market', 'portfolio'] })));
     render(<App />);
-    expect(await screen.findByLabelText('持仓面板')).toBeTruthy();
-    expect(screen.getByText(/还没有记录持仓/)).toBeTruthy();
+    expect(await screen.findByRole('button',{name:'持仓'})).toBeTruthy();
+    expect(screen.queryByLabelText('持仓面板')).toBeNull();
     expect(window.localStorage.getItem('chives.panel.v2.expert')).toBe('portfolio');
   });
 
@@ -279,15 +276,16 @@ describe('App side panels', () => {
   });
 
   it('fills and focuses the composer from the watches panel without sending', async () => {
-    window.localStorage.setItem('chives.panel.v2.expert', 'watches');
+    window.history.replaceState(null, '', '/#/workspace/strategies');
     const fetchMock = appFetch(makeBot({ panels: ['market', 'portfolio', 'watches'] }), [
       watchDto()
     ]);
     vi.stubGlobal('fetch', fetchMock);
     render(<App />);
 
+    fireEvent.click(await screen.findByRole('button', { name:'盯盘'}));
     fireEvent.click(await screen.findByRole('button', { name: '修改' }));
-    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
+    const textarea = await screen.findByLabelText('给 Bot 发消息') as HTMLTextAreaElement;
     expect(textarea.value).toBe('修改盯盘「柳工回踩」：');
     await waitFor(() => expect(document.activeElement).toBe(textarea));
     expect(
@@ -299,49 +297,14 @@ describe('App side panels', () => {
     ).toBe(false);
   });
 
-  it('renders a strategy panel button with the strategy name and stacks it with other panels', async () => {
-    vi.stubGlobal(
-      'fetch',
-      appFetch(makeBot({ id: 'zhushenglang', name: '主升浪', panels: ['market', 'strategy:zhushenglang'] }))
-    );
-    render(<App />);
-
-    const strategyButton = await screen.findByRole('button', { name: '主升浪' });
-    fireEvent.click(strategyButton);
-    expect(await screen.findByLabelText('主升浪策略面板')).toBeTruthy();
-    expect(await screen.findByText('兆威机电')).toBeTruthy();
-    expect(window.localStorage.getItem('chives.panel.v2.zhushenglang')).toBe('strategy:zhushenglang');
-
-    fireEvent.click(screen.getByRole('button', { name: '行情' }));
-    expect(await screen.findByLabelText('行情面板')).toBeTruthy();
-    expect(screen.getByLabelText('主升浪策略面板')).toBeTruthy();
-    expect(window.localStorage.getItem('chives.panel.v2.zhushenglang')).toBe(
-      'market,strategy:zhushenglang'
-    );
-  });
-
-  it('fills the composer from a strategy row without sending', async () => {
-    vi.stubGlobal(
-      'fetch',
-      appFetch(makeBot({ id: 'zhushenglang', name: '主升浪', panels: ['strategy:zhushenglang'] }))
-    );
-    render(<App />);
-
-    fireEvent.click(await screen.findByRole('button', { name: '主升浪' }));
-    fireEvent.click(await screen.findByRole('button', { name: '查看兆威机电的主升浪轮次' }));
-    const textarea = screen.getByRole('textbox') as HTMLTextAreaElement;
-    expect(textarea.value).toBe('看看兆威机电的主升浪轮次');
-  });
-
-  it('shows no panel buttons for a bot without panels', async () => {
-    vi.stubGlobal(
-      'fetch',
-      appFetch(makeBot({ id: 'research', name: '研究员', panels: [] }))
-    );
-    render(<App />);
-    expect(await screen.findByRole('heading', { name: '想让研究员做什么？' })).toBeTruthy();
-    expect(screen.queryByRole('button', { name: '行情' })).toBeNull();
-    expect(screen.queryByRole('button', { name: '持仓' })).toBeNull();
-    expect(screen.queryByRole('button', { name: '盯盘' })).toBeNull();
-  });
+  it.each([['research', []], ['zhushenglang', ['strategy:zhushenglang']]] as const)(
+    'offers the same global shortcuts for %s', async (id, panels) => {
+      window.history.replaceState(null, '', '/#/bot/'+id);
+      vi.stubGlobal('fetch', appFetch(makeBot({id, panels:[...panels]})));
+      render(<App/>);
+      const controls = await screen.findByRole('group',{name:'右侧面板快捷按钮'});
+      expect(Array.from(controls.querySelectorAll('button'), item=>item.getAttribute('aria-label')))
+        .toEqual(['盯盘','持仓','行情']);
+      expect(screen.queryByLabelText('右侧面板')).toBeNull();
+    });
 });

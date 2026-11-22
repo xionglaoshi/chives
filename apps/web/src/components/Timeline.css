@@ -9,22 +9,9 @@
 .timeline__scroll {
   flex: 1;
   min-width: 0;
-  padding: calc(var(--chat-header-height, 64px) + var(--space-4)) var(--space-14) var(--space-4);
+  padding: var(--space-4) var(--space-14) var(--space-4);
   overflow-y: auto;
   overflow-x: hidden;
-}
-
-/* Messages fade out under the floating header instead of hitting a hard edge. */
-.timeline::before {
-  position: absolute;
-  top: 0;
-  right: 0;
-  left: 0;
-  z-index: 1;
-  height: var(--chat-header-height, 64px);
-  background: linear-gradient(var(--color-bg) 55%, transparent);
-  pointer-events: none;
-  content: '';
 }
 
 .timeline__inner {
@@ -325,7 +312,7 @@
 
 @media (max-width: 720px) {
   .timeline__scroll {
-    padding: calc(var(--chat-header-height, 64px) + var(--space-2)) var(--space-6) var(--space-4);
+    padding: var(--space-2) var(--space-6) var(--space-4);
   }
 
   .timeline__inner {

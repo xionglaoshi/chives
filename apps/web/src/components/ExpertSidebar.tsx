@@ -1,5 +1,4 @@
 export {
-  PANEL_LABELS,
   SidePanel,
   useSidePanelState,
   type SidePanelProps,

@@ -2,8 +2,6 @@ import { useEffect, useState, type ReactElement } from 'react';
 
 import type { BotSummary } from '@chives/server/protocol';
 
-import { ConversationSearch } from './ConversationSearch';
-import type { ConversationHit } from '../api/client';
 import { workbenchTools, type WorkbenchTool } from '../utils/routes';
 import { Logo } from '../brand/Logo';
 import { BotList, BotRail } from './BotList';
@@ -39,7 +37,6 @@ export interface SidebarProps {
   onSelect: (botId: string) => void;
   activeTool: WorkbenchTool | null;
   onTool: (tool:WorkbenchTool)=>void;
-  onLocate: (hit:ConversationHit)=>void;
   onMove: (source:string,target:string)=>void;
   onShowAll: () => void;
   onOpenSettings: () => void;
@@ -65,7 +62,7 @@ export function Sidebar({
   compact: previewOpen = false,
   allBotsActive = false,
   settingsActive = false,
-  activeTool, onTool, onLocate, onMove,
+  activeTool, onTool, onMove,
   onSelect,
   onShowAll,
   onOpenSettings
@@ -117,7 +114,6 @@ export function Sidebar({
           </svg>
         </button>
       </div>
-      <ConversationSearch bots={bots} onLocate={onLocate}/>
       <section className="desk-shortcuts" aria-label="工作台">
         <h2 className="bot-list__heading">工作台</h2>
         {visibleTools.map((key,index)=><div className="sidebar-pin-row" key={key}

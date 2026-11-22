@@ -12,12 +12,7 @@ from .screen import clean, context_label
 PAGES = (("热门榜单", "trends"), ("行情看板", "market"),
          ("用户持仓", "holdings"), ("风格评估", "portrait"))
 CHANNEL_NAMES = dict(weixin="微信", wecom="企业微信", feishu="飞书", telegram="Telegram", slack="Slack", discord="Discord")
-COMMANDS = {
-    "/model": "切换模型", "/history": "浏览并续接历史研究", "/new": "另开研究",
-    "/files": "查看交付文件", "/context": "查看上下文", "/stop": "停止当前任务",
-    "/bot": "选择 Bot", "/settings": "打开设置", "/help": "命令与快捷键",
-    "/exit": "退出终端", "/allow": "允许工具", "/deny": "拒绝工具",
-}
+COMMANDS = json.loads(Path(__file__).with_name("command-reference.json").read_text(encoding="utf-8"))["chat"]
 PREFS = Path.home() / ".config/chives/terminal.json"
 APPEARANCE = {
     "contrast": ("高对比", False), "compact": ("紧凑排版", False),

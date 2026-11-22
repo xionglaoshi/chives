@@ -7,6 +7,15 @@
   background: var(--color-bg);
 }
 
+.app__frame {
+  position: relative;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  padding-top: var(--chat-header-height);
+}
+
 .app__body {
   display: flex;
   flex: 1;

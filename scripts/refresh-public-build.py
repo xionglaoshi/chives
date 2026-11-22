@@ -8,7 +8,9 @@ WEB = ROOT / "apps/web"
 STAMP = ROOT / "runtime/public-build.inputs"
 roots = [WEB / "src", WEB / "public", WEB / "index.html", WEB / "vite.config.ts",
          WEB / "package.json", ROOT / "pnpm-lock.yaml", ROOT / "packages/chives-ui/src",
-         ROOT / "apps/server/src/bots/pixel-icons.ts"]
+         ROOT / "apps/server/src/bots/pixel-icons.ts", ROOT / "INSTALL.md",
+         ROOT / "docs/设置中心.md", ROOT / "docs/专家内核与配置.md", ROOT / "docs/投研工具.md",
+         ROOT / "packages/chives-terminal/chives_terminal/command-reference.json"]
 
 
 def fingerprint():

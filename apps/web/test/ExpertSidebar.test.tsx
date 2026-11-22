@@ -297,7 +297,7 @@ describe('SidePanel refresh', () => {
 
 describe('useSidePanelState', () => {
   function Harness({ botId }: { botId: string }): ReactElement {
-    const state = useSidePanelState(botId, ['market', 'portfolio', 'watches']);
+    const state = useSidePanelState(botId);
     return (
       <>
         <button type="button" onClick={() => state.toggle('market')}>
@@ -317,39 +317,40 @@ describe('useSidePanelState', () => {
     fireEvent.click(screen.getByRole('button', { name: 'portfolio' }));
     expect(screen.getByTestId('open').textContent).toBe('portfolio');
     fireEvent.click(screen.getByRole('button', { name: 'market' }));
-    expect(screen.getByTestId('open').textContent).toBe('market,portfolio');
-    expect(window.localStorage.getItem('chives.panel.v2.expert')).toBe('market,portfolio');
+    expect(screen.getByTestId('open').textContent).toBe('portfolio,market');
+    expect(window.localStorage.getItem('chives.panel.v2.expert')).toBe('');
 
     fireEvent.click(screen.getByRole('button', { name: 'market' }));
     expect(screen.getByTestId('open').textContent).toBe('portfolio');
     fireEvent.click(screen.getByRole('button', { name: 'portfolio' }));
     expect(screen.getByTestId('open').textContent).toBe('none');
-    expect(window.localStorage.getItem('chives.panel.v2.expert')).toBeNull();
+    expect(window.localStorage.getItem('chives.panel.v2.expert')).toBe('');
   });
 
-  it('restores each bot’s own last panel when switching bots', () => {
+  it('starts every bot closed even when an older build stored open panels', () => {
     window.localStorage.setItem('chives.panel.v2.expert', 'watches');
     window.localStorage.setItem('chives.panel.v2.research', 'market');
     const { rerender } = render(<Harness botId="expert" />);
-    expect(screen.getByTestId('open').textContent).toBe('watches');
+    expect(screen.getByTestId('open').textContent).toBe('none');
+    fireEvent.click(screen.getByRole('button', {name:'market'}));
     rerender(<Harness botId="research" />);
-    expect(screen.getByTestId('open').textContent).toBe('market');
+    expect(screen.getByTestId('open').textContent).toBe('none');
     rerender(<Harness botId="expert" />);
-    expect(screen.getByTestId('open').textContent).toBe('watches');
+    expect(screen.getByTestId('open').textContent).toBe('none');
   });
 
-  it('opens every panel on the first visit to a bot', () => {
+  it('closes every panel on the first visit to a bot', () => {
     window.localStorage.clear();
     render(<Harness botId="expert" />);
-    expect(screen.getByTestId('open').textContent).toBe('market,portfolio,watches');
+    expect(screen.getByTestId('open').textContent).toBe('none');
   });
 
-  it('ignores choices stored by older builds and opens every panel on a laptop-width window', () => {
+  it('ignores choices stored by older builds on a laptop-width window', () => {
     window.localStorage.clear();
     window.localStorage.setItem('chives.panel.expert', 'watches');
     window.innerWidth = 1100;
     render(<Harness botId="expert" />);
-    expect(screen.getByTestId('open').textContent).toBe('market,portfolio,watches');
+    expect(screen.getByTestId('open').textContent).toBe('none');
   });
 
   it('starts closed on a narrow window', () => {

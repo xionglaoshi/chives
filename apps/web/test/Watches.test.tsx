@@ -80,18 +80,19 @@ describe('watch UI', () => {
     expect(screen.getByRole('button', { name: /2 条盯盘/ })).toBeTruthy();
   });
 
-  it('renders one panel button per bot panel and drops the old watch label', () => {
+  it('renders one button per global panel and drops the old watch label', () => {
     const onTogglePanel = vi.fn();
     render(
       <ChatHeader
-        bot={makeBot({
+        onOpenOperator={() => undefined}
+        operator={makeBot({
           id: 'expert',
           name: '投资专家',
           watchCount: 2,
           panels: ['market', 'portfolio', 'watches']
         })}
         runningTask={null}
-        openPanel={null}
+        bots={[makeBot({watchCount:2})]}
         onTogglePanel={onTogglePanel}
       />
     );
@@ -99,11 +100,12 @@ describe('watch UI', () => {
     expect(screen.queryByRole('button', { name: '盯盘 2 条' })).toBeNull();
     const buttons = screen.getAllByRole('button');
     expect(buttons.map((button) => button.getAttribute('aria-label'))).toEqual([
+      '与投资专家对话',
       '通知',
-      '搜索与投资专家的时间线',
-      '行情',
+      '全局搜索',
+      '盯盘',
       '持仓',
-      '盯盘'
+      '行情'
     ]);
     fireEvent.click(screen.getByRole('button', { name: '盯盘' }));
     expect(onTogglePanel).toHaveBeenCalledWith('watches');
@@ -112,7 +114,8 @@ describe('watch UI', () => {
   it('hides the watch badge when the count is zero', () => {
     render(
       <ChatHeader
-        bot={makeBot({ id: 'expert', name: '投资专家', panels: ['watches'], watchCount: 0 })}
+        onOpenOperator={() => undefined}
+        operator={makeBot({ id: 'expert', name: '投资专家', panels: ['watches'], watchCount: 0 })}
         runningTask={null}
       />
     );
@@ -122,7 +125,8 @@ describe('watch UI', () => {
   it('shows the unread bell and the notification list', () => {
     render(
       <ChatHeader
-        bot={makeBot({ id: 'expert', name: '投资专家' })}
+        onOpenOperator={() => undefined}
+        operator={makeBot({ id: 'expert', name: '投资专家' })}
         runningTask={null}
         notifications={[notice]}
         unreadCount={1}

@@ -1,3 +1,4 @@
+import { helpItems } from '../utils/helpTopics';
 import {useEffect,useRef,useState} from 'react';
 import type {ReactNode} from 'react';
 import {desk, type Preferences} from './deskApi';
@@ -36,14 +37,6 @@ export function Behavior({p,save,page}:{p:Preferences;save:Save;page:string}){
  return page==='chat'?<>{check('showProcess','显示实时思考摘要','显示内核公开返回的推理片段。')}{check('showTools','显示工具调用','在对话中展开本轮工具执行步骤。')}<Row title="任务执行期间的新消息" hint="排队会等本轮结束。优先引导会结束当前轮次，优先处理新要求。"><Picker label="新消息方式" value={p.busyMode} onChange={v=>void save({busyMode:v}).catch(()=>{})} choices={[['queue','顺序排队'],['interrupt','优先引导']]}/></Row></>:<>
  {check('attachmentsRead','向 Bot 提供工作区附件','允许将选中的工作区文件随消息交给 Bot 阅读。')}{check('workspaceWrite','工作区写入','控制本地报告保存工具和 dsh 工作区写入模式。')}{check('databaseRead','查询本地资料库','控制 Bot 的表格抽样查询工具。')}{check('memoryWrite','写入 Bot 记忆','关闭后只允许读取已有记忆。')}{check('portfolioAccess','访问持仓服务','关闭后下轮任务不再挂载私人持仓 MCP。')}</>;
 }
-const helpItems=[
- ['怎样让 Bot 按我的投资习惯作答？','在「风格评估」完成问卷。获准读取用户画像的 Bot 会用这些偏好解释机会和风险。'],
- ['怎样找到以前和 Bot 聊过的内容？','在侧栏搜索历史会话，点击结果可跳到原消息。也可以直接从已在岗Bot列表打开该 Bot，接着之前的对话聊。'],
- ['内核与模型有什么区别？','内核执行任务、调度工具。模型提供推理。Chives 统一使用 dsh。Bot 可以继承全局模型，也可以选择自己的模型连接。'],
- ['消息发送到哪里？','应用内通知、浏览器和系统通知分别控制。通讯频道需要验证机器人身份、指定目标会话并启用投递。'],
- ['怎样迁移到另一台 Mac？','在「备份及导入」下载个性化数据，在目标机导入。聊天和报告索引另有研究记录导出。模型及通讯密钥需在目标机重新授权。'],
- ['为什么有些组件无法更新？','只有上游仓库发布的文件可以更新。存在本地开发改动时，Chives 会显示冲突，供开发者核对。'],
-];
 export function HelpDesk(){
  const [query,setQuery]=useState('');
  const terms=query.trim().toLowerCase().split(/\s+/).filter(Boolean);

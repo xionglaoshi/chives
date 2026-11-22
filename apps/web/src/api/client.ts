@@ -472,11 +472,13 @@ export function exportDownloadUrl(): string {
 }
 
 export function fetchWatches(
-  botId: string,
+  botId: string | undefined,
   status: 'active' | 'all' = 'active',
   signal?: AbortSignal
 ): Promise<WatchDto[]> {
-  const params = new URLSearchParams({ botId, status });
+  const params = new URLSearchParams();
+  if (botId !== undefined) params.set('botId', botId);
+  params.set('status', status);
   return request<WatchDto[]>(`/api/watches?${params.toString()}`, {
     ...(signal === undefined ? {} : { signal })
   });

@@ -6,4 +6,4 @@ requires-python = ">=3.12"
 dependencies = ["prompt-toolkit>=3.0.51,<3.1"]
 
 [tool.setuptools.package-data]
-chives_terminal = ["workbench-content.json"]
+chives_terminal = ["workbench-content.json", "command-reference.json"]

@@ -4,9 +4,9 @@ import {StyleAssessment} from './components/StyleAssessment';
 import {portraitDescription} from './components/SettingsNav';
 import {Holdings} from './components/Holdings';
 import { workbenchTools } from './utils/routes';
-import { saveBotOrder, type ConversationHit } from './api/client';
+import { saveBotOrder } from './api/client';
 import {desk,applyDesk,type Preferences} from './components/deskApi';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { DragEvent, ReactElement } from 'react';
 
 import type {
@@ -142,6 +142,15 @@ interface PreviewState {
   workspaceFile?: { botId: string; path: string };
 }
 
+interface ConversationTarget {
+  botId: string;
+  messageId?: string;
+  taskId?: string;
+  draft?: string;
+}
+
+const GlobalSearch = lazy(() => import('./components/GlobalSearch'));
+
 export function App(): ReactElement {
   const { bots, loading, error: serverError, setBots, setBotStatus, reload } = useBots();
   const [route, setRoute] = useState<AppRoute>(() => readRoute(window.location.hash));
@@ -156,7 +165,7 @@ export function App(): ReactElement {
   const [pendingByBot, setPendingByBot] = useState<Record<string, PendingMessage[]>>({});
   const [preview, setPreview] = useState<PreviewState | null>(null);
   const previewTriggerRef = useRef<HTMLElement | null>(null);
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [search, setSearch] = useState<'global' | 'timeline' | null>(null);
   const [continuation, setContinuation] = useState<{ taskId: string; title: string } | null>(null);
   const [locateTarget, setLocateTarget] = useState<string | null>(null);
   const [memoryRevision, setMemoryRevision] = useState(0);
@@ -175,7 +184,8 @@ export function App(): ReactElement {
     () => bots.find((bot) => bot.id === selectedId) ?? null,
     [bots, selectedId]
   );
-  const sidePanel = useSidePanelState(selectedBot?.id ?? null, selectedBot?.panels ?? []);
+  const operator = bots.find(bot => bot.id === 'operator');
+  const sidePanel = useSidePanelState(route.name === 'conversation' ? selectedId : null);
   const timeline = useTimeline(selectedBot?.id ?? null);
   const { applyEvent } = timeline;
   const selectedBotIdRef = useRef<string | null>(null);
@@ -235,7 +245,6 @@ export function App(): ReactElement {
 
   useEffect(() => {
     const onKeyDown = (event: globalThis.KeyboardEvent): void => {
-      if (selectedBot === null || route.name !== 'conversation') return;
       const target = event.target;
       const typing =
         target instanceof HTMLElement &&
@@ -244,19 +253,19 @@ export function App(): ReactElement {
           target.isContentEditable);
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault();
-        setSearchOpen(true);
+        setSearch('global');
         return;
       }
       if (event.key === '/' && !typing && !event.metaKey && !event.ctrlKey && !event.altKey) {
         event.preventDefault();
-        setSearchOpen(true);
+        setSearch('global');
       }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selectedBot, route.name]);
+  }, []);
 
-  const pendingHit = useRef<ConversationHit | null>(null);
+  const pendingTarget = useRef<ConversationTarget | null>(null);
   const orderSaving = useRef(false);
   const [orderError,setOrderError] = useState('');
   const moveDot = async (source:string,target:string) => {
@@ -274,27 +283,36 @@ export function App(): ReactElement {
     } catch {setOrderError('排序未保存，请重试。');reload();}
     finally {orderSaving.current=false;}
   };
-  const locateHit = (hit:ConversationHit) => {
-    if (route.name==='conversation' && selectedId===hit.botId) {
-      setPreview(null);setLocateTarget(hit.messageId);
-    } else {
-      pendingHit.current=hit;
-      navigate({name:'conversation',botId:hit.botId});
+  const openConversationTarget = useCallback((target: ConversationTarget) => {
+    setSearch(null);
+    if (route.name !== 'conversation' || selectedId !== target.botId) {
+      pendingTarget.current = target;
+      navigate({name: 'conversation', botId: target.botId});
+      return;
     }
-  };
+    setPreview(null);
+    if (target.messageId) setLocateTarget(target.messageId);
+    if (target.taskId) setLocateTaskId(target.taskId);
+    if (target.draft !== undefined) {
+      setComposerText(target.draft);
+      setComposerFocusToken(value => value + 1);
+    }
+  }, [navigate, route.name, selectedId]);
   const currentRouteKey = routeKey(route);
   useEffect(() => {
-    setComposerText('');
+    const target = pendingTarget.current?.botId === selectedId ? pendingTarget.current : null;
+    pendingTarget.current = null;
+    setComposerText(target?.draft ?? '');
+    if (target?.draft !== undefined) setComposerFocusToken(value => value + 1);
     setNotice(null);
     setAttachments([]);
     setUploadNotice(null);
     setDragActive(false);
     setPreview(null);
-    setSearchOpen(false);
+    setSearch(null);
     setContinuation(null);
-    setLocateTarget(pendingHit.current?.botId===selectedId ? pendingHit.current.messageId : null);
-    pendingHit.current=null;
-    setLocateTaskId(null);
+    setLocateTarget(target?.messageId ?? null);
+    setLocateTaskId(target?.taskId ?? null);
     setHighlightMessageId(null);
     previewTriggerRef.current = null;
   }, [currentRouteKey,selectedId]);
@@ -347,8 +365,7 @@ export function App(): ReactElement {
 
   const openNotification = useCallback(
     async (notification: NotificationDto): Promise<void> => {
-      navigate({ name: 'conversation', botId: notification.botId });
-      if (notification.taskId !== '') setLocateTaskId(notification.taskId);
+      openConversationTarget({botId: notification.botId, taskId: notification.taskId});
       if (notification.readAt !== null) return;
       const readAt = new Date().toISOString();
       setNotifications((current) =>
@@ -367,7 +384,7 @@ export function App(): ReactElement {
         // The local read state is still useful; the next fetch reconciles it.
       }
     },
-    [navigate, setBots]
+    [openConversationTarget, setBots]
   );
 
   const maybeShowBrowserNotification = useCallback(
@@ -392,7 +409,7 @@ export function App(): ReactElement {
   const handleEvent = useCallback(
     (event: ServerEvent) => {
       applyEvent(event);
-      if (event.type === 'task.closed' && event.botId === selectedBotIdRef.current) {
+      if (event.type === 'task.closed') {
         setTaskClosedToken((value) => value + 1);
       }
       if (event.type === 'bot.status') {
@@ -616,25 +633,15 @@ export function App(): ReactElement {
 
   const handleSearchReopen = useCallback(async (group: SearchTaskGroup): Promise<void> => {
     await reopenTask(group.taskId);
-    setSearchOpen(false);
+    setSearch(null);
     setContinuation({ taskId: group.taskId, title: group.title });
     setComposerText('');
     setComposerFocusToken((value) => value + 1);
   }, []);
 
   const handleLocate = useCallback((messageId: string): void => {
-    setSearchOpen(false);
+    setSearch(null);
     setLocateTarget(messageId);
-  }, []);
-
-  const handleLocateTask = useCallback((taskId: string): void => {
-    setSearchOpen(false);
-    setLocateTaskId(taskId);
-  }, []);
-
-  const handleEditWatch = useCallback((label: string): void => {
-    setComposerText(`修改盯盘「${label}」：`);
-    setComposerFocusToken((value) => value + 1);
   }, []);
 
   const handleCancelContinuation = useCallback((): void => {
@@ -814,6 +821,17 @@ export function App(): ReactElement {
   return (
     <div className="app">
       <ServiceBanner serverError={serverError} eventStatus={eventStatus} onRetry={reload} />
+      <div className="app__frame">
+        <ChatHeader
+          operator={operator}
+          runningTask={selectedId === 'operator' ? runningTask : null}
+          turnStartedAt={selectedId === 'operator' ? turnStartedAt : null}
+          onSearch={() => setSearch('global')}
+          onOpenOperator={() => navigate({name: 'conversation', botId: 'operator'})}
+          bots={bots} notifications={notifications} unreadCount={unreadTotal}
+          onMarkAllRead={markAllRead} onOpenNotification={notification => void openNotification(notification)}
+          openPanels={sidePanel.open} onTogglePanel={sidePanel.toggle}
+        />
       <div className={`app__body${preview === null ? '' : ' app__body--preview'}`}>
         {route.name!=='settings'&&<Sidebar
           bots={hiredBots}
@@ -822,7 +840,7 @@ export function App(): ReactElement {
           compact={preview !== null}
           activeTool={route.name==='workspace'?route.tool:null}
           onTool={tool=>navigate({name:'workspace',tool})}
-          onLocate={locateHit} onMove={(a,b)=>void moveDot(a,b)}
+          onMove={(a,b)=>void moveDot(a,b)}
           allBotsActive={route.name === 'overview'}
           settingsActive={false}
           onSelect={(botId) => navigate({ name: 'conversation', botId })}
@@ -901,20 +919,6 @@ export function App(): ReactElement {
                 {dragActive ? <div className="conversation__drop">松开以上传文件</div> : null}
                 <div className="conversation__body">
                 <div className="conversation__chat">
-                <ChatHeader
-                  bot={selectedBot}
-                  runningTask={runningTask}
-                  turnStartedAt={turnStartedAt}
-                  onSearch={() => setSearchOpen(true)}
-                  onOpenProfile={() => navigate({ name: 'profile', botId: selectedBot.id })}
-                  bots={bots}
-                  notifications={notifications}
-                  unreadCount={unreadTotal}
-                  onMarkAllRead={markAllRead}
-                  onOpenNotification={(notification) => void openNotification(notification)}
-                  openPanels={sidePanel.open}
-                  onTogglePanel={sidePanel.toggle}
-                />
                 {selectedBot.hired === false ? (
                   <div className="bots-overview__quiet" role="status">这位 Bot 待聘，历史记录可继续查看。
                     <button type="button" className="bots-overview__action" onClick={() => navigate({name:'overview'})}>去人才市场聘用</button>
@@ -1034,27 +1038,22 @@ export function App(): ReactElement {
                   </>
                 ) : null}
                 </div>
-                {sidePanel.open.length === 0 ? null : (
-                  <SidePanel
-                    botId={selectedBot.id}
-                    panels={sidePanel.open}
-                    taskClosedToken={taskClosedToken}
-                    watchRevision={watchRevision}
-                    narrow={sidePanel.narrow}
-                    onPickName={(name) => {
-                      setComposerText(`看看${name}`);
-                      setComposerFocusToken((value) => value + 1);
-                    }}
-                    onEditWatch={handleEditWatch}
-                    onLocateTask={handleLocateTask}
-                    onCancelWatch={handleCancelWatch}
-                  />
-                )}
                 </div>
               </div>
             )
           ) : null}
         </main>
+        {sidePanel.open.length > 0 && <SidePanel
+          panels={sidePanel.open} narrow={sidePanel.narrow}
+          taskClosedToken={taskClosedToken} watchRevision={watchRevision}
+          onPickName={name => openConversationTarget({
+            botId: showConversation && selectedBot?.hired !== false ? selectedId ?? 'operator' : 'operator',
+            draft: `看看${name}`
+          })}
+          onEditWatch={(label, botId) => openConversationTarget({botId, draft: `修改盯盘「${label}」：`})}
+          onLocateTask={(taskId, botId) => openConversationTarget({botId, taskId})}
+          onCancelWatch={handleCancelWatch}
+        />}
         {preview !== null ? (
           <DeliverablePreview
             deliverable={preview.deliverable}
@@ -1064,10 +1063,15 @@ export function App(): ReactElement {
           />
         ) : null}
       </div>
-      {searchOpen && selectedBot !== null && route.name === 'conversation' ? (
+      </div>
+      {search === 'global' && <Suspense fallback={null}><GlobalSearch
+        bots={bots} onLocate={openConversationTarget} onClose={() => setSearch(null)}
+        currentBot={showConversation ? selectedBot : null} onTimeline={() => setSearch('timeline')}
+      /></Suspense>}
+      {search === 'timeline' && selectedBot !== null && showConversation ? (
         <SearchOverlay
           bot={selectedBot}
-          onClose={() => setSearchOpen(false)}
+          onClose={() => setSearch(null)}
           onReopen={handleSearchReopen}
           onLocate={handleLocate}
           onOpenDeliverable={openDeliverable}

@@ -71,11 +71,11 @@ function syncText(error: string): string {
 }
 
 export interface WatchesPanelProps {
-  botId: string;
+  botId: string | undefined;
   /** Bumped on any watch SSE event. */
   revision: number;
-  onEditWatch: (label: string) => void;
-  onLocateTask: (taskId: string) => void;
+  onEditWatch: (label: string, botId: string) => void;
+  onLocateTask: (taskId: string, botId: string) => void;
   onCancelWatch: (watchId: string) => Promise<void>;
 }
 
@@ -227,7 +227,7 @@ export function WatchesPanel({
                   <button
                     type="button"
                     className="expert-sidebar__watch-button"
-                    onClick={() => onEditWatch(watch.label)}
+                    onClick={() => onEditWatch(watch.label, watch.botId)}
                   >
                     修改
                   </button>
@@ -262,7 +262,7 @@ export function WatchesPanel({
                 className="expert-sidebar__trigger"
                 disabled={watch.triggerTaskId === null}
                 onClick={() => {
-                  if (watch.triggerTaskId !== null) onLocateTask(watch.triggerTaskId);
+                  if (watch.triggerTaskId !== null) onLocateTask(watch.triggerTaskId, watch.botId);
                 }}
               >
                 <span className="expert-sidebar__trigger-time">

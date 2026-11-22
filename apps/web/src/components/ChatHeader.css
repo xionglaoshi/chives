@@ -2,13 +2,13 @@
   --chat-header-height: 64px;
 }
 
-/* A floating layer: no bar, no divider, and it never takes layout height. */
+/* Anchored to the non-scrolling app frame above every route and panel. */
 .chat-header {
   position: absolute;
   top: 0;
   right: 0;
   left: 0;
-  z-index: 15;
+  z-index: 25;
   display: flex;
   align-items: flex-start;
   justify-content: center;
@@ -76,9 +76,6 @@ button.chat-header__pill:hover {
   white-space: nowrap;
 }
 
-.chat-header__pill-name--short {
-  display: none;
-}
 
 .chat-header__pill-dot {
   flex: none;
@@ -306,11 +303,10 @@ button.chat-header__pill:hover {
     max-width: 120px;
   }
 
-  .chat-header__pill-name {
-    display: none;
-  }
 
-  .chat-header__pill-name--short {
-    display: inline;
-  }
+}
+
+@media (max-width: 540px) {
+  .chat-header__panel { position: fixed; top: var(--chat-header-height); right: 12px; left: 12px; width: auto; }
+  .chat-header__dock { max-width: 100%; gap: 2px; }
 }

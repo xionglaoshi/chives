@@ -298,6 +298,7 @@ describe('App', () => {
     await screen.findByText('已有的回复');
 
     fireEvent.keyDown(window, { key: '/' });
+    fireEvent.click(await screen.findByRole('button', {name:'搜索与投资专家的时间线'}));
     expect(
       await screen.findByRole('dialog', { name: /搜索与投资专家的时间线/ })
     ).toBeTruthy();
