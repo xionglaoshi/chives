@@ -34,6 +34,7 @@ export interface ComposerProps {
   onRemoveAttachment?: (path: string) => void;
   uploading?: boolean;
   suggesting?: boolean;
+  suggestion?: string | null;
   uploadNotice?: string | null;
 }
 
@@ -118,6 +119,7 @@ export function Composer({
   onRemoveAttachment,
   uploading = false,
   suggesting = false,
+  suggestion = null,
   uploadNotice = null
 }: ComposerProps): ReactElement {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -135,7 +137,7 @@ export function Composer({
     element.style.height = `${height}px`;
     element.style.overflowY = element.scrollHeight > maxHeight ? 'auto' : 'hidden';
     setMultiline(element.scrollHeight > 34 || value.includes('\n'));
-  }, [value]);
+  }, [value, suggestion]);
 
   useEffect(() => {
     if (autoFocus) textareaRef.current?.focus();
@@ -152,6 +154,11 @@ export function Composer({
   };
 
   const handleKeyDown = (event: KeyboardEvent<HTMLTextAreaElement>): void => {
+    if (event.key === 'Tab' && !event.shiftKey && !event.nativeEvent.isComposing && suggestion && value === '') {
+      event.preventDefault();
+      onChange(suggestion);
+      return;
+    }
     if (event.key !== 'Enter' || event.shiftKey || event.nativeEvent.isComposing) return;
     event.preventDefault();
     submit();
@@ -232,7 +239,7 @@ export function Composer({
           className={suggesting ? "composer__input composer__input--suggesting" : "composer__input"}
           rows={1}
           value={value}
-          placeholder={suggesting ? "Chives正在思考您可能想问什么……" : placeholder}
+          placeholder={suggesting ? "Chives正在思考您可能想问什么……" : suggestion ?? placeholder}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
@@ -259,6 +266,12 @@ export function Composer({
               <path d="M9 14V4M4.5 8.5L9 4l4.5 4.5" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </button>
+        )}
+        {suggestion && value === '' && (
+          <button type="button" className="composer__accept-suggestion" onClick={() => {
+            onChange(suggestion);
+            textareaRef.current?.focus();
+          }}>使用建议</button>
         )}
       </form>
       {notice === null ? null : (

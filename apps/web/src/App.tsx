@@ -1,3 +1,4 @@
+import { useFollowupSuggestion } from './hooks/useFollowupSuggestion';
 import { Hotspots } from './components/Hotspots';
 import { MarketBoard } from './components/MarketBoard';
 import {StyleAssessment} from './components/StyleAssessment';
@@ -31,7 +32,6 @@ import {
   decideApproval,
   deleteRoutine,
   postMessage,
-  suggestOperatorDraft,
   reopenTask,
   retryTask,
   revealBotPath,
@@ -159,11 +159,6 @@ export function App(): ReactElement {
   const [route, setRoute] = useState<AppRoute>(() => readRoute(window.location.hash));
   const [composerText, setComposerText] = useState('');
   const [askFile, setAskFile] = useState<File | null>(null);
-  const [askDraft, setAskDraft] = useState<{prompt: string; source: string} | null>(null);
-  const editComposer = useCallback((text: string) => {
-    setAskDraft(null);
-    setComposerText(text);
-  }, []);
   const [notice, setNotice] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   useEffect(()=>{void desk<Preferences>('prefs').then(applyDesk).catch(()=>{});},[]);
@@ -303,16 +298,13 @@ export function App(): ReactElement {
     if (target.messageId) setLocateTarget(target.messageId);
     if (target.taskId) setLocateTaskId(target.taskId);
     if (target.draft !== undefined) {
-      setComposerText(target.askFile ? '' : target.draft);
+      setComposerText(target.draft);
       if (target.askFile) {
         setAttachments([]);
         setAskFile(target.askFile);
-        setAskDraft({prompt: target.draft, source: target.askFile.name});
         setNotice(null);
         setUploadNotice(null);
         setContinuation(null);
-      } else {
-        setAskDraft(null);
       }
       setComposerFocusToken(value => value + 1);
     }
@@ -321,13 +313,11 @@ export function App(): ReactElement {
   useEffect(() => {
     const target = pendingTarget.current?.botId === selectedId ? pendingTarget.current : null;
     pendingTarget.current = null;
-    setComposerText(target?.askFile ? '' : target?.draft ?? '');
+    setComposerText(target?.draft ?? '');
     if (target?.draft !== undefined) setComposerFocusToken(value => value + 1);
     setNotice(null);
     setAttachments([]);
     setAskFile(target?.askFile ?? null);
-    setAskDraft(target?.askFile && target.draft !== undefined
-      ? {prompt: target.draft, source: target.askFile.name} : null);
     setUploadNotice(null);
     setDragActive(false);
     setPreview(null);
@@ -338,24 +328,6 @@ export function App(): ReactElement {
     setHighlightMessageId(null);
     previewTriggerRef.current = null;
   }, [currentRouteKey,selectedId]);
-
-  useEffect(() => {
-    if (askDraft === null || route.name !== 'conversation' || selectedId !== 'operator') return;
-    const signal = AbortSignal.timeout(12000);
-    const request = new AbortController();
-    async function fillDraft(template: string, source: string) {
-      let text = template;
-      try {
-        const {draft} = await suggestOperatorDraft(template, source, AbortSignal.any([request.signal, signal]));
-        if (draft && !signal.aborted) text = draft;
-      } catch { /* Use the original template. */ }
-      if (request.signal.aborted) return;
-      setComposerText(current => current === '' ? text : current);
-      setAskDraft(null);
-    }
-    void fillDraft(askDraft.prompt, askDraft.source);
-    return () => request.abort();
-  }, [askDraft, route.name, selectedId]);
 
   useEffect(() => {
     if (!askFile || route.name !== 'conversation' || selectedId !== 'operator') return;
@@ -595,7 +567,6 @@ export function App(): ReactElement {
   );
 
   const removeAttachment = useCallback((path: string): void => {
-    setAskDraft(null);
     setAttachments((current) => current.filter((attachment) => attachment.path !== path));
   }, []);
 
@@ -679,7 +650,6 @@ export function App(): ReactElement {
       if (selectedBot === null || selectedBot.hired === false || askFile !== null) return;
       if (text.trim() === '' && attachments.length === 0) return;
       const outgoing = [...attachments];
-      setAskDraft(null);
       setComposerText('');
       setAttachments([]);
       setUploadNotice(null);
@@ -826,6 +796,11 @@ export function App(): ReactElement {
   }, [selectedBot, timeline.state.tasks]);
   const unreadTotal = notifications.filter((notification) => notification.readAt === null).length;
   const serverUnavailable = serverError !== null;
+  const followup = useFollowupSuggestion(
+    route.name === 'conversation' && selectedBot && selectedBot.hired !== false &&
+      !serverUnavailable && !running && !sending && !uploading && !askFile &&
+      composerText === '' && attachments.length === 0 ? selectedBot.id : null
+  );
   const showConversation = route.name === 'conversation';
   const showWelcome =
     showConversation &&
@@ -1002,7 +977,7 @@ export function App(): ReactElement {
                 {showWelcome ? (
                   <Welcome
                     value={composerText}
-                    onChange={editComposer}
+                    onChange={setComposerText}
                     onSend={handleSend}
                     onStop={() => void handleStop()}
                     running={running}
@@ -1019,7 +994,8 @@ export function App(): ReactElement {
                     onAddFiles={(files) => void addFiles(files)}
                     onRemoveAttachment={removeAttachment}
                     uploading={uploading || askFile !== null}
-                    suggesting={askDraft !== null}
+                    suggesting={followup.loading}
+                    suggestion={followup.text}
                     uploadNotice={uploadNotice}
                   />
                 ) : null}
@@ -1077,7 +1053,7 @@ export function App(): ReactElement {
                         )}
                         <Composer
                           value={composerText}
-                          onChange={editComposer}
+                          onChange={setComposerText}
                           onSend={handleSend}
                           onStop={() => void handleStop()}
                           running={running}
@@ -1092,7 +1068,8 @@ export function App(): ReactElement {
                           onAddFiles={(files) => void addFiles(files)}
                           onRemoveAttachment={removeAttachment}
                           uploading={uploading || askFile !== null}
-                          suggesting={askDraft !== null}
+                          suggesting={followup.loading}
+                          suggestion={followup.text}
                           uploadNotice={uploadNotice}
                         />
                       </div>
