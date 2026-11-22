@@ -191,7 +191,6 @@
 .sidebar { gap: 14px; padding-block: 16px 10px; }
 .sidebar__brand { padding-block: 2px; }
 .desk-shortcuts button:hover,.desk-shortcuts button[aria-current="page"] { background: var(--color-raised); }
-.sidebar__hint { color: var(--color-text-muted); font-size: var(--text-xs); }
 .desk-shortcuts { display: grid; flex: none; }
 .desk-shortcuts button { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border: none; background: transparent; color: var(--color-text); font-size: var(--text-sm); border-radius: var(--radius-md); }
 .sidebar .bot-list { gap: 2px; }
@@ -200,12 +199,11 @@
 .dot-grip { display:grid; place-items:center; width:24px; height:22px; color: var(--color-text-muted); opacity: 0; touch-action: none; cursor: grab; }
 .bot-list__item:hover .dot-grip,.bot-list__item:focus-within .dot-grip { opacity: .85; }
 .sidebar .bot-row { padding-right: 15px; }
-.sidebar__hint { white-space: nowrap; }
 .sidebar__all-label { flex: none; }
 .workbench-placeholder { padding: clamp(20px,4vw,48px); }
 .workbench-placeholder h1 { font-size: var(--text-xl); }
 .workbench-placeholder p { color: var(--color-text-secondary); }
-.sidebar--compact .desk-shortcuts span,.sidebar--compact .desk-shortcuts h2,.sidebar--compact .sidebar__hint { display:none; }
+.sidebar--compact .desk-shortcuts span,.sidebar--compact .desk-shortcuts h2 { display:none; }
 @media (min-width: 721px) {
   .sidebar .bot-list { min-height: 0; }
   .sidebar .bot-list__list { overflow-y: auto; min-height: 0; scrollbar-width: thin; }

@@ -158,12 +158,12 @@ export function Sidebar({
           className={`sidebar__all${allBotsActive ? ' sidebar__all--active' : ''}`}
           onClick={onShowAll}
           aria-current={allBotsActive ? 'page' : undefined}
-          title="Bot市场 · 聘用与解聘 Bot" aria-label="Bot市场，聘用与解聘 Bot"
+          title="Bot市场" aria-label="Bot市场"
         >
           <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
             <path d="M4 6h7v7H4zM13 6h7v7h-7zM4 15h7v5H4zM13 15h7v5h-7z" />
           </svg>
-          <span className="sidebar__all-label">Bot市场</span><small className="sidebar__hint">聘用与解聘 Bot</small>
+          <span className="sidebar__all-label">Bot市场</span>
         </button>
         <button
           type="button"
