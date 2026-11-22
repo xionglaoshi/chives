@@ -318,8 +318,16 @@ export interface ModelSettingsDto {
 
 export type ModelApiDto = 'openai-completions' | 'openai-responses' | 'anthropic-messages' | 'openai-codex-subscription';
 
+export type ReasoningEffort = 'minimal' | 'low' | 'medium' | 'high' | 'xhigh' | 'max';
+export interface ModelTuning { reasoningEffort?: ReasoningEffort; fastMode?: boolean }
+export interface ModelReceipt {
+  at:string; requestedModel:string; requestedEffort:string|null; requestedTier:string|null;
+  model:string|null; effort:string|null; tier:string|null;
+}
+export interface ModelCapabilities { efforts: ReasoningEffort[]; fast: boolean }
+
 /** The settings-page model endpoint. The API key is write-only and never appears here. */
-export interface ModelProviderDto {
+export interface ModelProviderDto extends ModelTuning {
   baseURL: string;
   api: ModelApiDto;
   model: string;

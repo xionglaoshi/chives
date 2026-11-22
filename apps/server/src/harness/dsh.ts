@@ -59,6 +59,7 @@ export interface DshSpawnOptions extends DshPatchOptions {
 }
 
 export interface DshModelRuntime {
+  reasoningEffort?: string;
   patchPath: string;
   route: DshModelRoute;
   env: Readonly<Record<string, string>>;

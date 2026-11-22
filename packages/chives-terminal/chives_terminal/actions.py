@@ -90,6 +90,36 @@ class Actions:
                 self.desk.default_model = active.get("displayName") or active["model"]
                 self.desk.saved("默认模型已设为 " + self.desk.default_model)
 
+    async def tune_model(self):
+        path = "/api/settings/desk/models"
+        entries = await self.api(path)
+        if not entries:
+            return await self.ui.info("思考强度与速度", "请先添加模型连接")
+        selected = await self.ui.select("选择要调整的模型连接", [
+            (e["id"], clean(e["model"]) + (" · 默认" if e.get("active") else "")) for e in entries
+        ], next((e["id"] for e in entries if e.get("active")), None))
+        if selected is None:
+            return
+        entry = next(e for e in entries if e["id"] == selected)
+        caps = await self.api(path, {"action":"capabilities", "id":selected})
+        specs = []
+        names = {"minimal":"极低","low":"低","medium":"中","high":"高","xhigh":"很高","max":"最高"}
+        if caps["efforts"]:
+            options = [("", "跟随模型")] + [(v, names.get(v,v) + " (" + v + ")") for v in caps["efforts"]]
+            specs.append(("effort","思考强度",entry.get("reasoningEffort",""),options))
+        if caps["fast"]:
+            specs.append(("speed","处理速度","fast" if entry.get("fastMode") else "standard",
+                          [("standard","标准"),("fast","快速 · 优先处理，可能消耗更多额度")]))
+        if not specs:
+            return await self.ui.info("思考强度与速度", "此连接未提供可调档位")
+        values = await self.ui.form(entry["model"], specs)
+        if values is not None:
+            body = {"action":"tune", "id":selected, "fastMode":values.get("speed") == "fast"}
+            if values.get("effort"):
+                body["reasoningEffort"] = values["effort"]
+            await self.api(path, body)
+            self.desk.saved("模型设置已保存，下轮对话生效")
+
     def toggle_label(self, key):
         return APPEARANCE[key][0] + (" · 开" if self.prefs[key] else " · 关")
 
@@ -109,6 +139,7 @@ class Actions:
     def primary_settings(self):
         name = self.desk.default_model
         return [("default", "默认模型" + (" · " + name if name else "")),
+                ("tune", "思考强度与速度"),
                 *((k, self.toggle_label(k)) for k in ("compact", "reasoning", "tools")),
                 ("more", "更多设置…")]
 
@@ -216,6 +247,8 @@ class Actions:
             self.toggle(key)
         elif key == "default":
             await self.model()
+        elif key == "tune":
+            await self.tune_model()
         elif key == "more":
             await self.more()
 

@@ -6,12 +6,13 @@
  */
 
 import { chmodSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
 import {CodexSubscription,codexBase} from './codex-subscription.js';
 import { stringify } from 'yaml';
 
-import type { ModelProviderDto } from '../api/protocol.js';
+import type { ModelProviderDto, ModelCapabilities, ModelReceipt, ModelTuning, ReasoningEffort } from '../api/protocol.js';
 import type { Store } from '../store/index.js';
 
 export const MODEL_PROVIDER_KEY = 'model_provider';
@@ -23,7 +24,7 @@ export const MODEL_APIS = ['openai-completions', 'openai-responses', 'anthropic-
 export type ModelApi = (typeof MODEL_APIS)[number];
 export type { ModelProviderDto };
 
-export interface ModelProviderConfig {
+export interface ModelProviderConfig extends ModelTuning {
   baseURL: string;
   api: ModelApi;
   model: string;
@@ -35,7 +36,7 @@ export interface ModelProviderConfig {
   deepseekThinking: boolean;
 }
 
-export interface ModelRuntime {
+export interface ModelRuntime extends ModelTuning {
   patchPath: string;
   route: { provider: string; model: string };
   env: Record<string, string>;
@@ -95,7 +96,7 @@ export function parseModelProvider(raw: unknown): ModelProviderConfig {
     'displayName',
     'contextWindow',
     'maxTokens',
-    'deepseekThinking',
+    'deepseekThinking', 'reasoningEffort', 'fastMode',
   ]);
   for (const key of Object.keys(raw)) {
     if (!allowed.has(key)) throw new ModelProviderError(`未知字段 "${key}"`);
@@ -115,6 +116,11 @@ export function parseModelProvider(raw: unknown): ModelProviderConfig {
   }
   const thinking = raw['deepseekThinking'] ?? DEFAULT_MODEL_PROVIDER.deepseekThinking;
   if (typeof thinking !== 'boolean') throw new ModelProviderError('deepseekThinking 必须是布尔值');
+  const effort = raw.reasoningEffort;
+  if (effort !== undefined && (typeof effort !== 'string' || !['minimal','low','medium','high','xhigh','max'].includes(effort))) {
+    throw new ModelProviderError('无效的思考强度');
+  }
+  if (raw.fastMode !== undefined && typeof raw.fastMode !== 'boolean') throw new ModelProviderError('快速模式必须是布尔值');
   const contextWindow = positiveInt(raw['contextWindow'], '上下文窗口');
   const maxTokens = positiveInt(raw['maxTokens'], '最大输出');
   return {
@@ -127,6 +133,8 @@ export function parseModelProvider(raw: unknown): ModelProviderConfig {
     ...(contextWindow === undefined ? {} : { contextWindow }),
     ...(maxTokens === undefined ? {} : { maxTokens }),
     deepseekThinking: thinking,
+    ...(effort === undefined ? {} : {reasoningEffort: effort as ReasoningEffort}),
+    ...(raw.fastMode === true ? {fastMode:true} : {}),
   };
 }
 
@@ -139,8 +147,20 @@ export function modelPatchPath(dataDir: string): string {
 }
 
 /** dsh `llm-pi-ai` patch for the configured route; the key is referenced by env name only. */
-export function buildModelPatch(config: ModelProviderConfig): string {
-  if(config.api==='openai-codex-subscription')return stringify([{id:'llm-pi-ai',config:{providers:{'openai-codex':{models:[{id:config.model}]}}}}]);
+export function buildModelPatch(config: ModelProviderConfig,receiptPath?:string): string {
+  const subscription = config.api === 'openai-codex-subscription';
+  const route = subscription ? 'openai-codex' : CHIVES_PROVIDER_ID;
+  const sessionSettings = {insert:[{id:'chives-model-settings',
+    name:fileURLToPath(new URL('../../../../overlays/model-settings.plugin.mjs', import.meta.url)),
+    config:{provider:route,model:config.model,receiptPath:subscription?receiptPath:undefined,reasoningEffort:config.reasoningEffort,fastMode:subscription && !!config.fastMode}}]};
+  if (subscription) {
+    const effort = config.reasoningEffort;
+    // New subscription models may precede the dsh catalog. Declare the selected capability.
+    const model = {id:config.model, ...(effort ? {reasoningEfforts:{[effort]:effort}} : {})};
+    const profile = {models:[model], ...(effort ? {reasoning:effort} : {})};
+    return stringify([{id:'llm-pi-ai',config:{providers:{'openai-codex':profile}}},
+      sessionSettings]);
+  }
   const model: Record<string, unknown> = { id: config.model };
   if (config.displayName !== undefined) model['name'] = config.displayName;
   if (config.contextWindow !== undefined) model['contextWindow'] = config.contextWindow;
@@ -155,8 +175,9 @@ export function buildModelPatch(config: ModelProviderConfig): string {
     api: config.api,
     baseURL: config.baseURL,
     models: [model],
+    ...(config.reasoningEffort ? {reasoning:config.reasoningEffort} : {}),
   };
-  return stringify([{ id: 'llm-pi-ai', config: { providers: { [CHIVES_PROVIDER_ID]: provider } } }], {
+  return stringify([{ id: 'llm-pi-ai', config: { providers: { [CHIVES_PROVIDER_ID]: provider } } }, sessionSettings], {
     lineWidth: 0,
   });
 }
@@ -177,6 +198,21 @@ export class ModelProviderStore {
     } catch {
       return null;
     }
+  }
+
+  async capabilities(config:ModelProviderConfig): Promise<ModelCapabilities> {
+    if (config.api==='openai-codex-subscription') {
+      const status=await this.subscription.status();
+      return status.capabilities[config.model] ?? {efforts:[],fast:false};
+    }
+    return {efforts: config.api==='openai-completions' && config.deepseekThinking ? ['high','max'] : [], fast:false};
+  }
+
+  async validateTuning(config:ModelProviderConfig, capabilities?:ModelCapabilities) {
+    if (!config.reasoningEffort && !config.fastMode) return;
+    const caps=capabilities ?? await this.capabilities(config);
+    if (config.reasoningEffort && !caps.efforts.includes(config.reasoningEffort)) throw new ModelProviderError('此模型不支持所选思考强度');
+    if (config.fastMode && !caps.fast) throw new ModelProviderError('此模型未提供快速模式');
   }
 
   keyConfigured(): boolean {
@@ -219,18 +255,27 @@ export class ModelProviderStore {
     const config = this.read();
     const key = this.currentKey();
     if (config === null || (key === '' && config.api!=='openai-codex-subscription')) return undefined;
-    return this.runtimeFor({...config,model:override || config.model},key,botId);
+    const {reasoningEffort,fastMode,...base} = config;
+    return this.runtimeFor(override && override!==config.model ? {...base,model:override} : config,key,botId);
   }
 
   runtimeFor(config:ModelProviderConfig,key:string,botId?:string): ModelRuntime {
     const patchPath = botId ? join(this.dataDir, "harness", "dsh", botId + ".model.yml") : modelPatchPath(this.dataDir);
     mkdirSync(join(this.dataDir, 'harness', 'dsh'), { recursive: true });
-    writeFileSync(patchPath, buildModelPatch(config), 'utf8');
+    writeFileSync(patchPath, buildModelPatch(config,botId?this.receiptFile(botId):undefined), 'utf8');
     return {
       patchPath,
+      ...(config.reasoningEffort ? {reasoningEffort: config.reasoningEffort} : {}),
       route: { provider: config.api==='openai-codex-subscription'?'openai-codex':CHIVES_PROVIDER_ID, model: config.model },
       env: config.api==='openai-codex-subscription'?{}:{ [MODEL_KEY_ENV]: key },
     };
+  }
+
+  private receiptFile(botId:string){return join(this.dataDir,'harness','dsh',botId+'.last-codex.json');}
+
+  receipt(botId:string):ModelReceipt|null {
+    try { return JSON.parse(readFileSync(this.receiptFile(botId),'utf8')) as ModelReceipt; }
+    catch { return null; }
   }
 
   async validateModel(model: string): Promise<void> {

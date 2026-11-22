@@ -154,6 +154,7 @@ export class DshDriver implements HarnessDriver, TemporaryPromptDriver, HiddenPr
   private readonly sinks = new Map<string, HarnessSink>();
   /** Sessions already loaded in each harness process; a restarted process gets a new client and starts empty. */
   private readonly liveSessions = new WeakMap<AcpClient, Set<string>>();
+  private readonly selections = new WeakMap<AcpSpawnSpec,DshModelRuntime>();
   private readonly spawnSpecs = new Map<string, AcpSpawnSpec>();
   private readonly bots = new Map<string, BotManifest>();
   /** Which task owns each ACP session, so a permission request can be routed. */
@@ -213,7 +214,9 @@ export class DshDriver implements HarnessDriver, TemporaryPromptDriver, HiddenPr
     if (this.options.workspaceWrite) spawnOptions.workspaceWrite = this.options.workspaceWrite();
     const runtime = this.options.modelRuntime?.(bot);
     if (runtime !== undefined) {spawnOptions.modelRuntime = runtime; spawnOptions.model = runtime.route;}
-    return dshSpawnSpec(bot, spawnOptions);
+    const spec=dshSpawnSpec(bot, spawnOptions);
+    if(runtime)this.selections.set(spec,runtime);
+    return spec;
   }
 
   private mcpServers(bot: BotManifest, task: TaskRecord): McpServer[] {
@@ -295,6 +298,23 @@ export class DshDriver implements HarnessDriver, TemporaryPromptDriver, HiddenPr
     }
   }
 
+  private async applySelection(client:AcpClient, sessionId:string, options:readonly SessionConfigOption[], spec:AcpSpawnSpec) {
+    const selected=this.selections.get(spec);
+    if(!selected)return options;
+    const route=JSON.stringify([selected.route.provider,selected.route.model]);
+    const enforce=async(id:string,value:string)=>{
+      if(options.find(option=>option.id===id)?.currentValue!==value) {
+        options=await client.setConfigOption(sessionId,id,value);
+        if(options.find(option=>option.id===id)?.currentValue!==value)
+          throw Error('dsh 未采用新的模型设置，请检查连接后重试');
+      }
+    };
+    await enforce('model',route);
+    if(selected.reasoningEffort || options.some(option=>option.id==='reasoning_effort'))
+      await enforce('reasoning_effort',selected.reasoningEffort??'');
+    return options;
+  }
+
   async ensureSession(
     bot: BotManifest,
     task: TaskRecord,
@@ -323,41 +343,29 @@ export class DshDriver implements HarnessDriver, TemporaryPromptDriver, HiddenPr
     // Only a session that is actually established needs a fresh token.
     const mcpServers = this.mcpServers(bot, task);
     if (task.harnessSessionId !== null) {
-      try {
-        const resumed = await client.resumeSession({ sessionId: task.harnessSessionId, cwd, mcpServers });
-        live.add(task.harnessSessionId);
-        this.sessionTasks.set(task.harnessSessionId, task);
+      const id=task.harnessSessionId;
+      const resumed=await client.resumeSession({sessionId:id,cwd,mcpServers}).catch(()=>null);
+      if(resumed){
+        const config=await this.applySelection(client,id,resumed.configOptions??[],spec);
+        live.add(id);
+        this.sessionTasks.set(id,task);
         this.options.onSessionEstablished?.(bot);
-        try {
-          this.options.onConfigOptions?.(bot, resumed.configOptions ?? []);
-        } catch {
-          // Reporting config options must not break the session.
-        }
-        return task.harnessSessionId;
-      } catch {
-        if (options.silent !== true) {
-          try {
-            this.options.onNotice?.(
-              bot,
-              task,
-              '上一轮的 harness 会话无法恢复，已为这一轮新建会话。',
-            );
-          } catch {
-            // Notice delivery is best-effort.
-          }
-        }
+        try { this.options.onConfigOptions?.(bot,config); } catch { /* Reporting is best-effort. */ }
+        return id;
       }
+      if(!options.silent)this.options.onNotice?.(bot,task,'上一轮的 harness 会话无法恢复，已为这一轮新建会话。');
     }
     const created = await client.newSession({ cwd, mcpServers });
+    const configOptions=await this.applySelection(client,created.sessionId,created.configOptions??[],spec);
     live.add(created.sessionId);
     this.sessionTasks.set(created.sessionId, task);
     this.options.onSessionEstablished?.(bot);
     try {
-      this.options.onConfigOptions?.(bot, created.configOptions ?? []);
+      this.options.onConfigOptions?.(bot, configOptions);
     } catch {
       // Reporting config options must not break the session.
     }
-    if (bot.model === 'default') {
+    if (bot.model === 'default' && !this.selections.has(spec)) {
       let model: string | null;
       try {
         model = this.options.defaultModel?.() ?? null;

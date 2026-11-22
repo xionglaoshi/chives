@@ -1521,7 +1521,11 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           const body=await readJsonObject(request);
           if (body.action==='delete' && registry.list().some(bot=>preferenceFor(bot.id).connection===body.id))
             throw new AppError(409,'model_in_use','请先让使用该连接的 Bot 换用其他模型');
+          if(body.action==='receipts'){
+            sendJson(response,200,Object.fromEntries(registry.list().map(bot=>[bot.id,modelProvider.receipt(bot.id)])));return;
+          }
           try{result=await library.perform(body.action,body);}catch(e){if(e instanceof AppError)throw e;throw new AppError(400,'model',e instanceof ModelProviderError?e.message:'模型连接失败，请核对地址和网络');}
+          if(body.action==='tune')await orchestrator.reloadModel();
           if(['save','delete','activate'].includes(String(body.action))){settings.writeDefaultModel(null);await orchestrator.reloadModel();}
         }else if(section==='channels'&&method==='GET')result=await channels.manage('list',{});
         else if(section==='channels'&&method==='POST'){const body=await readJsonObject(request);result=await channels.manage(String(body.action),body);}
@@ -1690,6 +1694,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
                 throw new ModelProviderError('apiKey 必须是文本或 null');
               }
               const parsed = parseModelProvider(fields);
+              await modelProvider.validateTuning(parsed);
               // An empty key field means "keep the saved key".
               const key = typeof apiKey === 'string' && apiKey.trim() === '' ? undefined : apiKey;
               saved = modelProvider.write(parsed, key===undefined&&modelProvider.read()?.baseURL!==parsed.baseURL?null:key as string | null | undefined);

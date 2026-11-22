@@ -44,3 +44,7 @@ html[data-font-size=large] #root{zoom:1.1;height:90.91vh}html[data-font-size=sma
 .desk-help-search{display:block;width:100%;box-sizing:border-box;margin-bottom:8px}
 
 .desk-settings.desk-workspace-portrait { grid-template-columns:minmax(0,1fr); }
+
+.model-picker label{display:flex;flex-direction:column;gap:6px;font-size:13px}
+.model-tuning small{color:var(--color-text-secondary);font-size:12px}
+.model-tuning:empty{display:none}

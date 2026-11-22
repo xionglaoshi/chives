@@ -3,6 +3,7 @@ import {createInterface} from 'node:readline';
 import {join} from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {selectedVersion} from '../harness/kernel-manager.js';
+import type {ModelCapabilities,ModelTuning} from '../api/protocol.js';
 import {AppError} from '../errors.js';
 
 const script=fileURLToPath(new URL('../../../../scripts/codex-subscription.mjs',import.meta.url));
@@ -24,8 +25,11 @@ export class CodexSubscription {
    child.stdin?.on('error',()=>{});child.stdin?.end(input?JSON.stringify(input):'');
   });
  }
- async status(){return {...await this.call<{authorized:boolean;models:string[]}>('status'),failed:this.loginError};}
- complete(model:string,instructions:string,text:string){return this.call<{text:string}>('complete',model,{instructions,text});}
+ async status(){return {...await this.call<{authorized:boolean;models:string[];capabilities:Record<string,ModelCapabilities>}>('status'),failed:this.loginError};}
+ complete(model:string,instructions:string,text:string,tuning:ModelTuning={}){
+  return this.call<{text:string;sent:{model:string;effort:string|null;tier:string|null};served:{model:string|null;effort:string|null;tier:string|null}|null}>('complete',model,
+    {instructions,text,reasoningEffort:tuning.reasoningEffort,fastMode:tuning.fastMode});
+ }
  login(device=false){
   if(this.flow)return this.flow;
   this.loginError=false;

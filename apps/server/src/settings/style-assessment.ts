@@ -68,7 +68,7 @@ export class AssessmentFormatError extends AppError {
 export async function summarize<T>(provider:ModelProviderStore, model:string, input:unknown, prompt:string, schema:z.ZodType<T>):Promise<T>{
   const config=provider.read(), key=provider.currentKey();
   if(config?.api==='openai-codex-subscription'){
-    const response=await provider.subscription.complete(model,prompt,JSON.stringify(input));
+    const response=await provider.subscription.complete(model,prompt,JSON.stringify(input),config.model===model?config:{});
     try{return schema.parse(JSON.parse(response.text.trim().replace(/^```(?:json)?\s*/i,'').replace(/\s*```$/,'')));}
     catch{throw new AssessmentFormatError('请返回符合字段规范的完整 JSON 对象');}
   }
@@ -86,7 +86,8 @@ export async function summarize<T>(provider:ModelProviderStore, model:string, in
     headers.Authorization='Bearer '+key;
     const responses=config.api==='openai-responses';
     url=base+(responses?'/responses':'/chat/completions');
-    const jsonMode=new URL(base).hostname==='api.deepseek.com'?
+    const jsonMode=config.model===model && config.reasoningEffort && config.deepseekThinking ?
+      {thinking:{type:'enabled'},reasoning_effort:config.reasoningEffort}:new URL(base).hostname==='api.deepseek.com'?
       {thinking:{type:'disabled'},response_format:{type:'json_object'}}:{};
     body=responses?{model,instructions:prompt,input:content}:{model,messages,max_tokens:8192,...jsonMode};
   }

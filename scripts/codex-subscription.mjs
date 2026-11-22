@@ -8,15 +8,25 @@ const id='openai-codex';
 const cache=join(process.env.npm_config_cache||join(homedir(),'.agents/state/chives-npm'),'_npx');
 const emit=value=>console.log(JSON.stringify(value));
 // The CLI account catalog can advertise new chat models before the kernel ships them.
-function subscriptionCatalog(models) {
+function subscriptionCatalog(models, getSupportedThinkingLevels) {
  const builtIn = models.getModels(id);
  const catalog = new Map();
+ const capabilities = {};
+ const dshLevels = ['minimal','low','medium','high','xhigh','max'];
+ function nativeEfforts(model) {
+  return getSupportedThinkingLevels(model).filter(level => dshLevels.includes(level) &&
+    (!model.thinkingLevelMap?.[level] || model.thinkingLevelMap[level] === level));
+ }
  const codexHome = process.env.CODEX_HOME || join(homedir(), '.codex');
  try {
   const cached = JSON.parse(readFileSync(join(codexHome, 'models_cache.json'), 'utf8'));
   for (const entry of cached.models) {
    if (entry.visibility !== 'list' || typeof entry.slug !== 'string' || !/^gpt-[a-z0-9.-]+$/.test(entry.slug)) continue;
    const native = models.getModel(id, entry.slug);
+   const advertised = entry.supported_reasoning_levels?.map(level => level.effort);
+   const efforts = Array.isArray(advertised) ? dshLevels.filter(level => advertised.includes(level)) : native ? nativeEfforts(native) : [];
+   capabilities[entry.slug] = {efforts, fast: entry.service_tiers?.some(tier => tier.id === 'priority') === true ||
+     entry.additional_speed_tiers?.includes('fast') === true};
    if (native) { catalog.set(entry.slug, native); continue; }
    const transport = builtIn[0];
    if (!transport || !Number.isSafeInteger(entry.context_window) || entry.context_window <= 0) continue;
@@ -25,13 +35,14 @@ function subscriptionCatalog(models) {
     baseUrl: transport.baseUrl, cost: transport.cost, contextWindow: entry.context_window,
     maxTokens: Math.min(8192, entry.context_window),
     input: entry.input_modalities?.includes('image') ? ['text','image'] : ['text'],
-    thinkingLevelMap: { off: null },
+    thinkingLevelMap: { off: null, ...Object.fromEntries(efforts.map(level => [level,level])) },
     reasoning: Array.isArray(entry.supported_reasoning_levels) && entry.supported_reasoning_levels.length > 0
    });
   }
  } catch { /* Standalone installations use the kernel catalog. */ }
  for (const native of builtIn) if (!catalog.has(native.id)) catalog.set(native.id, native);
- return catalog;
+ for (const native of builtIn) capabilities[native.id] ??= {efforts:nativeEfforts(native),fast:false};
+ return {catalog, capabilities};
 }
 
 async function main(){
@@ -40,7 +51,7 @@ async function main(){
  });
  if(!manifest)throw Error('kernel');
  const req=createRequire(manifest),load=name=>import(name.startsWith("@earendil-works/pi-ai/")?join(dirname(manifest),"../../",name.replace("pi-ai/","pi-ai/dist/")+".js"):req.resolve(name));
- const [{Context,Service},{LocalCredentialProvider},{credentialKey},{createModels},{openaiCodexProvider}]=await Promise.all([
+ const [{Context,Service},{LocalCredentialProvider},{credentialKey},{createModels,getSupportedThinkingLevels},{openaiCodexProvider}]=await Promise.all([
   '@deepseek-ai/cordis','@deepseek-ai/dsh-credentials-local','@deepseek-ai/dsh-credentials','@earendil-works/pi-ai/models','@earendil-works/pi-ai/providers/openai-codex'
  ].map(load));
  const storage=new LocalCredentialProvider(new Context(),{dshHome:home,watch:false});
@@ -65,16 +76,22 @@ async function main(){
      if(n.type==='device_code')emit({url:n.verificationUri,code:n.userCode});}
    });
   }else if(action==='status'){
-   emit({authorized:(await storage.readRecord(address))?.kind==='grant',models:[...subscriptionCatalog(models).keys()]});
+   const {catalog,capabilities}=subscriptionCatalog(models,getSupportedThinkingLevels);
+   emit({capabilities,authorized:(await storage.readRecord(address))?.kind==='grant',models:[...catalog.keys()]});
   }else if(action==='complete'){
    if(!(await credentials.read()))throw Error('missing authorization');
-   const m=subscriptionCatalog(models).get(model);if(!m)throw Error('model');
-   const {instructions,text}=JSON.parse(readFileSync(0,'utf8'));
-   const answer=await models.complete(m,{systemPrompt:instructions,messages:[{role:'user',content:text,timestamp:Date.now()}]},{signal:AbortSignal.timeout(105000)});
+   const m=subscriptionCatalog(models,getSupportedThinkingLevels).catalog.get(model);if(!m)throw Error('model');
+   const {instructions,text,reasoningEffort,fastMode}=JSON.parse(readFileSync(0,'utf8'));
+   let sent=null,served=null;
+   const answer=await models.complete(m,{systemPrompt:instructions,messages:[{role:'user',content:text,timestamp:Date.now()}]},{
+    signal:AbortSignal.timeout(105000), ...(reasoningEffort?{reasoningEffort}:{}), ...(fastMode?{serviceTier:'priority'}:{}),
+    onPayload(body){sent={model:body.model,effort:body.reasoning?.effort??null,tier:body.service_tier??null};},
+    onProviderStreamEvent(event){const response=event?.response;if(event.type==='response.completed'&&response)served={model:response.model??null,effort:response.reasoning?.effort??null,tier:response.service_tier??null};}
+   });
    if(answer.stopReason==='error'||answer.stopReason==='aborted')throw Error('upstream');
    const output=answer.content.filter(x=>x.type==='text').map(x=>x.text).join('').trim();
    if(!output)throw Error('empty');
-   emit({text:output});
+   emit({text:output,sent,served});
   }else throw Error('unknown action');
  }finally{await dispose();}
 }
