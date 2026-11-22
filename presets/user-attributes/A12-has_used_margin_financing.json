@@ -1,0 +1,14 @@
+{
+  "id": "A12",
+  "key": "has_used_margin_financing",
+  "label": "是否实际融资买入过股票",
+  "version": 1,
+  "meaning": "有无以证券融资借款买入的实际经历",
+  "scale": "布尔。实际融资买入为真；仅开通授信、询问利率、普通现金买入不计",
+  "domain": {
+    "kind": "boolean",
+    "arguments": []
+  },
+  "bot_use": "解释融资利息、维持担保及被动处置风险时选择深度，是否允许未来使用另看 A21",
+  "review_when": "本人确认或记录有明确融资标记；偿清借款只更新账本"
+}

@@ -223,6 +223,24 @@ if bot == 'chives':
         return internal_call('experts/assets', payload)
 
 @server.tool()
+def read_user_attributes(keys: list[str]) -> list:
+    """按 A01 等编号或英文键查共享属性、取值口径和现值；空列表返回目录。"""
+    return internal_call('user/attributes', {'keys':keys})
+
+
+@server.tool()
+def propose_user_attribute(key: str, value: object, quote: str, reason: str, alternatives: str) -> dict:
+    """依据本次对话中的本人原话提议新属性值。列出理由和其他解释。返回审核状态，merged 为真才已生效。"""
+    return internal_call('user/propose',dict(key=key,value=value,quote=quote,reason=reason,alternatives=alternatives))
+
+
+@server.tool()
+def find_user_memory(query: str) -> list:
+    """按证券、委托或用户观点查个人 Wiki，返回少量片段与页名。"""
+    return internal_call('user/search', {'query':query})
+
+
+@server.tool()
 def read_style_cards(ids: list[str]) -> list:
     """按编号读取用户风格卡片，如 ["C25","C31"]。空列表读取全部；含状态、判断、关联字段及任务建议。"""
     return internal_call('profile/cards', {'ids':ids})

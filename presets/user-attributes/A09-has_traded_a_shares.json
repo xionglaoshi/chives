@@ -1,0 +1,14 @@
+{
+  "id": "A09",
+  "key": "has_traded_a_shares",
+  "label": "是否买过 A 股",
+  "version": 1,
+  "meaning": "有无直接买入境内 A 股股票的实盘经历",
+  "scale": "布尔。买股票为真，仅持基金、ETF 或参加模拟盘仍需核实；明确从未买过为假",
+  "domain": {
+    "kind": "boolean",
+    "arguments": []
+  },
+  "bot_use": "决定是否解释交易单位、涨跌停对执行的影响",
+  "review_when": "本人确认真实买入或提供 A 股成交凭据；询价、自选及基金持股不能触发"
+}

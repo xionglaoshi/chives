@@ -1,0 +1,14 @@
+{
+  "id": "A18",
+  "key": "max_industry_exposure_pct",
+  "label": "单一行业仓位上限",
+  "version": 1,
+  "meaning": "用户给同一行业合计暴露的长期上限",
+  "scale": "百分数，分母同 A17；行业分类口径在来源中注明，基金穿透覆盖不足时标明",
+  "domain": {
+    "kind": "percent",
+    "arguments": []
+  },
+  "bot_use": "即使两只票都低于单股上限，也检查组合是否押在同一行业",
+  "review_when": "本人调整行业上限或归类范围可提。只买了同板块数只股不足以推断其接受的限额"
+}
