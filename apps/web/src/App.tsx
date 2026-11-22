@@ -821,17 +821,16 @@ export function App(): ReactElement {
   return (
     <div className="app">
       <ServiceBanner serverError={serverError} eventStatus={eventStatus} onRetry={reload} />
-      <div className="app__frame">
-        <ChatHeader
-          operator={operator}
-          runningTask={selectedId === 'operator' ? runningTask : null}
-          turnStartedAt={selectedId === 'operator' ? turnStartedAt : null}
-          onSearch={() => setSearch('global')}
-          onOpenOperator={() => navigate({name: 'conversation', botId: 'operator'})}
-          bots={bots} notifications={notifications} unreadCount={unreadTotal}
-          onMarkAllRead={markAllRead} onOpenNotification={notification => void openNotification(notification)}
-          openPanels={sidePanel.open} onTogglePanel={sidePanel.toggle}
-        />
+      <ChatHeader
+        operator={operator}
+        runningTask={selectedId === 'operator' ? runningTask : null}
+        turnStartedAt={selectedId === 'operator' ? turnStartedAt : null}
+        onSearch={() => setSearch('global')}
+        onOpenOperator={() => navigate({name: 'conversation', botId: 'operator'})}
+        bots={bots} notifications={notifications} unreadCount={unreadTotal}
+        onMarkAllRead={markAllRead} onOpenNotification={notification => void openNotification(notification)}
+        openPanels={sidePanel.open} onTogglePanel={sidePanel.toggle}
+      />
       <div className={`app__body${preview === null ? '' : ' app__body--preview'}`}>
         {route.name!=='settings'&&<Sidebar
           bots={hiredBots}
@@ -1062,7 +1061,6 @@ export function App(): ReactElement {
             onClose={closePreview}
           />
         ) : null}
-      </div>
       </div>
       {search === 'global' && <Suspense fallback={null}><GlobalSearch
         bots={bots} onLocate={openConversationTarget} onClose={() => setSearch(null)}

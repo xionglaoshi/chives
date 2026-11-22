@@ -1,25 +1,35 @@
 .app {
-  display: flex;
-  flex-direction: column;
+  display: grid;
+  grid-template: auto minmax(0, 1fr) / minmax(0, 1fr);
   height: 100vh;
   height: 100dvh;
   overflow: hidden;
   background: var(--color-bg);
 }
 
-.app__frame {
-  position: relative;
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  min-height: 0;
-  padding-top: var(--chat-header-height);
+.app > .service-banner {
+  grid-area: 1 / 1;
 }
 
+/* The toolbar overlaps this same cell. Only a service notice owns a separate row. */
 .app__body {
+  grid-area: 2 / 1;
   display: flex;
-  flex: 1;
   min-height: 0;
+}
+
+@media (max-width: 1100px) {
+  .desk-settings:not(.desk-workspace-portrait) .desk-page {
+    padding-block-start: var(--chat-header-height);
+  }
+}
+
+@media (min-width: 721px) and (max-width: 1100px) {
+  /* Keep the initial page heading legible where it shares the dock's horizontal position. */
+  .main > :is(.market-board, .holdings, .workbench-placeholder, .bots-overview, .bot-profile),
+  .desk-workspace-portrait .desk-page {
+    padding-block-start: var(--chat-header-height);
+  }
 }
 
 .main {

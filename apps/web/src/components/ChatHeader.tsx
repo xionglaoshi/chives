@@ -142,6 +142,8 @@ export function ChatHeader({
         })}
       </div>
 
+      </div>
+
       {notificationsOpen ? (
         <div className="chat-header__panel chat-header__panel--notifications" role="dialog" aria-label="通知">
           <div className="chat-header__panel-head">
@@ -186,7 +188,6 @@ export function ChatHeader({
           )}
         </div>
       ) : null}
-      </div>
     </header>
   );
 }

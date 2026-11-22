@@ -4,7 +4,7 @@
   align-items: center;
   justify-content: center;
   min-height: 0;
-  padding: calc(var(--chat-header-height, 64px) + var(--space-10)) var(--space-14) var(--space-14);
+  padding: var(--space-10) var(--space-14) var(--space-14);
   overflow-y: auto;
 }
 
@@ -82,7 +82,7 @@
 @media (max-width: 720px) {
   .welcome {
     align-items: flex-start;
-    padding: calc(var(--chat-header-height, 64px) + var(--space-6)) var(--space-6) var(--space-8);
+    padding: var(--space-6) var(--space-6) var(--space-8);
   }
 
   .welcome__inner {
