@@ -122,6 +122,16 @@ export function Composer({
   suggestion = null,
   uploadNotice = null
 }: ComposerProps): ReactElement {
+  const [touchLayout, setTouchLayout] = useState(false);
+  useEffect(() => {
+    const media = window.matchMedia?.('(max-width: 720px), (pointer: coarse)');
+    if (!media) return;
+    const update = () => setTouchLayout(media.matches);
+    update();
+    media.addEventListener('change', update);
+    return () => media.removeEventListener('change', update);
+  }, []);
+  const suggestionPlaceholder = suggestion && (touchLayout ? suggestion : suggestion + '　按Tab键 编辑该提示词');
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [multiline, setMultiline] = useState(false);
@@ -137,7 +147,7 @@ export function Composer({
     element.style.height = `${height}px`;
     element.style.overflowY = element.scrollHeight > maxHeight ? 'auto' : 'hidden';
     setMultiline(element.scrollHeight > 34 || value.includes('\n'));
-  }, [value, suggestion]);
+  }, [value, suggestionPlaceholder]);
 
   useEffect(() => {
     if (autoFocus) textareaRef.current?.focus();
@@ -239,7 +249,7 @@ export function Composer({
           className={suggesting ? "composer__input composer__input--suggesting" : "composer__input"}
           rows={1}
           value={value}
-          placeholder={suggesting ? "Chives正在思考您可能想问什么……" : suggestion ?? placeholder}
+          placeholder={suggesting ? "Chives正在思考您可能想问什么……" : suggestionPlaceholder ?? placeholder}
           onChange={(event) => onChange(event.target.value)}
           onKeyDown={handleKeyDown}
           onPaste={handlePaste}
@@ -267,14 +277,11 @@ export function Composer({
             </svg>
           </button>
         )}
-        {suggestion && value === '' && (
+        {touchLayout && suggestion && value === '' && (
           <button type="button" className="composer__accept-suggestion" onClick={() => {
             onChange(suggestion);
             textareaRef.current?.focus();
-          }}>
-            <span className="composer__suggestion-keyboard">按Tab键　接受建议追问</span>
-            <span className="composer__suggestion-touch">使用建议</span>
-          </button>
+          }}>使用建议</button>
         )}
       </form>
       {notice === null ? null : (
