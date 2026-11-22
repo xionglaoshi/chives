@@ -131,7 +131,7 @@ export function Composer({
     media.addEventListener('change', update);
     return () => media.removeEventListener('change', update);
   }, []);
-  const suggestionPlaceholder = suggestion && (touchLayout ? suggestion : suggestion + '　按Tab键 编辑该提示词');
+  const inlineSuggestion = !touchLayout && value === '' ? suggestion : null;
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [multiline, setMultiline] = useState(false);
@@ -147,7 +147,7 @@ export function Composer({
     element.style.height = `${height}px`;
     element.style.overflowY = element.scrollHeight > maxHeight ? 'auto' : 'hidden';
     setMultiline(element.scrollHeight > 34 || value.includes('\n'));
-  }, [value, suggestionPlaceholder]);
+  }, [value, suggestion, inlineSuggestion]);
 
   useEffect(() => {
     if (autoFocus) textareaRef.current?.focus();
@@ -243,20 +243,27 @@ export function Composer({
             </svg>
           )}
         </button>
-        <textarea
-          id="chives-composer"
-          ref={textareaRef}
-          className={suggesting ? "composer__input composer__input--suggesting" : "composer__input"}
-          rows={1}
-          value={value}
-          placeholder={suggesting ? "Chives正在思考您可能想问什么……" : suggestionPlaceholder ?? placeholder}
-          onChange={(event) => onChange(event.target.value)}
-          onKeyDown={handleKeyDown}
-          onPaste={handlePaste}
-          autoFocus={autoFocus}
-          disabled={disabled}
-          aria-describedby={disabled ? 'chives-composer-disabled' : undefined}
-        />
+        <div className="composer__input-slot">
+          <textarea
+            id="chives-composer"
+            ref={textareaRef}
+            className={suggesting ? "composer__input composer__input--suggesting" : "composer__input"}
+            rows={1}
+            value={value}
+            placeholder={suggesting ? "Chives正在思考您可能想问什么……" : inlineSuggestion ? undefined : suggestion ?? placeholder}
+            onChange={(event) => onChange(event.target.value)}
+            onKeyDown={handleKeyDown}
+            onPaste={handlePaste}
+            autoFocus={autoFocus}
+            disabled={disabled}
+            aria-describedby={disabled ? 'chives-composer-disabled' : inlineSuggestion ? 'chives-inline-suggestion' : undefined}
+          />
+          {inlineSuggestion && (
+            <div className="composer__inline-suggestion" id="chives-inline-suggestion">
+              {inlineSuggestion}<span className="composer__tab-hint">【按Tab键 编辑该提示词】</span>
+            </div>
+          )}
+        </div>
         {botId && <ComposerModelPicker key={botId} botId={botId} running={running} disabled={disabled || sending}/>}
         {running && !sendDisabled && <button type="submit" className="composer__send" aria-label="提交后续消息">↑</button>}
         {running ? (

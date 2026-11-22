@@ -269,3 +269,33 @@
   color: var(--color-text-secondary);
   font-size: var(--text-xs);
 }
+
+.composer__input-slot {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.composer__input-slot > * { grid-area: 1 / 1; }
+
+.composer__inline-suggestion {
+  padding: 6px var(--space-2);
+  color: var(--color-text-muted);
+  font-size: var(--text-base);
+  line-height: 22px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  pointer-events: none;
+}
+
+.composer__tab-hint { margin-inline-start: 0.35em; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .composer__tab-hint {
+    animation: composer-suggesting 0.9s ease-in-out infinite alternate;
+  }
+}
+
+@media (max-width: 720px), (pointer: coarse) and (max-width: 960px) and (max-height: 520px) {
+  .composer__input-slot { order: -1; flex: 0 0 100%; }
+}
