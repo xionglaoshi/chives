@@ -1,41 +1,54 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { suggestFollowup } from '../api/client';
 
-export function useFollowupSuggestion(botId: string | null) {
-  const [state, setState] = useState<{botId: string; text: string | null; loading: boolean} | null>(null);
+interface Attempt {
+  messageId: string;
+  text: string | null;
+  loading: boolean;
+}
+
+const empty = {text: null, loading: false};
+
+export function useFollowupSuggestion(botId: string | null, messageId: string | null) {
+  const [attempts, setAttempts] = useState<ReadonlyMap<string, Attempt>>(() => new Map());
+  const started = useRef(new Map<string, string>());
 
   useEffect(() => {
-    setState(null);
-    if (botId === null) return;
+    if (botId === null || messageId === null) return;
+    const id = botId;
+    const turn = messageId;
     let timer: number | undefined;
-    let request: AbortController | undefined;
+
+    function save(attempt: Attempt) {
+      setAttempts(current => new Map(current).set(id, attempt));
+    }
+
     function schedule() {
       window.clearTimeout(timer);
-      request?.abort();
-      setState(null);
-      if (document.hidden || botId === null) return;
-      const id = botId;
+      if (document.hidden || started.current.get(id) === turn) return;
       timer = window.setTimeout(async () => {
-        const controller = new AbortController();
-        request = controller;
-        setState({botId: id, text: null, loading: true});
+        started.current.set(id, turn);
+        save({messageId: turn, text: null, loading: true});
+        const signal = AbortSignal.timeout(12000);
         let text: string | null = null;
         try {
-          const signal = AbortSignal.any([controller.signal, AbortSignal.timeout(12000)]);
-          ({draft: text} = await suggestFollowup(id, signal));
-          if (signal.aborted) text = null;
-        } catch { /* An unavailable suggestion does not interrupt the conversation. */ }
-        if (!controller.signal.aborted) setState({botId: id, text, loading: false});
+          const {draft} = await suggestFollowup(id, signal);
+          if (!signal.aborted) text = draft;
+        } catch { /* This turn has already used its single attempt. */ }
+        if (started.current.get(id) === turn) {
+          save({messageId: turn, text, loading: false});
+        }
       }, 30000);
     }
+
     schedule();
     document.addEventListener('visibilitychange', schedule);
     return () => {
       window.clearTimeout(timer);
-      request?.abort();
       document.removeEventListener('visibilitychange', schedule);
     };
-  }, [botId]);
+  }, [botId, messageId]);
 
-  return state && state.botId === botId ? state : {text: null, loading: false};
+  const attempt = botId === null ? undefined : attempts.get(botId);
+  return attempt?.messageId === messageId ? attempt : empty;
 }

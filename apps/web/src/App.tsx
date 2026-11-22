@@ -796,10 +796,14 @@ export function App(): ReactElement {
   }, [selectedBot, timeline.state.tasks]);
   const unreadTotal = notifications.filter((notification) => notification.readAt === null).length;
   const serverUnavailable = serverError !== null;
+  const latestFollowupMessage = timelineMatchesBot && timeline.state.status === 'ready'
+    ? timeline.state.messages.findLast(message => message.role === 'user' || message.role === 'bot')
+    : undefined;
   const followup = useFollowupSuggestion(
     route.name === 'conversation' && selectedBot && selectedBot.hired !== false &&
       !serverUnavailable && !running && !sending && !uploading && !askFile &&
-      composerText === '' && attachments.length === 0 ? selectedBot.id : null
+      composerText === '' && attachments.length === 0 ? selectedBot.id : null,
+    latestFollowupMessage?.id ?? null
   );
   const showConversation = route.name === 'conversation';
   const showWelcome =
