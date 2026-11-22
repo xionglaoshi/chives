@@ -269,3 +269,10 @@
   color: var(--color-text-secondary);
   font-size: var(--text-xs);
 }
+
+.composer__suggestion-touch { display: none; }
+
+@media (max-width: 720px), (pointer: coarse) {
+  .composer__suggestion-keyboard { display: none; }
+  .composer__suggestion-touch { display: inline; }
+}

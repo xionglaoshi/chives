@@ -271,7 +271,10 @@ export function Composer({
           <button type="button" className="composer__accept-suggestion" onClick={() => {
             onChange(suggestion);
             textareaRef.current?.focus();
-          }}>使用建议</button>
+          }}>
+            <span className="composer__suggestion-keyboard">按Tab键　接受建议追问</span>
+            <span className="composer__suggestion-touch">使用建议</span>
+          </button>
         )}
       </form>
       {notice === null ? null : (
