@@ -1,4 +1,5 @@
-import { KernelSettings } from "./KernelSettings";
+import { BotAssets } from "./BotAssets";
+import "./KernelSettings.css";
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 
@@ -526,7 +527,8 @@ export function BotProfile({
           </button>
         </div>
       </header>
-      <KernelSettings key={bot.id} id={bot.id} onSave={() => setReloadToken(n => n + 1)} />
+      <p className="bot-profile__model-link">请在<a href="#/settings?tab=models">模型设置</a>中配置 Bot 模型。</p>
+      <BotAssets key={bot.id} id={bot.id} onSave={() => setReloadToken(n => n + 1)} />
 
       {profileError !== null ? (
         <div className="bot-profile__error" role="alert">

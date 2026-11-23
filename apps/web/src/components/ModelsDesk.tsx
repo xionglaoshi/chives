@@ -1,3 +1,5 @@
+import {BotModelSettings} from './KernelSettings';
+import './KernelSettings.css';
 import {effortNames} from "./modelTuning";
 import {useState,useEffect} from 'react';
 import {readModelFile,type ImportedModel} from './importModel';
@@ -90,6 +92,7 @@ export function ModelsDesk(){
  <section className="settings__section" aria-labelledby="bot-default-models">
    <h3 id="bot-default-models">各 Bot 的默认模型</h3><button onClick={()=>void refreshReceipts().catch(e=>note(e.message))}>刷新实际调用记录</button>
    {bots?.map(bot=>{const r=receipts[bot.id];return <div key={bot.id}><div className="settings__row"><span>{bot.name}</span><span>{bot.modelDisplayName}</span></div>
+   <BotModelSettings id={bot.id} onSave={()=>void load().catch(e=>note(e.message))}/>
    {r&&<p>最近一次 Codex 调用 · {new Date(r.at).toLocaleString()}<br/>请求 {r.requestedModel} · 思考 {r.requestedEffort??'跟随模型'} · {tierName(r.requestedTier??'default')}<br/>
    服务端回报 {r.model??'未报告模型'} · 思考 {r.effort??'未报告'} · {tierName(r.tier)}</p>}</div>;})}
    {bots?.length===0&&<p>暂无可配置的 Bot</p>}
