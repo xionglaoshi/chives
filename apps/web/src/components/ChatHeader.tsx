@@ -175,8 +175,11 @@ export function ChatHeader({
                       setNotificationsOpen(false);
                     }}
                   >
-                    <span className={`chat-header__notification-level chat-header__notification-level--${notification.level}`}>
-                      {LEVEL_TEXT[notification.level]}
+                    <span className="chat-header__notification-labels">
+                      <span className={`chat-header__notification-level chat-header__notification-level--${notification.level}`}>
+                        {LEVEL_TEXT[notification.level]}
+                      </span>
+                      {notification.readAt === null && <span className="chat-header__notification-unread">未读</span>}
                     </span>
                     <span className="chat-header__notification-title">
                       {bots.find((entry) => entry.id === notification.botId)?.name ??
