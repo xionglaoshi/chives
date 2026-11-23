@@ -125,6 +125,8 @@ def replay(code, start, cutoff):
                     close=close,
                     target=median(outcomes),
                     static=r["static"]["mid"],
+                    static_band=r["static"],
+                    method=r["method"],
                     x=features(r["signals"]),
                 )
             )
@@ -133,6 +135,22 @@ def replay(code, start, cutoff):
         start=start,
         candidate_dates=len(candidates),
         gaps=dict(gaps),
+        static_check={
+            "covered": sum(
+                p["static_band"]["low"] <= p["target"] <= p["static_band"]["high"]
+                for p in observations
+            ),
+            "median_absolute_pct_error": median(
+                abs(p["static"] / p["target"] - 1) for p in observations
+            )
+            if observations
+            else None,
+            "last_close_median_absolute_pct_error": median(
+                abs(p["close"] / p["target"] - 1) for p in observations
+            )
+            if observations
+            else None,
+        },
         observation_snapshot=snapshot({"code": code, "observations": observations}),
         price_basis="估值日原始收盘价，向后复合每日除权参考口径的涨跌幅；连续20个宽基交易日收盘中位数",
     )

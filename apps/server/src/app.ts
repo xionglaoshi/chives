@@ -1523,7 +1523,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
               watchlist.pending(code,id,day);
               try {
                 result=await orchestrator.submitMessage(coordinatorId,
-                  `请测算用户关注中的 ${entry.name}（${entry.code}）。核对近期行情和最新公开财务数据，给出每股人民币合理估值区间及未来20个交易日的方向评分（-5至5，0为中性，依据不足用 null）。${valuationInstructions} 以 ${day} 作为 as_of 调用测算器。把返回的 valuation_id 交给 save_watchlist_estimate 保存价格及版本，另附方向评分、依据和失效条件。完成后简洁回复。`,[],id);
+                  `请测算用户关注中的 ${entry.name}（${entry.code}）。核对每股人民币估值区间及未来20个交易日的方向。${valuationInstructions} 以 ${day} 作为 as_of 调用测算器。把 valuation_id 交给 save_watchlist_estimate，附依据和失效条件。完成后简洁回复。`,[],id);
               }catch(error){watchlist.pending(code,null);throw error;}
             }else throw new AppError(400,'watchlist_action','未知用户关注操作。');
           }

@@ -126,3 +126,50 @@ def test_sentiment_and_calibration_are_point_in_time(tmp_path, monkeypatch):
     r["dynamic"] = None
     apply_validated(r)
     assert r["dynamic"] is None
+
+
+def test_losses_use_revenue_and_loss_peers_not_negative_pe():
+    inputs = sample()
+    inputs["reports"][0].update(KCFJCXSYJLR=-3, TOTALOPERATEREVE=100)
+    for row in inputs["peers"]:
+        row.update(PS_TTM=2, PE_TTM=-20)
+    result = evaluate("600000.SH", "2024-04-30", inputs)
+    assert result["method"] == "亏损企业可比 PS"
+    assert result["static"] == {"low": 20, "mid": 20, "high": 20}
+    assert result["comparable_ratio"] == -0.03 and result["quality_roe"] is None
+    inputs["reports"][0]["TOTALOPERATEREVE"] = 0
+    assert evaluate("600000.SH", "2024-04-30", inputs)["static"] is None
+
+
+def test_direction_asof_no_future_labels_and_suspension():
+    from datetime import date, timedelta
+    import math
+    from equity_evidence.valuation_direction import assess_direction
+
+    days = [(date(2019, 1, 1) + timedelta(days=i)).isoformat() for i in range(1100)]
+    indices = {d: {"000001": 3000 + i, "399001": 9000 + i} for i, d in enumerate(days)}
+    history = [
+        dict(
+            TRADE_DATE=d,
+            CHANGE_RATE=math.sin(i / 30) * 1.5,
+            PB_MRQ=2 + math.sin(i / 200),
+        )
+        for i, d in enumerate(days)
+    ]
+    cutoff = days[799]
+    full, audit = assess_direction(history, indices, cutoff)
+    before, _ = assess_direction(
+        history[:800], dict(list(indices.items())[:800]), cutoff
+    )
+    assert full == before
+    replay = next(
+        r
+        for r in assess_direction(history, indices, days[-1])[1]["windows"]
+        if r["date"] == cutoff
+    )
+    assert replay["predicted"] == ((full["score"] > 0) - (full["score"] < 0))
+    windows = audit["windows"]
+    assert all(r["predicted"] == r["base"] for r in windows[1:])
+    assert all(r["end"] <= cutoff for r in windows)
+    assert all(a["end"] <= b["date"] for a, b in zip(windows, windows[1:]))
+    assert assess_direction(history[:795], indices, cutoff)[0] is None

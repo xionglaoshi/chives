@@ -16,7 +16,7 @@ SECURITIES = "RPT_VALUEANALYSIS_DET"
 REPORTS = "RPT_F10_FINANCE_MAINFINADATA"
 MARKET = "RPT_VALUEMARKET"
 FINANCING = "RPTA_WEB_RZRQ_GGMX"
-PEER_FIELDS = "SECUCODE,SECURITY_NAME_ABBR,TRADE_DATE,PE_TTM,PB_MRQ"
+PEER_FIELDS = "SECUCODE,SECURITY_NAME_ABBR,TRADE_DATE,PE_TTM,PB_MRQ,PS_TTM"
 REPORT_FIELDS = (
     "SECUCODE,REPORT_DATE,NOTICE_DATE,UPDATE_DATE,CURRENCY,ORG_TYPE,EPSJB,BPS,"
     "PARENTNETPROFIT,KCFJCXSYJLR,TOTALOPERATEREVE,ROEJQ,MGJYXJJE,ZCFZL,NONPERLOAN,HXYJBCZL"
@@ -221,6 +221,18 @@ def peer_rows(industry, months):
     groups = [months[i : i + 3] for i in range(0, len(months), 3)]
     with ThreadPoolExecutor(max_workers=3) as pool:
         return [row for batch in pool.map(peers, groups) for row in batch]
+
+
+def direction_history(code, day):
+    # The vendor's security valuation series generally starts in 2018; newer listings start later.
+    start = "2015-01-01" if day >= "2015-01-01" else "2000-01-01"
+    history = rows(
+        SECURITIES,
+        "SECUCODE,TRADE_DATE,CHANGE_RATE,CLOSE_PRICE,PB_MRQ",
+        f"(SECUCODE=\"{code}\")(TRADE_DATE>='{start}')(TRADE_DATE<='{day}')",
+        "TRADE_DATE",
+    )
+    return history, index_history(start, day)
 
 
 def collect(code, day):

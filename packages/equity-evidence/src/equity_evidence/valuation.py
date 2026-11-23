@@ -8,9 +8,10 @@ from statistics import median
 from .market import symbol
 from .storage import library, save_bytes, snapshot
 from .valuation_calibration import apply_validated, sentiment
-from .valuation_data import collect, number, SourceUnavailable
+from .valuation_data import collect, direction_history, number, SourceUnavailable
+from .valuation_direction import assess_direction, summarize_windows
 
-VERSION = "ashare-peer-1.0"
+VERSION = "ashare-peer-1.1"
 CYCLICAL = (
     "煤炭",
     "钢铁",
@@ -84,6 +85,9 @@ def fundamentals(quote, rows):
     profit = trailing(reports, period, "PARENTNETPROFIT")
     core = trailing(reports, period, "KCFJCXSYJLR")
     eps = None if core is None or profit is None else min(profit, core) / shares
+    sales = trailing(reports, period, "TOTALOPERATEREVE")
+    sales_per_share = sales / shares if sales and sales > 0 else None
+    margin = min(core, profit) / sales if eps is not None and sales_per_share else None
     normal_roe = None
     if book and book > 0 and eps is not None:
         normal_roe = eps / book
@@ -95,6 +99,9 @@ def fundamentals(quote, rows):
         book_per_share=book,
         ttm_parent_profit=profit,
         ttm_recurring_profit=core,
+        ttm_revenue=sales,
+        sales_per_share=sales_per_share,
+        recurring_margin=margin,
         reported_roe_ytd_pct=r.get("ROEJQ"),
         operating_cash_per_share_ytd=r.get("MGJYXJJE"),
         debt_pct=r.get("ZCFZL"),
@@ -135,12 +142,16 @@ def fundamentals(quote, rows):
             normal_roe = median(margins[:5]) * ttm_sales / shares / book
             info["cycle_margins"] = margins[:5]
         return "银行 PB" if bank else "周期 PB", "PB_MRQ", book, normal_roe, info
-    if eps is None or eps <= 0:
-        raise ValueError("归母与扣非最近四季盈利未同时为正，无法建立可持续 PE")
+    if eps is None:
+        raise ValueError("最近四季归母或扣非利润的财报数据不全")
+    if eps <= 0:
+        if sales_per_share is None:
+            raise ValueError("最近四季持续盈利和正的可核验营收均缺失")
+        return "亏损企业可比 PS", "PS_TTM", sales_per_share, margin, info
     return "正常化 PE", "PE_TTM", eps, normal_roe, info
 
 
-def peer_bands(panel, code, metric, target_roe):
+def peer_bands(panel, code, metric, target_ratio):
     by_month = defaultdict(dict)
     for row in panel:
         if row["SECUCODE"] != code:
@@ -150,18 +161,27 @@ def peer_bands(panel, code, metric, target_roe):
         valid = [r for r in members.values() if (number(r.get(metric)) or 0) > 0]
         if len(valid) < 4 or len(valid) < len(members) * 0.5:
             continue
-        # PB/PE cancels share price and approximates trailing earnings / latest book.
+        # Signed PS/PE measures the net margin, including loss-making peers.
+        comparison = "PS_TTM" if metric == "PS_TTM" else "PB_MRQ"
         matched = [
             r
             for r in valid
-            if (number(r.get("PE_TTM")) or 0) > 0 and (number(r.get("PB_MRQ")) or 0) > 0
+            if number(r.get("PE_TTM"))
+            and (metric == "PS_TTM" or r["PE_TTM"] > 0)
+            and (number(r.get(comparison)) or 0) > 0
         ]
         core = valid
-        if target_roe is not None and len(matched) >= 12:
+        if metric == "PS_TTM" and target_ratio is not None and target_ratio <= 0:
+            loss_peers = [r for r in matched if r["PE_TTM"] < 0]
+            if len(loss_peers) >= 4:
+                matched = loss_peers
+        if target_ratio is not None and len(matched) >= (
+            4 if metric == "PS_TTM" else 12
+        ):
             core = sorted(
                 matched,
                 key=lambda r: (
-                    abs(r["PB_MRQ"] / r["PE_TTM"] - target_roe),
+                    abs(r[comparison] / r["PE_TTM"] - target_ratio),
                     r["SECUCODE"],
                 ),
             )[: max(8, len(matched) // 2)]
@@ -225,11 +245,11 @@ def evaluate(code, day, data):
         result["reasons"] = [data.get("error") or "没有近期可核验的交易日估值数据"]
         return result
     try:
-        method, metric, base, roe, financials = fundamentals(quote, data["reports"])
+        method, metric, base, ratio, financials = fundamentals(quote, data["reports"])
     except ValueError as exc:
         result["reasons"] = [str(exc)]
         return result
-    months = peer_bands(data["peers"], code, metric, roe)
+    months = peer_bands(data["peers"], code, metric, ratio)
     if len(months) < 6 or len({m["date"][:4] for m in months}) < 2:
         result["reasons"] = ["同行有效样本或中性月份不足（至少 4 家、6 个月、跨 2 年）"]
         return result
@@ -245,7 +265,9 @@ def evaluate(code, day, data):
         static=dict(zip(("low", "mid", "high"), band)),
         financials=financials,
         base_per_share=base,
-        quality_roe=roe,
+        quality_roe=ratio if metric != "PS_TTM" else None,
+        metric=metric,
+        comparable_ratio=ratio,
         multiples=multiples,
         all_peer_median=median(m["industry_median"] for m in months),
         neutral_month_count=len(months),
@@ -261,6 +283,31 @@ def evaluate(code, day, data):
             "静态区间为同行估值情景；三个动态因子均未通过样本外校准。",
         ],
     )
+    if metric == "PS_TTM":
+        result["confidence"] = "有限"
+        result["reasons"].insert(
+            0,
+            "最近四季归母与扣非盈利的较低值不大于零，以每股营收估值，按净利率匹配同行。收入能否转化为利润是关键假设。",
+        )
+    elif metric == "PE_TTM" and financials["sales_per_share"]:
+        alternative = peer_bands(
+            data["peers"], code, "PS_TTM", financials["recurring_margin"]
+        )
+        if len(alternative) >= 6 and len({m["date"][:4] for m in alternative}) >= 2:
+            prices = [
+                round(
+                    financials["sales_per_share"]
+                    * median(m["bands"][i] for m in alternative),
+                    2,
+                )
+                for i in range(3)
+            ]
+            result["sales_cross_check"] = dict(zip(("low", "mid", "high"), prices))
+            if prices[2] < band[0] or prices[0] > band[2]:
+                result["confidence"] = "有限"
+                result["reasons"].insert(
+                    0, "营收法与盈利法的情景区间不重合，对经营利润率假设敏感。"
+                )
     return result
 
 
@@ -300,6 +347,40 @@ def estimate_equity_value(code: str, as_of: str | None = None) -> dict:
         inputs["reports"] = list(visible.values())
     result = evaluate(code, requested.isoformat(), inputs)
     apply_validated(result)
+    result["outlook"] = None
+    if inputs.get("quote") and not inputs.get("stale"):
+        try:
+            history, indices = direction_history(code, result["as_of"])
+            result["outlook"], diagnostics = assess_direction(
+                history, indices, result["as_of"]
+            )
+            inputs["direction_snapshot"] = snapshot(
+                dict(security=history, indices=indices)
+            )
+            if "windows" in diagnostics:
+                windows = diagnostics["windows"]
+                result["outlook_backtest"] = summarize_windows(windows)
+                inputs["direction_replay"] = snapshot(diagnostics)
+                checked = result["outlook_backtest"]
+                if checked["count"] < 24:
+                    reliability = "个股历史窗口少于24个，结论仅供观察"
+                elif checked["correct"] <= max(
+                    checked[k]
+                    for k in (
+                        "prior_correct",
+                        "up_correct",
+                        "flat_correct",
+                        "down_correct",
+                    )
+                ):
+                    reliability = "历史三分类命中数未超过全部简单基准，预测优势未证实"
+                else:
+                    reliability = "样本内逐期回放超过简单基准，未来表现待验证"
+                result["outlook"]["evidence"] = reliability
+            else:
+                result["reasons"].append(diagnostics["reason"])
+        except SourceUnavailable as exc:
+            result["reasons"].append("未来20日方向缺少独立的历史行情：" + str(exc))
     result["input_snapshot"] = snapshot(inputs)
     blob = json.dumps(
         result, ensure_ascii=False, sort_keys=True, allow_nan=False, indent=2

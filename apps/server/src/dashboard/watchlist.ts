@@ -8,7 +8,7 @@ export type Estimate = {version: number; low: number|null; high: number|null; sc
 type Entry = {code: string; name: string; addedAt: string; source: 'manual'|'screen'; note: string;
   pending?: string; pendingDate?: string; estimates: Estimate[]};
 
-export const valuationInstructions = 'A 股合理估值统一调用 estimate_equity_value(code, as_of)。使用返回的区间和 valuation_id。dynamic 有值时优先显示动态估值，否则只显示 static 并标注静态参考、动态待校准。两项均为空时注明工具返回的原因。估值缺口不直接换算为涨跌概率。';
+export const valuationInstructions = 'A 股合理估值统一调用 estimate_equity_value(code, as_of)。使用返回的区间和 valuation_id。dynamic 有值时优先显示动态估值，否则只显示 static 并标注静态参考、动态待校准。两项均为空时注明工具返回的原因。未来20个交易日采用同一回执的 outlook.label 和 outlook.score，说明其历史命中情况及限制。';
 export const valuationDay = (now: Date) => new Intl.DateTimeFormat('sv-SE',{timeZone:'Asia/Shanghai',year:'numeric',month:'2-digit',day:'2-digit'}).format(now);
 
 export const screeningPrompt = '接下来我会通过对话筛选股票。请先用几句话建议我可以从哪些维度筛选，例如近五年平均股息率和分红稳定性、盈利与现金流、估值、行业与主题（如 AI 产业链）、成交活跃度，以及与我当前持仓的行业重合度。请问我这次最看重什么、要筛哪个市场、有哪些必须满足的条件。等我给出条件后再运行筛选，简要列出候选股票、入选理由和关键指标。请让我以「确认加入用户关注：证券代码」确认要加入的股票，支持多个代码。确认后调用关注工具，告诉我新增及已在列表中的标的。自选股即用户关注。' + ' 若筛选条件涉及合理估值，按以下规则测算候选。' + valuationInstructions;
@@ -82,12 +82,11 @@ export class Watchlist {
     if (!entry) {
       throw new AppError(409,'watchlist_pending','没有匹配的用户测算请求。');
     }
-    const {valuationId,score,basis,invalidation}=body;
+    const {valuationId,basis,invalidation}=body;
     const note=(value:unknown):value is string=>typeof value==='string'&&value.trim().length>0&&value.length<=4000;
     if (typeof valuationId!=='string' || !/^[a-f0-9]{64}$/.test(valuationId) ||
-        !(score===null||(typeof score==='number'&&Number.isInteger(score)&&Math.abs(score)<=5)) ||
         !note(basis)||!note(invalidation)) {
-      throw new AppError(400,'watchlist_estimate','请提供工具的测算编号、方向评分、依据和失效条件。');
+      throw new AppError(400,'watchlist_estimate','请提供工具的测算编号、依据和失效条件。');
     }
     const day=entry.pendingDate??valuationDay(now);
     const file=join(this.data,'equity-research','valuations',entry.code,day,valuationId+'.json');
@@ -102,6 +101,8 @@ export class Watchlist {
         !/^\d{4}-\d{2}-\d{2}$/.test(record.as_of) || typeof record.model_version!=='string') throw invalid();
     const band=record.dynamic??record.static;
     if(band!=null && !(Number.isFinite(band.low)&&Number.isFinite(band.high)&&band.low>0&&band.high>=band.low)) throw invalid();
+    const score=Object.hasOwn(record,'outlook') ? record.outlook?.score ?? null : body.score ?? null;
+    if(score!==null && !(typeof score==='number' && Number.isInteger(score) && Math.abs(score)<=5)) throw invalid();
     const estimate:Estimate={version:(entry.estimates.at(-1)?.version??0)+1,low:band?.low??null,
       high:band?.high??null,score,asOf:record.as_of,basis,invalidation,valuationId,modelVersion:record.model_version,
       valuationKind:record.dynamic?'动态估值':record.static?'静态参考':'依据不足',

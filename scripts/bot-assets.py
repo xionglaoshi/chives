@@ -225,8 +225,8 @@ if bot == 'operator':
         return internal_call("operator/watchlist", {"action": action})
 
     @server.tool()
-    def save_watchlist_estimate(valuation_id: str, score: int | None, basis: str, invalidation: str) -> dict:
-        """为本轮关注测算保存 estimate_equity_value 返回的 valuation_id。价格由服务读取。20 日方向须独立判断，依据不足填 null。"""
+    def save_watchlist_estimate(valuation_id: str, basis: str, invalidation: str, score: int | None = None) -> dict:
+        """保存 estimate_equity_value 回执。价格和 20 日方向由服务读回；旧回执兼容 score。"""
         return internal_call("operator/watchlist", dict(action="estimate", valuationId=valuation_id,
                                                        score=score, basis=basis, invalidation=invalidation))
 

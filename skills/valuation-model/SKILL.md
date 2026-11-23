@@ -9,7 +9,7 @@ description: 调用 Chives 个股估值测算器取得 A 股每股区间和可�
 
 先报告工具的币种、数据截至日和价格区间。优先展示已校准的 `dynamic`。若仅有 `static`，标注「静态参考，动态待校准」，说明定价分母、同行样本和关键假设。两项皆空时，报告 `reasons` 指出的缺口。按需用 `research_snapshot` 查 `input_snapshot` 的公开依据。个人偏好影响安全边际与解读，市场估值本身对所有用户相同。
 
-关注任务把原样返回的 `valuation_id` 交给 `save_watchlist_estimate`。20 日方向与估值分开判断，证据不足填 null。模型不能自行填写或覆盖价格。
+关注任务把原样返回的 `valuation_id` 交给 `save_watchlist_estimate`，价格与 20 日方向均由服务读回。亏损公司的可比 PS 用已披露营收和同行利润率定价，需说明利润改善假设。出现盈利法和营收法区间不重合时披露分歧。按 `outlook.label`、`outlook.score`、`outlook.method` 解释后市；报告 `outlook_backtest` 的命中数、总数及基准，新股特别说明实际回放次数。这个判断预测未来 20 个交易日的收盘中位数，本版正式方向主要是个股历史基准倾向。组合信号只作研究对照；历史频数和分档没有校准为未来概率。
 
 ## 解释差异与自定义情景
 
