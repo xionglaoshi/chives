@@ -612,104 +612,83 @@ export function BotProfile({
         </div>
 
         <div className="bot-profile__column">
-          <section className="bot-profile__section" aria-labelledby="profile-workspace">
+          <section className="bot-profile__section" aria-labelledby="profile-routines">
             <div className="bot-profile__section-head">
-              <h2 className="bot-profile__section-title" id="profile-workspace">
-                工作目录
+              <h2 className="bot-profile__section-title" id="profile-routines">
+                主动任务
               </h2>
-              <span
-                className="bot-profile__path"
-                title={profile?.workspace.path ?? ''}
-              >
-                {profile === null ? '—' : shortenWorkspacePath(profile.workspace.path)}
-              </span>
-            </div>
-            <div className="bot-profile__workspace-actions">
-              <button
-                type="button"
-                className="bot-profile__button"
-                onClick={handleReveal}
-              >
-                在访达中打开
-              </button>
-              <button
-                type="button"
-                className="bot-profile__button"
-                onClick={() => onOpenWorkspaceMap?.(bot.id)}
-              >
-                打开目录地图
-              </button>
               <span className="bot-profile__section-meta">
-                {profile === null
-                  ? ''
-                  : `共 ${profile.workspace.fileCount} 个文件 · ${formatFileSize(
-                      profile.workspace.totalBytes
-                    )}`}
+                {routines.filter((routine) => routine.enabled).length} 个已启用
               </span>
             </div>
-            {revealNotice !== null ? (
+            {routineNotice === null ? null : (
               <div className="bot-profile__notice" role="status">
-                {revealNotice}
+                {routineNotice}
               </div>
-            ) : null}
-            {filesError !== null ? (
-              <div className="bot-profile__placeholder" role="status">
-                {filesError}
-              </div>
-            ) : files.length === 0 ? (
+            )}
+            {routines.length === 0 ? (
               <div className="bot-profile__placeholder">
-                {profile === null && loading ? '正在读取…' : '这个工作目录还没有文件。'}
+                这个 Bot 目前没有主动任务。可以在对话里说“每个交易日 8:30 给我盘前简报”，它会创建并在这里列出，你可以随时关掉。
               </div>
             ) : (
-              <div className="bot-profile__workspace-groups">
-                {workspaceGroups.map((group) => {
-                  const open = groupOpen(group.key);
-                  return (
-                    <section className="bot-profile__workspace-group" key={group.key}>
+              <ul className="bot-profile__routines">
+                {routines.map((routine) => (
+                  <li className="bot-profile__routine" key={routine.id}>
+                    <div className="bot-profile__routine-head">
+                      <span className="bot-profile__routine-title">{routine.title}</span>
+                      <span className="bot-profile__routine-source">
+                        {routine.source === 'manifest' ? '内置' : '你创建的'}
+                      </span>
+                      <span
+                        className={`bot-profile__routine-state${
+                          routine.enabled ? ' bot-profile__routine-state--on' : ''
+                        }`}
+                      >
+                        {routine.enabled ? '已启用' : '已暂停'}
+                      </span>
+                    </div>
+                    <div className="bot-profile__routine-schedule">{routine.scheduleText}</div>
+                    <div className="bot-profile__routine-meta">
+                      上次运行 {routine.lastRunAt === null ? '—' : formatRoutineTime(routine.lastRunAt)}
+                      {' · '}
+                      下次运行 {routine.nextRunAt === null ? '—' : formatRoutineTime(routine.nextRunAt)}
+                    </div>
+                    <div className="bot-profile__routine-actions">
+                      <label>
+                        启用任务
+                        <input type="checkbox" role="switch" checked={routine.enabled}
+                          aria-label={`启用任务：${routine.title}`} disabled={routineBusy === routine.id}
+                          onChange={() => toggleRoutine(routine)} />
+                      </label>
                       <button
                         type="button"
-                        className="bot-profile__workspace-group-head"
-                        aria-expanded={open}
-                        onClick={() => toggleGroup(group.key)}
+                        className="bot-profile__button bot-profile__button--primary"
+                        disabled={routineBusy === routine.id}
+                        onClick={() => runRoutineNow(routine)}
                       >
-                        <span className="bot-profile__workspace-caret" aria-hidden="true">
-                          {open ? '▾' : '▸'}
-                        </span>
-                        <span className="bot-profile__workspace-group-name">{group.label}</span>
-                        <span className="bot-profile__workspace-group-meta">
-                          {group.files.length} 个文件 · {formatFileSize(totalBytesOf(group.files))}
-                        </span>
+                        立即运行
                       </button>
-                      {open ? (
-                        group.key === 'reports' ? (
-                          group.topics.map((topic) => (
-                            <div className="bot-profile__workspace-topic" key={topic.name}>
-                              <div className="bot-profile__workspace-topic-name">
-                                <span>{topic.name}</span>
-                                <span>{topic.files.length}</span>
-                              </div>
-                              <ul className="bot-profile__files">
-                                {topic.files.map((file) => renderWorkspaceFile(file))}
-                              </ul>
-                            </div>
-                          ))
-                        ) : (
-                          <ul className="bot-profile__files">
-                            {group.files.map((file) => renderWorkspaceFile(file))}
-                          </ul>
-                        )
+                      {routine.source === 'user' ? (
+                        <button
+                          type="button"
+                          className="bot-profile__button bot-profile__button--danger"
+                          disabled={routineBusy === routine.id}
+                          onClick={() => removeRoutine(routine)}
+                        >
+                          删除
+                        </button>
                       ) : null}
-                    </section>
-                  );
-                })}
-              </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </section>
 
           <section className="bot-profile__section" aria-labelledby="profile-watches">
             <div className="bot-profile__section-head">
               <h2 className="bot-profile__section-title" id="profile-watches">
-                盯盘
+                盯盘任务
               </h2>
               <span className="bot-profile__section-meta">
                 {(profile?.watches ?? []).filter((watch) => watch.status === 'active').length} 条生效中
@@ -949,76 +928,97 @@ export function BotProfile({
             )}
           </section>
 
-          <section className="bot-profile__section" aria-labelledby="profile-routines">
+          <section className="bot-profile__section" aria-labelledby="profile-workspace">
             <div className="bot-profile__section-head">
-              <h2 className="bot-profile__section-title" id="profile-routines">
-                主动任务
+              <h2 className="bot-profile__section-title" id="profile-workspace">
+                工作目录
               </h2>
-              <span className="bot-profile__section-meta">
-                {routines.filter((routine) => routine.enabled).length} 个已启用
+              <span
+                className="bot-profile__path"
+                title={profile?.workspace.path ?? ''}
+              >
+                {profile === null ? '—' : shortenWorkspacePath(profile.workspace.path)}
               </span>
             </div>
-            {routineNotice === null ? null : (
+            <div className="bot-profile__workspace-actions">
+              <button
+                type="button"
+                className="bot-profile__button"
+                onClick={handleReveal}
+              >
+                在访达中打开
+              </button>
+              <button
+                type="button"
+                className="bot-profile__button"
+                onClick={() => onOpenWorkspaceMap?.(bot.id)}
+              >
+                打开目录地图
+              </button>
+              <span className="bot-profile__section-meta">
+                {profile === null
+                  ? ''
+                  : `共 ${profile.workspace.fileCount} 个文件 · ${formatFileSize(
+                      profile.workspace.totalBytes
+                    )}`}
+              </span>
+            </div>
+            {revealNotice !== null ? (
               <div className="bot-profile__notice" role="status">
-                {routineNotice}
+                {revealNotice}
               </div>
-            )}
-            {routines.length === 0 ? (
+            ) : null}
+            {filesError !== null ? (
+              <div className="bot-profile__placeholder" role="status">
+                {filesError}
+              </div>
+            ) : files.length === 0 ? (
               <div className="bot-profile__placeholder">
-                这个 Bot 目前没有主动任务。可以在对话里说“每个交易日 8:30 给我盘前简报”，它会创建并在这里列出，你可以随时关掉。
+                {profile === null && loading ? '正在读取…' : '这个工作目录还没有文件。'}
               </div>
             ) : (
-              <ul className="bot-profile__routines">
-                {routines.map((routine) => (
-                  <li className="bot-profile__routine" key={routine.id}>
-                    <div className="bot-profile__routine-head">
-                      <span className="bot-profile__routine-title">{routine.title}</span>
-                      <span className="bot-profile__routine-source">
-                        {routine.source === 'manifest' ? '内置' : '你创建的'}
-                      </span>
-                      <span
-                        className={`bot-profile__routine-state${
-                          routine.enabled ? ' bot-profile__routine-state--on' : ''
-                        }`}
-                      >
-                        {routine.enabled ? '已启用' : '已暂停'}
-                      </span>
-                    </div>
-                    <div className="bot-profile__routine-schedule">{routine.scheduleText}</div>
-                    <div className="bot-profile__routine-meta">
-                      上次运行 {routine.lastRunAt === null ? '—' : formatRoutineTime(routine.lastRunAt)}
-                      {' · '}
-                      下次运行 {routine.nextRunAt === null ? '—' : formatRoutineTime(routine.nextRunAt)}
-                    </div>
-                    <div className="bot-profile__routine-actions">
-                      <label>
-                        启用任务
-                        <input type="checkbox" role="switch" checked={routine.enabled}
-                          aria-label={`启用任务：${routine.title}`} disabled={routineBusy === routine.id}
-                          onChange={() => toggleRoutine(routine)} />
-                      </label>
+              <div className="bot-profile__workspace-groups">
+                {workspaceGroups.map((group) => {
+                  const open = groupOpen(group.key);
+                  return (
+                    <section className="bot-profile__workspace-group" key={group.key}>
                       <button
                         type="button"
-                        className="bot-profile__button bot-profile__button--primary"
-                        disabled={routineBusy === routine.id}
-                        onClick={() => runRoutineNow(routine)}
+                        className="bot-profile__workspace-group-head"
+                        aria-expanded={open}
+                        onClick={() => toggleGroup(group.key)}
                       >
-                        立即运行
+                        <span className="bot-profile__workspace-caret" aria-hidden="true">
+                          {open ? '▾' : '▸'}
+                        </span>
+                        <span className="bot-profile__workspace-group-name">{group.label}</span>
+                        <span className="bot-profile__workspace-group-meta">
+                          {group.files.length} 个文件 · {formatFileSize(totalBytesOf(group.files))}
+                        </span>
                       </button>
-                      {routine.source === 'user' ? (
-                        <button
-                          type="button"
-                          className="bot-profile__button bot-profile__button--danger"
-                          disabled={routineBusy === routine.id}
-                          onClick={() => removeRoutine(routine)}
-                        >
-                          删除
-                        </button>
+                      {open ? (
+                        group.key === 'reports' ? (
+                          group.topics.map((topic) => (
+                            <div className="bot-profile__workspace-topic" key={topic.name}>
+                              <div className="bot-profile__workspace-topic-name">
+                                <span>{topic.name}</span>
+                                <span>{topic.files.length}</span>
+                              </div>
+                              <ul className="bot-profile__files">
+                                {topic.files.map((file) => renderWorkspaceFile(file))}
+                              </ul>
+                            </div>
+                          ))
+                        ) : (
+                          <ul className="bot-profile__files">
+                            {group.files.map((file) => renderWorkspaceFile(file))}
+                          </ul>
+                        )
                       ) : null}
-                    </div>
-                  </li>
-                ))}
-              </ul>
+                    </section>
+                  );
+                })}
+              </div>
             )}
           </section>
         </div>
