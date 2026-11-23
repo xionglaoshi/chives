@@ -96,30 +96,27 @@ export function ToolStepList({ tools, now }: { tools: ToolEventDto[]; now: numbe
   );
 }
 
-/** One collapsible "worked for …" row per task, with its tool steps inside. */
+/** A read-only task status row. */
 export function TaskProgress({ task, tools }: TaskProgressProps): ReactElement {
-  const [open, setOpen] = useState(false);
   const running = task.status === 'running';
   const now = useNow(running);
-  const duration = formatDurationBetween(task.startedAt, task.endedAt, now);
-  const summary = running
-    ? `工作中… · ${tools.length} 步 · ${duration}`
-    : `工作了 ${duration} · ${tools.length} 步 · ${TASK_LABELS[task.status]}`;
+  const start = Date.parse(task.startedAt);
+  const end = task.endedAt === null ? now : Date.parse(task.endedAt);
+  const seconds = Number.isFinite(end - start) ? Math.max(0, Math.round((end - start) / 1000)) : 0;
 
   return (
-    <section className={`task-progress${running ? ' task-progress--running' : ''}`} aria-label="工作过程">
-      <button
-        type="button"
-        className="task-progress__toggle"
-        aria-expanded={open}
-        onClick={() => setOpen((value) => !value)}
-      >
-        <span className="task-progress__chevron" aria-hidden="true">
-          {open ? '▾' : '▸'}
+    <div className="task-progress" aria-label="工作过程">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <rect x="5" y="4" width="14" height="17" rx="2"/>
+        <path d="M9 4V3h6v1M9 9h6M9 13h6M9 17h4"/>
+      </svg>
+      <span>
+        {running && '我正在结合您的用户画像、持仓情况及近期记忆等，基于我能查询到的各类数据认真思考……'}
+        <span className="task-progress__summary">
+          思考了 {seconds} 秒 · {tools.length} 步{running ? '' : ` · ${TASK_LABELS[task.status]}`}
         </span>
-        <span className="task-progress__summary">{summary}</span>
-      </button>
-      {open ? <ToolStepList tools={tools} now={now} /> : null}
-    </section>
+      </span>
+    </div>
   );
 }

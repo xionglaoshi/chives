@@ -20,6 +20,7 @@ import { DelegationRow } from './DelegationRow';
 import { deliverablesFromMessage, embeddedImagePaths, formatFileSize } from '../utils/deliverables';
 import { formatDateLabel, formatTime, toDayKey } from '../utils/format';
 import { Markdown } from './Markdown';
+import { ReplyFooter } from './ReplyFooter';
 import { TaskProgress } from './TaskProgress';
 import './Timeline.css';
 
@@ -59,7 +60,7 @@ type Item =
   | { kind: 'date'; key: string; label: string }
   | { kind: 'divider'; key: string; task: TaskDto }
   | { kind: 'message'; key: string; message: MessageDto }
-  | { kind: 'task'; key: string; task: TaskDto };
+  | { kind: 'task'; key: string; task: TaskDto; until?: string };
 
 function buildItems(
   messages: MessageDto[],
@@ -69,12 +70,25 @@ function buildItems(
   let currentDay = '';
   const seenTasks = new Set<string>();
   const seenDividers = new Set<string>();
-  // A running task's progress row follows its latest user message, so a follow-up
-  // sent into a long task shows "working…" right under it instead of far above.
-  const anchorFor = new Map<string, string>();
-  for (const message of messages) {
-    if (message.role !== 'user' || message.taskId === null) continue;
-    if (tasks[message.taskId]?.status === 'running') anchorFor.set(message.taskId, message.id);
+  // A segment can contain several user turns. Bound historical progress to each turn.
+  const usersByTask = new Set<string>();
+  const nextUser = new Map<string, string>();
+  const lastReply = new Map<string, string>();
+  const turnWindows = new Map<string, {until?: string; end?: string}>();
+  for (let i = messages.length - 1; i >= 0; i--) {
+    const message = messages[i]!;
+    const id = message.taskId;
+    if (id === null) continue;
+    if (message.role === 'bot' && message.kind === 'text' && !lastReply.has(id)) {
+      lastReply.set(id, message.createdAt);
+    } else if (message.role === 'user') {
+      usersByTask.add(id);
+      const until = nextUser.get(id);
+      const end = lastReply.get(id);
+      turnWindows.set(message.id, {...(until !== undefined ? {until} : {}), ...(end !== undefined ? {end} : {})});
+      nextUser.set(id, message.createdAt);
+      lastReply.delete(id);
+    }
   }
 
   for (const message of messages) {
@@ -98,13 +112,14 @@ function buildItems(
 
     if (message.role === 'user') {
       items.push({ kind: 'message', key: `message-${message.id}`, message });
-      const anchor = message.taskId === null ? undefined : anchorFor.get(message.taskId);
-      if (message.taskId !== null && !seenTasks.has(message.taskId) && (anchor === undefined || anchor === message.id)) {
-        const task = tasks[message.taskId];
-        if (task !== undefined) {
-          seenTasks.add(message.taskId);
-          items.push({ kind: 'task', key: `task-${task.id}`, task });
-        }
+      const task = message.taskId === null ? undefined : tasks[message.taskId];
+      if (task) {
+        const window = turnWindows.get(message.id);
+        const startedAt = message.createdAt;
+        const progress = window?.until
+          ? {...task, startedAt, endedAt: window.end ?? startedAt, status: (window.end ? 'done' : 'interrupted') as TaskDto['status']}
+          : {...task, startedAt};
+        items.push({kind:'task', key:`task-${message.id}`, task:progress, ...(window?.until ? {until:window.until} : {})});
       }
       continue;
     }
@@ -113,7 +128,7 @@ function buildItems(
       message.role === 'bot' &&
       message.taskId !== null &&
       !seenTasks.has(message.taskId) &&
-      !anchorFor.has(message.taskId)
+      !usersByTask.has(message.taskId)
     ) {
       const task = tasks[message.taskId];
       if (task !== undefined) {
@@ -444,16 +459,23 @@ function MessageRow({
     );
   }
 
+  return <BotReply message={message} deliverables={deliverables} onOpenDeliverable={onOpenDeliverable} />;
+}
+
+function BotReply({message, deliverables, onOpenDeliverable}: {
+  message: MessageDto;
+  deliverables: readonly DeliverableDto[];
+  onOpenDeliverable?: ((deliverable: DeliverableDto, trigger: HTMLElement) => void) | undefined;
+}) {
+  const content = useRef<HTMLDivElement>(null);
   return (
     <section className="timeline__bot-message" aria-label="Bot 回复">
-      <Markdown
-        botId={message.botId}
-        deliverables={deliverables}
-        onOpenDeliverable={onOpenDeliverable}
-      >
-        {message.content}
-      </Markdown>
-      <div className="timeline__time">{formatTime(message.createdAt)}</div>
+      <div ref={content}>
+        <Markdown botId={message.botId} deliverables={deliverables} onOpenDeliverable={onOpenDeliverable}>
+          {message.content}
+        </Markdown>
+      </div>
+      <ReplyFooter message={message} content={content} />
     </section>
   );
 }
@@ -603,18 +625,15 @@ export function Timeline({
               );
             }
             if (item.kind === 'divider') {
-              const title = item.task.summaryTitle ?? item.task.title ?? '未命名任务';
-              const conclusion = item.task.summaryConclusion ?? null;
               return (
                 <div
                   className="timeline__task-divider"
                   key={item.key}
                   role="separator"
-                  aria-label={`新任务 · ${title}${conclusion === null ? '' : ` · ${conclusion}`}`}
-                  title={conclusion ?? undefined}
+                  aria-label="新任务"
                 >
                   <span className="timeline__task-divider-line" />
-                  <span className="timeline__task-divider-label">新任务 · {title}</span>
+                  <span className="timeline__task-divider-label">新任务</span>
                   <span className="timeline__task-divider-line" />
                 </div>
               );
@@ -622,11 +641,9 @@ export function Timeline({
             if (item.kind === 'task') {
               return (
                 <div className="timeline__task" key={item.key}>
-                  <div className="timeline__task-label">
-                    <span className="timeline__task-chip">任务</span>
-                    {item.task.title ?? '未命名任务'}
-                  </div>
-                  <TaskProgress task={item.task} tools={toolEvents[item.task.id] ?? []} />
+                  <TaskProgress task={item.task} tools={(toolEvents[item.task.id] ?? []).filter(tool =>
+                    tool.startedAt >= item.task.startedAt && (item.until === undefined || tool.startedAt < item.until)
+                  )} />
                 </div>
               );
             }
@@ -695,7 +712,6 @@ export function Timeline({
             </div>
           ))}
 
-          {draft?.reasoning&&<details className="desk-thought" open><summary>思考摘要</summary><p>{draft.reasoning}</p></details>}
           {draft !== null && draft.text !== '' ? (
             <div className="timeline__draft" role="status" aria-label="正在生成的回复">
               <div className="timeline__draft-label">{draft.committed ? '正在提交…' : '正在撰写…'}</div>
