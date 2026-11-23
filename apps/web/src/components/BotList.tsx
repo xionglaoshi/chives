@@ -61,10 +61,12 @@ export function BotRow({ bot, selected, onSelect, onKeyDown, buttonRef, onMove, 
           tone={bot.avatar.tone}
           size={18}
         />
-        {unread > 0 ? <span className="bot-row__unread" aria-hidden="true" /> : null}
         <span className="bot-row__body">
           <span className="bot-row__line">
-            <span className="bot-row__name">{bot.name}</span>
+            <span className="bot-row__identity">
+              <span className="bot-row__name">{bot.name}</span>
+              {unread > 0 && <span className="bot-row__unread" aria-hidden="true">（{unread}）</span>}
+            </span>
             <span className={`bot-row__status bot-row__status--${STATUS_TONES[bot.status]}`}>
               <span className="bot-row__dot" aria-hidden="true" />
               <span className={idle ? "bot-row__status-label bot-row__status-label--idle" : "bot-row__status-label"}>{statusLabel}</span>

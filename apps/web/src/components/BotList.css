@@ -186,15 +186,17 @@
   position: relative;
 }
 
+.bot-row__identity {
+  display: inline-flex;
+  align-items: baseline;
+  min-width: 0;
+}
+
 .bot-row__unread {
-  position: absolute;
-  top: 8px;
-  left: 32px;
-  width: 8px;
-  height: 8px;
-  border-radius: 999px;
-  background: var(--color-gold-highlight, #c8a45a);
-  box-shadow: 0 0 0 2px var(--color-nav);
+  flex: none;
+  color: var(--color-text-secondary);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
 }
 
 .bot-row__watch {
