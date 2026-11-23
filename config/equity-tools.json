@@ -59,6 +59,10 @@
       "expert"
     ]
   },
+  "estimate_equity_value": {
+    "label": "A 股个股估值测算器",
+    "bots": ["operator", "equity-analyst", "research", "expert"]
+  },
   "valuation_scenarios": {
     "label": "EPS × PE 情景估值",
     "bots": [

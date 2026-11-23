@@ -27,7 +27,7 @@
 
 @media (min-width: 721px) and (max-width: 1100px) {
   /* Keep the initial page heading legible where it shares the dock's horizontal position. */
-  .main > :is(.market-board, .holdings, .workbench-placeholder, .bots-overview, .bot-profile),
+  .main > :is(.market-board, .holdings, .watchlist, .workbench-placeholder, .bots-overview, .bot-profile),
   .desk-workspace-portrait .desk-page {
     padding-block-start: var(--chat-header-height);
   }
@@ -238,7 +238,7 @@
     --phone-heading-top: calc(68px + env(safe-area-inset-top, 0px));
   }
 
-  .main > :is(.market-board, .holdings, .workbench-placeholder, .bots-overview, .bot-profile),
+  .main > :is(.market-board, .holdings, .watchlist, .workbench-placeholder, .bots-overview, .bot-profile),
   .app .desk-settings .desk-page {
     padding: var(--phone-heading-top) 16px max(36px, env(safe-area-inset-bottom, 0px));
   }

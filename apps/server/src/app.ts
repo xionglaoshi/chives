@@ -40,6 +40,7 @@ import {
 import type { ChivesConfig } from './config.js';
 import { DashboardService } from './dashboard/index.js';
 import {hotspotService} from './dashboard/hotspots.js';
+import {Watchlist, screeningPrompt, valuationDay, valuationInstructions} from './dashboard/watchlist.js';
 import {holdings} from './dashboard/holdings.js';
 import { createSnapshotRunner } from './dashboard/portfolio.js';
 import {
@@ -520,6 +521,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
   const preferencesForTools=()=>{const p=preferences(store);return {workspaceWrite:p.workspaceWrite,memoryWrite:p.memoryWrite,databaseRead:p.databaseRead};};
   const driver =
     options.driver ?? (config.harness === 'fake' ? new FakeDriver() : undefined);
+  const watchlist = new Watchlist(config.repoRoot,config.dataDir);
   const orchestrator = new Orchestrator({
     executionFor: effectiveModel,
     styleReportTurn: (botId, text, attachment, messageId, sink) => {
@@ -822,6 +824,29 @@ export function createApp(options: CreateAppOptions): ChivesApp {
         if (method !== 'POST') {
           methodNotAllowed(response, 'POST');
           return;
+        }
+        if (path === '/api/internal/operator/watchlist') {
+          const bot=registry.get(identity.botId);
+          const task=store.tasks.get(identity.taskId);
+          if (!bot || bot.id!==coordinatorId || !task || task.botId!==bot.id ||
+              task.delegated || task.status!=='running' || identity.depth || !preferences(store).memoryWrite) {
+            throw new AppError(403,'forbidden','需要总调度的直接会话及用户库写入权限。');
+          }
+          const body=await readJsonObject(request);
+          const user=store.messages.listByTask(task.id).findLast(message=>message.role==='user');
+          if (body.action==='read') {
+            sendJson(response,200,watchlist.read());return;
+          }
+          if (body.action==='add') {
+            const codes=user?.content.trim().match(/^确认加入(?:用户关注|自选股)[：:]\s*((?:\d{6}\.(?:SH|SZ|BJ)[、，,\s]*)+)$/i)?.[1]
+              ?.match(/\d{6}\.(?:SH|SZ|BJ)/gi);
+            if (!codes?.length || codes.length>50) throw new AppError(403,'watchlist_confirm','请用户发出明确确认及完整证券代码。');
+            sendJson(response,200,watchlist.add([...new Set(codes.map(code=>code.toUpperCase()))],'screen',now()));return;
+          }
+          if (body.action==='estimate' && user) {
+            sendJson(response,200,watchlist.saveEstimate(user.id,body,task.id,bot.id,now()));return;
+          }
+          throw new AppError(400,'watchlist_action','未知用户关注操作。');
         }
         if (path === '/api/internal/operator/attribute') {
           const task = store.tasks.get(identity.taskId);
@@ -1481,6 +1506,27 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           result=employment.list();
         }else if(section==='hotspots' && (method==='GET'||method==='POST')){
           result=method==='GET'?hotspots.current():await hotspots.start();
+        }else if(section==='watchlist' && (method==='GET'||method==='POST')){
+          if(method==='GET'){
+            result=watchlist.read().map(entry=>({...entry,pending:entry.pending &&
+              (()=>{const taskId=store.messages.get(entry.pending)?.taskId;return taskId && store.tasks.get(taskId)?.status==='running';})()}));
+          }else{
+            const body=await readJsonObject(request), code=String(body.code??'');
+            if(body.action==='add')result=watchlist.add([code],'manual',now());
+            else if(body.action==='remove') {watchlist.remove(code);result={ok:true};}
+            else if(body.action==='screen') result=await orchestrator.submitMessage(coordinatorId,screeningPrompt);
+            else if(body.action==='estimate') {
+              const entry=watchlist.get(code);
+              const id=randomUUID();
+              if(orchestrator.runningTaskId(coordinatorId))throw new AppError(409,'bot_busy','总调度正在处理任务，请稍后再试。');
+              const day=valuationDay(now());
+              watchlist.pending(code,id,day);
+              try {
+                result=await orchestrator.submitMessage(coordinatorId,
+                  `请测算用户关注中的 ${entry.name}（${entry.code}）。核对近期行情和最新公开财务数据，给出每股人民币合理估值区间及未来20个交易日的方向评分（-5至5，0为中性，依据不足用 null）。${valuationInstructions} 以 ${day} 作为 as_of 调用测算器。把返回的 valuation_id 交给 save_watchlist_estimate 保存价格及版本，另附方向评分、依据和失效条件。完成后简洁回复。`,[],id);
+              }catch(error){watchlist.pending(code,null);throw error;}
+            }else throw new AppError(400,'watchlist_action','未知用户关注操作。');
+          }
         }else if(section==='holdings' && (method==='GET'||method==='POST')){
           const body=method==='GET'?{action:'get'}:await readJsonObject(request);
           result=await holdings(config.repoRoot,config.dshHome,body);

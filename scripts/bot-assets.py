@@ -219,6 +219,17 @@ for tool in tools:
     if tool.__name__ in selected:
         server.tool()(tool)
 if bot == 'operator':
+    @server.tool()
+    def user_watchlist(action: str = "read") -> dict | list:
+        """读取用户关注（自选股）。用户明确发出「确认加入用户关注：完整证券代码」后才用 add。"""
+        return internal_call("operator/watchlist", {"action": action})
+
+    @server.tool()
+    def save_watchlist_estimate(valuation_id: str, score: int | None, basis: str, invalidation: str) -> dict:
+        """为本轮关注测算保存 estimate_equity_value 返回的 valuation_id。价格由服务读取。20 日方向须独立判断，依据不足填 null。"""
+        return internal_call("operator/watchlist", dict(action="estimate", valuationId=valuation_id,
+                                                       score=score, basis=basis, invalidation=invalidation))
+
     from research_bridge import ResearchBridge
     research = ResearchBridge(json.loads(os.environ.get('CHIVES_RESEARCH_SERVERS', '[]')))
 

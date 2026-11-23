@@ -1,5 +1,6 @@
 """MCP capabilities are installed in bot_assets only when the expert selects them."""
 
+from .valuation import estimate_equity_value
 from .factors import factor_catalog, factor_values
 from .evidence import filing_evidence, evidence_page, cash_quality, research_snapshot
 from .research import (
@@ -20,6 +21,7 @@ from .fund_tools import (
 )
 
 TOOLS = (
+    estimate_equity_value,
     factor_catalog,
     factor_values,
     filing_evidence,

@@ -8,7 +8,7 @@ import { BotList, BotRail } from './BotList';
 import { HiddenMenu, Pin, useSidebarPins } from './SidebarPins';
 import './Sidebar.css';
 
-const initialTools = ['holdings', 'market', 'trends', 'strategies', 'portrait'];
+const initialTools = ['holdings', 'watchlist', 'market', 'trends', 'strategies', 'portrait'];
 const initialBots = ['chives', 'expert', 'equity-analyst', 'research', 'zhushenglang', 'report-builder'];
 const toolIds: WorkbenchTool[] = ['trends', ...(Object.keys(workbenchTools) as WorkbenchTool[]).filter(id => id !== 'trends')];
 
@@ -18,6 +18,7 @@ function readToolOrder(): WorkbenchTool[] {
     const saved: unknown = JSON.parse(localStorage.getItem(toolOrderKey) ?? 'null');
     if (Array.isArray(saved)) {
       const known = saved.filter((id): id is WorkbenchTool => toolIds.includes(id));
+      if (!known.includes('watchlist') && known.includes('holdings')) known.splice(known.indexOf('holdings')+1,0,'watchlist');
       return [...new Set<WorkbenchTool>(['trends', ...known, ...toolIds])];
     }
   } catch { /* Use the default order when storage is unavailable. */ }
@@ -117,8 +118,8 @@ export function Sidebar({
           </svg>
         </button>}
       </div>
-      <section className="desk-shortcuts" aria-label="工作台">
-        <h2 className="bot-list__heading">工作台</h2>
+      <section className="desk-shortcuts" aria-label="快速工具">
+        <h2 className="bot-list__heading">快速工具</h2>
         {visibleTools.map((key,index)=><div className="sidebar-pin-row" key={key}
           onDragOver={event => { if (key !== 'trends' && event.dataTransfer.types.includes('text/chives-tool')) event.preventDefault(); }}
           onDrop={event => {
@@ -137,7 +138,7 @@ export function Sidebar({
           title={workbenchTools[key] + (key === 'trends' ? ' · 展示时置顶' : ' · 拖动排序，或按 Alt 加上下方向键')} aria-label={workbenchTools[key]} aria-current={activeTool===key?'page':undefined}
           onClick={()=>onTool(key)}>
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d={{holdings:'M3 7h18v13H3z M8 7V4h8v3 M3 12c5 3 13 3 18 0 M11 13h2',market:'M3 4v16h18 M6 15l4-5 4 3 6-8',trends:'M13 3c1 5 6 6 6 12a7 7 0 0 1-14 0c0-3 2-6 4-8 0 4 1 5 2 5 2-2 3-5 2-9z',portrait:'M3 4h18v16H3z M10 10a2 2 0 1 0-4 0 2 2 0 0 0 4 0 M5 16c0-4 6-4 6 0 M14 9h4 M14 13h4',strategies:'M3 9l2-5h14l2 5 M3 9h18 M5 9v11h14V9 M9 20v-6h6v6'}[key]}/>
+            <path d={{watchlist:'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z',holdings:'M3 7h18v13H3z M8 7V4h8v3 M3 12c5 3 13 3 18 0 M11 13h2',market:'M3 4v16h18 M6 15l4-5 4 3 6-8',trends:'M13 3c1 5 6 6 6 12a7 7 0 0 1-14 0c0-3 2-6 4-8 0 4 1 5 2 5 2-2 3-5 2-9z',portrait:'M3 4h18v16H3z M10 10a2 2 0 1 0-4 0 2 2 0 0 0 4 0 M5 16c0-4 6-4 6 0 M14 9h4 M14 13h4',strategies:'M3 9l2-5h14l2 5 M3 9h18 M5 9v11h14V9 M9 20v-6h6v6'}[key]}/>
           </svg><span>{workbenchTools[key]}</span>
         </button><Pin name={workbenchTools[key]} pinned onClick={() => tools.toggle(key)}/></div>)}
         <HiddenMenu label="更多工具" items={order.filter(key => !tools.pins.includes(key)).map(id => ({id,name:workbenchTools[id]}))}

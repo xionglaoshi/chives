@@ -1,12 +1,14 @@
 import { useEffect, useId, useRef, useState } from 'react';
 
 export function useSidebarPins(group: string, defaults: readonly string[]) {
-  const key = 'chives.sidebar.pins.' + (group === 'tools' ? 'tools.v2' : group);
+  const key = 'chives.sidebar.pins.' + (group === 'tools' ? 'tools.v3' : group);
   function read(): string[] {
     try {
       if (group === 'tools' && localStorage.getItem(key) === null) {
+        const previous: unknown = JSON.parse(localStorage.getItem('chives.sidebar.pins.tools.v2') ?? 'null');
+        if (Array.isArray(previous) && previous.every(id => typeof id === 'string')) return [...new Set([...previous,'watchlist'])];
         const legacy: unknown = JSON.parse(localStorage.getItem('chives.sidebar.pins.tools') ?? 'null');
-        if (Array.isArray(legacy) && legacy.every(id => typeof id === 'string')) return [...new Set([...legacy, 'portrait'])];
+        if (Array.isArray(legacy) && legacy.every(id => typeof id === 'string')) return [...new Set([...legacy, 'portrait', 'watchlist'])];
       }
       const saved: unknown = JSON.parse(localStorage.getItem(key) ?? 'null');
       if (Array.isArray(saved) && saved.every(id => typeof id === 'string')) return saved;

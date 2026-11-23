@@ -10,7 +10,7 @@ from urllib.parse import quote
 from .screen import clean, context_label
 
 PAGES = (("热门榜单", "trends"), ("行情看板", "market"),
-         ("用户持仓", "holdings"), ("风格评估", "portrait"))
+         ("用户持仓", "holdings"), ("用户关注", "watchlist"), ("风格评估", "portrait"))
 CHANNEL_NAMES = dict(weixin="微信", wecom="企业微信", feishu="飞书", telegram="Telegram", slack="Slack", discord="Discord")
 COMMANDS = json.loads(Path(__file__).with_name("command-reference.json").read_text(encoding="utf-8"))["chat"]
 PREFS = Path.home() / ".config/chives/terminal.json"

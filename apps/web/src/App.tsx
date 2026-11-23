@@ -3,6 +3,7 @@ import { Hotspots } from './components/Hotspots';
 import { MarketBoard } from './components/MarketBoard';
 import {StyleAssessment} from './components/StyleAssessment';
 import {portraitDescription} from './components/SettingsNav';
+import {Watchlist} from './components/Watchlist';
 import {Holdings} from './components/Holdings';
 import { workbenchTools } from './utils/routes';
 import { saveBotOrder } from './api/client';
@@ -884,13 +885,14 @@ export function App(): ReactElement {
         <main className="main">
           {orderError && <p role="alert">{orderError}</p>}
           {route.name==='workspace' && route.tool==='holdings' && <Holdings/>}
+          {route.name==='workspace' && route.tool==='watchlist' && <Watchlist onConversation={()=>openConversationTarget({botId:'operator'})}/> }
           {route.name==='workspace' && route.tool==='portrait' && <section className="desk-settings desk-workspace-portrait"><div className="desk-content"><div className="desk-page">
             <header className="desk-header"><p>工作台</p><h2>用户画像</h2><p>{portraitDescription}</p></header>
             <StyleAssessment onAskExpert={askOperator} interviewReturn="workspace"/>
           </div></div></section>}
           {route.name==='workspace' && route.tool==='trends' && <Hotspots onAskExpert={askOperator} />}
           {route.name==='workspace' && route.tool==='market' && <MarketBoard onAskExpert={askOperator} />}
-          {route.name==='workspace' && route.tool!=='market' && route.tool!=='holdings' && route.tool!=='portrait' && route.tool!=='trends' && <section className="workbench-placeholder"><h1>{workbenchTools[route.tool]}</h1><p>功能开发中</p></section>}
+          {route.name==='workspace' && route.tool!=='market' && route.tool!=='holdings' && route.tool!=='watchlist' && route.tool!=='portrait' && route.tool!=='trends' && <section className="workbench-placeholder"><h1>{workbenchTools[route.tool]}</h1><p>功能开发中</p></section>}
           {route.name === 'settings' ? (
             <Settings onAskExpert={askOperator}
               onOpenProfile={(botId) => navigate({ name: 'profile', botId })}

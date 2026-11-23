@@ -25,7 +25,7 @@ def select_quote(q, now):
             stamp.time() >= time(9, 25))
     if live or stamp.time() >= time(15):
         if q.price and q.price > 0:
-            return dict(price=q.price, basis="最新行情" if live else "收盘价", as_of=q.time)
+            return dict(price=q.price, basis="最新行情" if live else "收盘价", as_of=q.time, **({"changePct": (q.price/q.prev_close-1)*100} if q.prev_close and q.prev_close > 0 else {}))
     if q.prev_close and q.prev_close > 0:
         return dict(price=q.prev_close, basis="前收盘价", as_of=q.time)
     return None

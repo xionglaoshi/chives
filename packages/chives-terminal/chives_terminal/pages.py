@@ -292,6 +292,26 @@ async def browse(api, view, page, *, replace_page):
             if change not in ("next", "prev"):
                 return
             i = (i + (1 if change == "next" else -1)) % len(sections)
+    if page == "watchlist":
+        paper = Paper()
+        entries = await api(DESK+"watchlist")
+        if not entries:
+            paper.text("还没有关注的股票。")
+        for entry in entries:
+            paper.text(f"{entry['name']}  {entry['code']}", "accent")
+            history = entry.get("estimates") or []
+            latest = history[-1] if history else None
+            if latest is None:
+                paper.text("测算中" if entry.get("pending") else "待测算")
+                continue
+            value = "依据不足" if latest["low"] is None else f"¥{latest['low']}–{latest['high']}"
+            score = latest["score"]
+            direction = "依据不足" if score is None else "中性 🤔" if score == 0 else (
+                "看涨 " + "🙂"*score if score > 0 else "看跌 " + "😢"*(-score))
+            kind = latest.get("valuationKind", "历史测算") if latest["low"] is not None else "合理估值"
+            paper.text(f"{kind} {value}  ·  未来 20 个交易日 {direction}")
+            paper.text(f"第 {latest['version']} 版 · 数据截至 {latest['asOf']}", "dim")
+        return await view("用户关注", paper)
     if page == "holdings":
         book = await api(DESK+"holdings")
         first = holdings(book)
