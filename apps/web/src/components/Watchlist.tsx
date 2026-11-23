@@ -121,7 +121,7 @@ export function Watchlist({onConversation}:{onConversation:()=>void}) {
           <WatchPrices code={entry.code} latest={latest}/>
           <div><small className="watchlist-mobile-label">后市涨跌预测</small>
             {score==null?(latest?'依据不足':'待测算'):<OutlookFaces score={score}/>}</div>
-          <div className="watchlist-actions"><button disabled={busy||entry.pending} onClick={()=>void act('estimate',entry.code)}>{entry.pending?'测算中':'立刻测算'}</button>
+          <div className="watchlist-actions"><button disabled={busy||entry.pending} onClick={()=>void act('estimate',entry.code)}>{entry.pending?'测算中':'重新评估'}</button>
             <button disabled={busy} onClick={()=>void act('remove',entry.code)}>移除</button>
             {latest&&<small>{stamp(latest.measuredAt)}</small>}</div>
         </article>;

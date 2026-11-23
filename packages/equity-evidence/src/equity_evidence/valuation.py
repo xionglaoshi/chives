@@ -151,7 +151,7 @@ def fundamentals(quote, rows):
     return "正常化 PE", "PE_TTM", eps, normal_roe, info
 
 
-def peer_bands(panel, code, metric, target_ratio):
+def peer_bands(panel, code, metric, target_ratio, percentiles=(0.25, 0.50, 0.75)):
     by_month = defaultdict(dict)
     for row in panel:
         if row["SECUCODE"] != code:
@@ -194,13 +194,18 @@ def peer_bands(panel, code, metric, target_ratio):
                 core=len(core),
                 peer_codes=sorted(r["SECUCODE"] for r in core),
                 industry_median=median(r[metric] for r in valid),
-                bands=[quantile(values, q) for q in (0.25, 0.50, 0.75)],
+                bands=[quantile(values, q) for q in percentiles],
             )
         )
     return months
 
 
-def evaluate(code, day, data):
+def acceptable_band(band):
+    low, mid, high = (round(value * 100) for value in band)
+    return 0 < low <= mid <= high and 5 * high < 6 * low
+
+
+def evaluate(code, day, data, *, enforce_width=False):
     quote = data.get("quote") or {}
     traded = str(quote.get("TRADE_DATE") or "")[:10] or None
     result = dict(
@@ -258,6 +263,20 @@ def evaluate(code, day, data):
     if band[0] <= 0:
         result["reasons"] = ["估值区间低于分币精度"]
         return result
+    if enforce_width:
+        data["initial_static_band"] = band
+        result["peer_percentiles"] = [0.25, 0.50, 0.75]
+        if not acceptable_band(band):
+            central = (0.35, 0.50, 0.65)
+            months = peer_bands(data["peers"], code, metric, ratio, central)
+            multiples = [median(m["bands"][i] for m in months) for i in range(3)]
+            band = [round(base * multiple, 2) for multiple in multiples]
+            if not acceptable_band(band):
+                result["reasons"] = [
+                    "同行估值分散，中央30%情景重算后仍无法形成偏离度小于20%的区间"
+                ]
+                return result
+            result["peer_percentiles"] = list(central)
     data["matched_months"] = months
     result.update(
         status="静态参考",
@@ -336,7 +355,10 @@ def estimate_equity_value(code: str, as_of: str | None = None) -> dict:
             if hashlib.sha256(blob).hexdigest() != path.stem:
                 continue
             previous = json.loads(blob)
-            if previous.get("static") and previous.get("model_version") == VERSION:
+            if (
+                previous.get("static")
+                and previous.get("model_version") == VERSION + "-width20"
+            ):
                 return {
                     **previous,
                     "valuation_id": path.stem,
@@ -345,8 +367,21 @@ def estimate_equity_value(code: str, as_of: str | None = None) -> dict:
     if inputs.get("reports") and inputs.get("quote"):
         visible = visible_reports(inputs["reports"], inputs["quote"]["TRADE_DATE"][:10])
         inputs["reports"] = list(visible.values())
-    result = evaluate(code, requested.isoformat(), inputs)
-    apply_validated(result)
+    result = evaluate(code, requested.isoformat(), inputs, enforce_width=True)
+    result["model_version"] = VERSION + "-width20"
+    calibrated = {
+        **result,
+        "model_version": VERSION,
+        "signals": dict(result["signals"]),
+        "reasons": list(result["reasons"]),
+    }
+    apply_validated(calibrated)
+    if calibrated["dynamic"]:
+        band = calibrated["dynamic"]
+        if acceptable_band([band["low"], band["mid"], band["high"]]):
+            result.update(calibrated, model_version=VERSION + "-width20")
+        else:
+            result["reasons"].append("动态区间超过宽度限制，采用静态参考")
     result["outlook"] = None
     if inputs.get("quote") and not inputs.get("stale"):
         try:
