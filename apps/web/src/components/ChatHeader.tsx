@@ -1,21 +1,11 @@
 import { useState } from 'react';
 import type { ReactElement } from 'react';
 
-import type { BotSummary, NotificationDto, TaskDto } from '@chives/server/protocol';
+import type { BotSummary, NotificationDto } from '@chives/server/protocol';
 
-import { BotAvatar } from '../brand/BotAvatar';
-import { useNow } from '../hooks/useNow';
-import { formatDurationBetween, formatTime } from '../utils/format';
+import { formatTime } from '../utils/format';
 import { toolbarPanels, type ToolbarPanelId } from './toolbarPanels';
 import './ChatHeader.css';
-
-const STATUS_TEXT: Record<BotSummary['status'], string> = {
-  idle: '空闲',
-  starting: '启动中',
-  working: '工作中',
-  awaiting_approval: '待批准',
-  error: '出错'
-};
 
 const LEVEL_TEXT: Record<NotificationDto['level'], string> = {
   info: '消息',
@@ -42,12 +32,9 @@ function SearchIcon(): ReactElement {
 }
 
 export interface ChatHeaderProps {
-  operator: BotSummary | undefined;
-  runningTask: TaskDto | null;
-  /** Start of the current turn; defaults to the task start. */
-  turnStartedAt?: string | null;
   onSearch?: () => void;
-  onOpenOperator: () => void;
+  onOpenInbox: () => Promise<boolean>;
+  inboxCount: number;
   bots?: readonly BotSummary[];
   notifications?: NotificationDto[];
   unreadCount?: number;
@@ -59,11 +46,9 @@ export interface ChatHeaderProps {
 }
 
 export function ChatHeader({
-  operator,
-  runningTask,
-  turnStartedAt = null,
   onSearch,
-  onOpenOperator,
+  onOpenInbox,
+  inboxCount,
   bots = [],
   notifications = [],
   unreadCount = 0,
@@ -72,24 +57,32 @@ export function ChatHeader({
   openPanels = [],
   onTogglePanel
 }: ChatHeaderProps): ReactElement {
-  const status = operator?.status ?? 'idle';
-  const active = status === 'working' || status === 'starting' || runningTask !== null;
-  const now = useNow(active);
-  const elapsed = runningTask === null ? null : formatDurationBetween(turnStartedAt ?? runningTask.startedAt, null, now);
   const watchCount = bots.reduce((sum, bot) => sum + (bot.watchCount ?? 0), 0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const name = operator?.name ?? '总调度';
+  const [inboxStatus, setInboxStatus] = useState<'loading'|'empty'|'error'|null>(null);
+
+  async function readInbox() {
+    setNotificationsOpen(false);
+    if (inboxStatus === 'loading') return;
+    if (inboxCount === 0) { setInboxStatus('empty'); return; }
+    setInboxStatus('loading');
+    try { setInboxStatus(await onOpenInbox() ? null : 'empty'); }
+    catch { setInboxStatus('error'); }
+  }
+
 
   return (
-    <header aria-label="全局工具条" className={`chat-header chat-header--${status}`}>
+    <header aria-label="全局工具条" className="chat-header">
       <div className="chat-header__dock">
-        <button type="button" className="chat-header__pill" aria-label={`与${name}对话`}
-          title={`与${name}对话 · ${STATUS_TEXT[status]}`}
-          onClick={() => { setNotificationsOpen(false); onOpenOperator(); }}>
-          <BotAvatar emblem={operator?.avatar.emblem ?? 'compass'} tone={operator?.avatar.tone ?? 'jade'} size={18} name={name}/>
-          <span className="chat-header__pill-name">{name}</span>
-          {active && <span className="chat-header__pill-dot" aria-hidden="true"/>}
-          {elapsed !== null && <span className="chat-header__pill-time">{elapsed}</span>}
+        <button type="button" className="chat-header__pill" title="收件箱"
+          aria-label={inboxCount > 0 ? `收件箱，${inboxCount} 条未读` : '收件箱'}
+          onClick={() => void readInbox()}>
+          <svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.4">
+            <rect x="2" y="3.5" width="12" height="9" rx="1.5"/>
+            <path d="m2.5 4.5 5.5 4 5.5-4" strokeLinejoin="round"/>
+          </svg>
+          <span className="chat-header__pill-name">收件箱</span>
+          {inboxCount > 0 && <span className="chat-header__inbox-count" aria-hidden="true">{inboxCount}</span>}
         </button>
 
       <span className="chat-header__divider" aria-hidden="true" />
@@ -100,7 +93,7 @@ export function ChatHeader({
           className="chat-header__icon chat-header__bell"
           aria-label={unreadCount > 0 ? `通知，${unreadCount} 条未读` : '通知'}
           aria-expanded={notificationsOpen}
-          onClick={() => setNotificationsOpen((current) => !current)}
+          onClick={() => { setInboxStatus(null); setNotificationsOpen(current => !current); }}
         >
           <BellIcon />
           {unreadCount > 0 ? <span className="chat-header__bell-dot">{unreadCount > 9 ? '9+' : unreadCount}</span> : null}
@@ -111,7 +104,7 @@ export function ChatHeader({
           className="chat-header__icon chat-header__search"
           aria-label="全局搜索"
           title="全局搜索（/ 或 Ctrl/⌘ K）"
-          onClick={() => { setNotificationsOpen(false); onSearch?.(); }}
+          onClick={() => { setInboxStatus(null); setNotificationsOpen(false); onSearch?.(); }}
         >
           <SearchIcon />
         </button>
@@ -129,7 +122,7 @@ export function ChatHeader({
               aria-label={label}
               aria-pressed={open}
               title={open ? `关闭${label}面板` : `打开${label}面板`}
-              onClick={() => { setNotificationsOpen(false); onTogglePanel?.(panel); }}
+              onClick={() => { setInboxStatus(null); setNotificationsOpen(false); onTogglePanel?.(panel); }}
             >
               <svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5">{icon}</svg>
               {panel === 'watches' && watchCount > 0 ? (
@@ -143,6 +136,18 @@ export function ChatHeader({
       </div>
 
       </div>
+
+      {inboxStatus !== null && (
+        <div className="chat-header__panel" role="dialog" aria-label="收件箱">
+          <div className="chat-header__panel-head">
+            <span>收件箱</span>
+            <button type="button" className="chat-header__panel-close" onClick={() => setInboxStatus(null)}>关闭</button>
+          </div>
+          <div className="chat-header__panel-empty" role="status">
+            {inboxStatus === 'loading' ? '正在打开未读通知…' : inboxStatus === 'error' ? '读取失败，请重新点击收件箱。' : '没有未读通知。'}
+          </div>
+        </div>
+      )}
 
       {notificationsOpen ? (
         <div className="chat-header__panel chat-header__panel--notifications" role="dialog" aria-label="通知">

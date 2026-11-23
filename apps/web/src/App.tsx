@@ -188,7 +188,6 @@ export function App(): ReactElement {
     () => bots.find((bot) => bot.id === selectedId) ?? null,
     [bots, selectedId]
   );
-  const operator = bots.find(bot => bot.id === 'operator');
   const sidePanel = useSidePanelState(route.name === 'conversation' ? selectedId : null);
   const timeline = useTimeline(selectedBot?.id ?? null);
   const { applyEvent } = timeline;
@@ -415,6 +414,19 @@ export function App(): ReactElement {
     [openConversationTarget, setBots]
   );
 
+  const openInbox = async (): Promise<boolean> => {
+    const candidates = bots.filter(bot => (bot.unreadNotifications ?? 0) > 0);
+    candidates.sort((left, right) => Number(right.id === 'operator') - Number(left.id === 'operator'));
+    for (const bot of candidates) {
+      const [notification] = await fetchNotifications({botId: bot.id, unreadOnly: true, limit: 1});
+      if (notification) {
+        await openNotification(notification);
+        return true;
+      }
+    }
+    return false;
+  };
+
   const maybeShowBrowserNotification = useCallback(
     (notification: NotificationDto): void => {
       if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
@@ -593,21 +605,6 @@ export function App(): ReactElement {
 
   const eventStatus = useEventStream(handleEvent);
   const running = selectedBot !== null && isBotRunning(selectedBot);
-  const runningTask =
-    selectedBot?.runningTaskId === null || selectedBot === null
-      ? null
-      : (timeline.state.tasks[selectedBot.runningTaskId ?? ''] ?? null);
-  // A continued task spans several turns; the header timer counts from the latest user message of this turn.
-  const turnStartedAt =
-    runningTask === null
-      ? null
-      : timeline.state.messages
-          .filter((message) => message.taskId === runningTask.id && message.role === 'user')
-          .reduce<string>(
-            (latest, message) => (message.createdAt > latest ? message.createdAt : latest),
-            runningTask.startedAt
-          );
-
   const send = useCallback(
     async (
       botId: string,
@@ -858,11 +855,9 @@ export function App(): ReactElement {
     <div className="app">
       <ServiceBanner serverError={serverError} eventStatus={eventStatus} onRetry={reload} />
       <ChatHeader
-        operator={operator}
-        runningTask={selectedId === 'operator' ? runningTask : null}
-        turnStartedAt={selectedId === 'operator' ? turnStartedAt : null}
         onSearch={() => setSearch('global')}
-        onOpenOperator={() => navigate({name: 'conversation', botId: 'operator'})}
+        onOpenInbox={openInbox}
+        inboxCount={bots.reduce((total, bot) => total + (bot.unreadNotifications ?? 0), 0)}
         bots={bots} notifications={notifications} unreadCount={unreadTotal}
         onMarkAllRead={markAllRead} onOpenNotification={notification => void openNotification(notification)}
         openPanels={sidePanel.open} onTogglePanel={sidePanel.toggle}

@@ -1946,7 +1946,9 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           min: 1,
           max: MAX_PAGE_LIMIT,
         });
+        const botId = url.searchParams.get('botId');
         const list = notifications.list({
+          ...(botId === null ? {} : {botId}),
           unreadOnly: url.searchParams.get('unread') === '1',
           limit,
         });
