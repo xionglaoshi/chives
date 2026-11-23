@@ -10,7 +10,7 @@ from prompt_toolkit.utils import get_cwidth
 STYLE = Style.from_dict({
     "title": "ansigreen bold", "accent": "ansigreen", "leaf": "ansigreen",
     "brand-shadow": "ansigreen", "green": "ansigreen",
-    "up": "ansired bold", "down": "ansigreen bold", "error": "ansired bold",
+    "neutral": "ansiyellow", "up": "ansired bold", "down": "ansigreen bold", "error": "ansired bold",
     "selected": "ansigreen bold noreverse", "user": "ansigreen bold",
     "agent": "ansigreen bold", "strong": "bold",
     "completion-menu.completion.current": "ansigreen bold underline noreverse",
@@ -28,7 +28,7 @@ class TerminalTheme(StyleTransformation):
 
     def transform_attrs(self, attrs):
         # Built-in completions, scrollbars and text selections have their own fills.
-        color = attrs.color if attrs.color in ("ansigreen", "ansired") else ""
+        color = attrs.color if attrs.color in ("ansigreen", "ansired", "ansiyellow") else ""
         strong = self.high_contrast() and bool(color)
         return attrs._replace(color=color, bgcolor="", reverse=False,
                               bold=attrs.bold or attrs.reverse or strong,

@@ -25,6 +25,8 @@
   /* Brand and market direction */
   --color-gold: #c8a96a;
   --color-gold-highlight: #e0c58c;
+  --color-value-in-range: var(--color-text);
+  --color-outlook-neutral: #e5ba54;
   --color-up: #e0685e;
   --color-down: #5db28a;
   --color-price-up: var(--color-up);
@@ -157,6 +159,8 @@
 
   --color-gold: #414247;
   --color-gold-highlight: #25262a;
+  --color-value-in-range: #000;
+  --color-outlook-neutral: #946600;
   --color-up: #c23b32;
   --color-down: #1f7a55;
   --color-stone: #999a9d;

@@ -269,6 +269,47 @@ def portrait(data):
     return paper
 
 
+def watchlist_page(entries, prices):
+    paper = Paper()
+    if not entries:
+        paper.text("还没有关注的股票。")
+    for entry in entries:
+        code = entry["code"]
+        paper.text(f"{entry['name']}  {code}", "accent")
+        history = entry.get("estimates") or []
+        if not history:
+            paper.text("测算中" if entry.get("pending") else "待测算")
+            continue
+        latest = history[-1]
+        low, high, score = latest.get("low"), latest.get("high"), latest.get("score")
+        style = "ink"
+        if low is None or high is None:
+            value = "依据不足"
+        else:
+            value = f"¥{number(low)}–{number(high)}"
+            price = prices.get(code)
+            if isinstance(price, (int, float)) and price > 0:
+                if price < low:
+                    style = "up"
+                elif price > high:
+                    style = "down"
+            elif code in prices:
+                value += "（暂无行情）"
+        kind = latest.get("valuationKind") or "合理估值"
+        paper.text(f"{kind}  {value}", style)
+        if score is None:
+            direction, color = "依据不足", "ink"
+        elif score == 0:
+            direction, color = "中性 😐︎", "neutral"
+        elif score > 0:
+            direction, color = "看涨 " + "☺" * score, "up"
+        else:
+            direction, color = "看跌 " + "☹" * -score, "down"
+        paper.text("后市涨跌预测  " + direction, color)
+        paper.text(f"第 {latest['version']} 版 · 数据截至 {latest['asOf']}", "dim")
+    return paper
+
+
 async def browse(api, view, page, *, replace_page):
     if page.startswith("board/") or page == "trends":
         snapshot = (await api(DESK + "hotspots")).get("snapshot") or {}
@@ -293,25 +334,42 @@ async def browse(api, view, page, *, replace_page):
                 return
             i = (i + (1 if change == "next" else -1)) % len(sections)
     if page == "watchlist":
-        paper = Paper()
         entries = await api(DESK+"watchlist")
-        if not entries:
-            paper.text("还没有关注的股票。")
-        for entry in entries:
-            paper.text(f"{entry['name']}  {entry['code']}", "accent")
-            history = entry.get("estimates") or []
-            latest = history[-1] if history else None
-            if latest is None:
-                paper.text("测算中" if entry.get("pending") else "待测算")
-                continue
-            value = "依据不足" if latest["low"] is None else f"¥{latest['low']}–{latest['high']}"
-            score = latest["score"]
-            direction = "依据不足" if score is None else "中性 🤔" if score == 0 else (
-                "看涨 " + "🙂"*score if score > 0 else "看跌 " + "😢"*(-score))
-            kind = latest.get("valuationKind", "历史测算") if latest["low"] is not None else "合理估值"
-            paper.text(f"{kind} {value}  ·  未来 20 个交易日 {direction}")
-            paper.text(f"第 {latest['version']} 版 · 数据截至 {latest['asOf']}", "dim")
-        return await view("用户关注", paper)
+        prices = {}
+        current = watchlist_page(entries, prices)
+        codes = [e["code"] for e in entries if e.get("estimates") and
+                 all(e["estimates"][-1].get(k) is not None for k in ("low", "high"))]
+        if not codes:
+            return await view("用户关注", current)
+
+        # Keep the document usable while individual quotes arrive.
+        slots = asyncio.Semaphore(3)
+
+        async def update(code):
+            nonlocal current
+            async with slots:
+                try:
+                    quote = await api(DESK+"holdings", {"action": "quote", "code": code})
+                    price = (quote or {}).get("price")
+                except (OSError, RuntimeError, ValueError):
+                    price = None
+                if code not in prices or prices[code] != price:
+                    prices[code] = price
+                    updated = watchlist_page(entries, prices)
+                    replace_page(current, updated)
+                    current = updated
+
+        async def refresh_quotes():
+            while True:
+                await asyncio.gather(*(update(code) for code in codes))
+                await asyncio.sleep(60)
+
+        refresh = asyncio.create_task(refresh_quotes())
+        try:
+            return await view("用户关注", current)
+        finally:
+            refresh.cancel()
+            await asyncio.gather(refresh, return_exceptions=True)
     if page == "holdings":
         book = await api(DESK+"holdings")
         first = holdings(book)

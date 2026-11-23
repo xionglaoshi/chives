@@ -13,7 +13,8 @@ function OutlookFaces({score}:{score:number}) {
   const direction=score>0?'up':score<0?'down':'neutral';
   const label=score>0?'看涨':score<0?'看跌':'中性';
   return <span className={`watchlist-faces watchlist-faces--${direction}`} role="img"
-    aria-label={score===0?label:`${label} ${Math.abs(score)} 档`} title={label}>
+    aria-label={score===0?label:`${label} ${Math.abs(score)} 档`} title={`未来 20 个交易日 · ${label}`}>
+    <span className="watchlist-faces__label">{label}</span>
     {Array.from({length:Math.max(1,Math.abs(score))},(_,index)=>
       <svg key={index} viewBox="0 0 24 24" width="20" height="20" fill="none"
         stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
@@ -26,7 +27,7 @@ function OutlookFaces({score}:{score:number}) {
   </span>;
 }
 
-function WatchQuote({code,latest}:{code:string;latest:Estimate|undefined}) {
+function WatchPrices({code,latest}:{code:string;latest:Estimate|undefined}) {
   const [quote,setQuote]=useState<Quote|null>(null);
   useEffect(()=>{
     let active=true;
@@ -36,14 +37,30 @@ function WatchQuote({code,latest}:{code:string;latest:Estimate|undefined}) {
     const timer=window.setInterval(refresh,60000);
     return ()=>{active=false;window.clearInterval(timer);};
   },[code]);
-  const bound=quote&&latest&&(latest.low!==null&&quote.price<latest.low?latest.low:
-    latest.high!==null&&quote.price>latest.high?latest.high:null);
-  if(!quote)return <>暂无行情</>;
-  const change=quote.changePct;
-  return <><strong>{fmt.format(quote.price)}</strong>{change!==undefined&&
-    <span className={change>0?'watchlist-up':change<0?'watchlist-down':''}> {change>0?'+':''}{fmt.format(change)}%</span>}
-    <small>{quote.basis} · {quote.as_of}</small>
-    {bound&&<small>现价{quote.price>bound?'高于估值上限':'低于估值下限'} {fmt.format(Math.abs(quote.price/bound-1)*100)}%</small>}
+  const price=quote?.price;
+  const hasPrice=typeof price==='number' && Number.isFinite(price) && price>0;
+  const low=latest?.low, high=latest?.high;
+  const hasRange=typeof low==='number' && typeof high==='number' &&
+    Number.isFinite(low) && Number.isFinite(high) && low>0 && low<=high;
+  const below=hasPrice && hasRange && price<low;
+  const above=hasPrice && hasRange && price>high;
+  const boundary=below?low:above?high:null;
+  const rangeClass=below?'watchlist-up':above?'watchlist-down':
+    hasPrice?'watchlist-range--inside':'watchlist-range--unpriced';
+  const change=quote?.changePct;
+  return <>
+    <div>{quote && hasPrice ? <>
+      <strong>{fmt.format(price)}</strong>{change!==undefined &&
+        <span className={change>0?'watchlist-up':change<0?'watchlist-down':''}> {change>0?'+':''}{fmt.format(change)}%</span>}
+      <small>{quote.basis} · {quote.as_of}</small>
+      {boundary!==null && <small>现价{below?'低于估值下限':'高于估值上限'} {fmt.format(Math.abs(price/boundary-1)*100)}%</small>}
+    </> : '暂无行情'}</div>
+    <div><small className="watchlist-mobile-label">合理估值</small>
+      {hasRange ? <>
+        <span className={rangeClass}>¥{fmt.format(low)}–{fmt.format(high)}</span>
+        <small>{latest?.valuationKind??'历史测算'}</small>
+      </> : latest?'依据不足':'待测算'}
+    </div>
   </>;
 }
 
@@ -96,16 +113,13 @@ export function Watchlist({onConversation}:{onConversation:()=>void}) {
     {notice&&<p role="status">{notice}</p>}
     {entries===null?<p>正在读取关注列表…</p>:entries.length===0?<p>还没有关注的股票。可直接添加，也可请总调度筛选。</p>:
     <div className="watchlist-grid">
-      <div className="watchlist-heading"><span>股票</span><span>行情</span><span>合理估值</span><span>后市判断</span><span>测算与操作</span></div>
+      <div className="watchlist-heading"><span>股票</span><span>行情</span><span>合理估值</span><span>后市涨跌预测</span><span>测算与操作</span></div>
       {entries.map(entry=>{
         const latest=entry.estimates.at(-1),score=latest?.score;
         return <article className="watchlist-row" key={entry.code}>
           <div><strong>{entry.name}</strong><small>{entry.code}</small></div>
-          <div><WatchQuote code={entry.code} latest={latest}/></div>
-          <div><small className="watchlist-mobile-label">合理估值</small>{latest
-            ?latest.low===null||latest.high===null?'依据不足':`¥${fmt.format(latest.low)}–${fmt.format(latest.high)}`
-            :'待测算'}{latest?.low!=null&&<small>{latest.valuationKind??'历史测算'}</small>}</div>
-          <div><small className="watchlist-mobile-label">未来 20 个交易日</small>
+          <WatchPrices code={entry.code} latest={latest}/>
+          <div><small className="watchlist-mobile-label">后市涨跌预测</small>
             {score==null?(latest?'依据不足':'待测算'):<OutlookFaces score={score}/>}</div>
           <div className="watchlist-actions"><button disabled={busy||entry.pending} onClick={()=>void act('estimate',entry.code)}>{entry.pending?'测算中':'立刻测算'}</button>
             <button disabled={busy} onClick={()=>void act('remove',entry.code)}>移除</button>

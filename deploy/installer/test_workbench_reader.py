@@ -11,7 +11,7 @@ from prompt_toolkit.output import DummyOutput
 from prompt_toolkit.utils import get_cwidth
 
 from chives_terminal import actions
-from chives_terminal.pages import CONTENT, board_page, market_page, portrait
+from chives_terminal.pages import CONTENT, board_page, market_page, portrait, watchlist_page
 from chives_terminal.workbench import Workbench
 
 
@@ -43,7 +43,12 @@ class FixtureAPI:
             return {"snapshot":self.snapshot}
         if path.endswith("/channels"):
             return self.channels if body is None else {"ok":True}
+        if path.endswith("/watchlist"):
+            return [dict(code="000001.SZ", name="测试关注", estimates=[
+                dict(low=10, high=20, score=1, version=1, asOf="2026-11-23")])]
         if path.endswith("/holdings"):
+            if body and body.get("action") == "quote":
+                return {"price": 8}
             return {"positions":[dict(code="1",name="测试持仓",qty=30,cost_price=12.5)]}
         if path.endswith("/portfolio"):
             return {"positions":[],"summary":{}}
@@ -117,7 +122,7 @@ class KeyFlow(unittest.IsolatedAsyncioTestCase):
         await self.key("\r", lambda: self.showing("资金流入榜"))
         self.assertIn("中A公司", self.body())
         self.assertIn("-2.08%", self.body())
-        for expected, text in [("行情看板","测试指数"),("用户持仓","测试持仓"),("风格评估","人物生平")]:
+        for expected, text in [("行情看板","测试指数"),("用户持仓","测试持仓"),("用户关注","后市涨跌预测"),("风格评估","人物生平")]:
             await self.key("\x1b", lambda: not desk.in_dialog)
             await self.key("\x1b[B\r", lambda: self.showing(expected))
             self.assertIn(text, self.body())
@@ -145,6 +150,19 @@ class KeyFlow(unittest.IsolatedAsyncioTestCase):
 
 
 class Reader(unittest.TestCase):
+    def test_watchlist_band_boundaries_and_outlook(self):
+        for price, score, value_style, direction_style, label in [
+            (9, 5, "up", "up", "看涨"), (21, -5, "down", "down", "看跌"),
+            (10, 0, "ink", "neutral", "中性"), (20, 0, "ink", "neutral", "中性"),
+            (15, None, "ink", "ink", "依据不足"), (None, None, "ink", "ink", "依据不足"),
+        ]:
+            entry = dict(code="600000.SH", name="测试", estimates=[
+                dict(low=10, high=20, score=score, version=1, asOf="2026-11-23")])
+            lines = watchlist_page([entry], {entry["code"]: price}).lines(70)
+            parts = [part for line in lines for part in line]
+            self.assertTrue(any(style=="class:"+value_style and "¥10–20" in txt for style,txt in parts))
+            self.assertTrue(any(style=="class:"+direction_style and "后市涨跌预测  "+label in txt for style,txt in parts))
+
     def test_width_direction_and_unknown_personal_report(self):
         api = FixtureAPI()
         _, paper = board_page(api.snapshot, "in")
