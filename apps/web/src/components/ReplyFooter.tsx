@@ -69,10 +69,28 @@ export function ReplyFooter({ message, content }: {message: MessageDto; content:
   return (
     <footer className="timeline__reply-footer">
       <time dateTime={message.createdAt}>{formatTime(message.createdAt)}</time>
-      <span title="根据可见回复文本估算">约 {tokens.toLocaleString('zh-CN')} Token</span>
-      <span title="每 100,000 个估算 Token 折算 1 模拟信用点">模拟 {(tokens / 100000).toFixed(2)} 信用点</span>
-      <button type="button" onClick={() => void copy()}>复制 Markdown</button>
-      {canSpeak && <button type="button" onClick={read}>{speaking ? '停止朗读' : '朗读回复'}</button>}
+      <span title="根据回复正文估算，每 100,000 Tokens 折算 1 韭菜币">
+        消耗约{tokens.toLocaleString('zh-CN')} Tokens、{(tokens / 100000).toFixed(2)}韭菜币
+      </span>
+      <button type="button" title="复制 Markdown 原文" onClick={() => void copy()}>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
+          <rect x="5.5" y="5.5" width="7.5" height="7.5" rx="1.5"/>
+          <path d="M10.5 3.5a1 1 0 0 0-1-1h-6a1 1 0 0 0-1 1v6a1 1 0 0 0 1 1"/>
+        </svg>
+        复制
+      </button>
+      {canSpeak && (
+        <button type="button" onClick={read}>
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3"
+            strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            {speaking ? <rect x="4" y="4" width="8" height="8" rx="1"/> : <>
+              <path d="M2.5 6h2l3-2.5v9l-3-2.5h-2z"/>
+              <path d="M10 5.5a3.6 3.6 0 0 1 0 5m2-6.5a5.8 5.8 0 0 1 0 8"/>
+            </>}
+          </svg>
+          {speaking ? '停止朗读' : '朗读'}
+        </button>
+      )}
       {notice && <span role="status">{notice}</span>}
     </footer>
   );

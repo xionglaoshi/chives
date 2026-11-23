@@ -424,6 +424,9 @@
 }
 
 .timeline__reply-footer button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   padding: 3px 6px;
   min-height: 32px;
   border: 0;
