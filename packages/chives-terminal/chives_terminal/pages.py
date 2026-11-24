@@ -297,20 +297,24 @@ def watchlist_page(entries, prices):
         latest = history[-1]
         low, high, score = latest.get("low"), latest.get("high"), latest.get("score")
         style = "ink"
+        comparison = None
         if low is None or high is None:
             value = "依据不足"
         else:
-            value = f"¥{number(low)}–{number(high)}"
+            value = f"{number(low)}–{number(high)}"
             price = prices.get(code)
             if isinstance(price, (int, float)) and price > 0:
                 if price < low:
                     style = "up"
+                    comparison = f"现价低于估值下限 {number((1 - price / low) * 100)}%"
                 elif price > high:
                     style = "down"
+                    comparison = f"现价高于估值上限 {number((price / high - 1) * 100)}%"
             elif code in prices:
                 value += "（暂无行情）"
-        kind = latest.get("valuationKind") or "合理估值"
-        paper.text(f"{kind}  {value}", style)
+        paper.text(f"合理股价  {value}", style)
+        if comparison:
+            paper.text(comparison, "dim")
         if score is None:
             direction, color = "依据不足", "ink"
         elif score == 0:
