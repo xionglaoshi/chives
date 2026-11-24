@@ -5,7 +5,7 @@ import {askAiPrompts} from '../utils/askAiPrompts';
 import type {AskExpert} from './askExpert';
 import {desk} from './deskApi';
 import './holdings.css';
-import {ValuationNotice,ValuationOutlook,ValuationRange,type EstimateRange} from './ValuationRange';
+import {ValuationNotice,ValuationOutlook,ValuationRange,useValuationAccessDenied,type EstimateRange} from './ValuationRange';
 import {HoldingSecurityFields} from './HoldingSecurityFields';
 
 type Position={code:string;name:string;qty:number;cost_price:number;available_qty?:number|null};
@@ -18,6 +18,7 @@ const privacyKey='chives.expertSidebar.hideAmounts';
 
 export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
  const [book,setBook]=useState<Ledger|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+  const denied=useValuationAccessDenied();
  const [valuations,setValuations]=useState<Record<string,EstimateRange|null>>({});
  const [valuating,setValuating]=useState<string|null>(null);
  const [valuationError,setValuationError]=useState('');
@@ -74,7 +75,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
     '累计浮盈亏：'+amount(snapshot.summary.totalPnl)
    ]),
    ...snapshot.positions.map(position=>{
-    const estimate=valuations[position.code];
+    const estimate=denied?null:valuations[position.code];
     return [
      position.name,position.code,'现价 '+formatPrice(position.price),'今日涨跌 '+formatPercent(position.changePct),
      ...(hidden?[]:['今日贡献 '+amount(position.todayPnl)]),
@@ -103,7 +104,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
  {portfolio.status==='loading'?'正在读取持仓行情…':!portfolio.data?'持仓行情暂不可用':
   [summary?.unpricedCount?'部分持仓缺少报价':null,portfolio.status==='error'?'最近缓存':null].filter(Boolean).join(' · ')}
  </small>
- <ValuationNotice/>
+ <ValuationNotice denied={denied}/>
  </>}
  {editor&&<form key={current?.code??'new'} onSubmit={save}><h2>{current?'编辑持仓':'添加持仓'}</h2><fieldset disabled={busy}>
  <HoldingSecurityFields current={current} hidden={hidden}/>
@@ -119,7 +120,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
        </thead>
        <tbody role="rowgroup">{book.positions.map(position => {
          const quote=quotes.get(position.code);
-         const estimate=valuations[position.code];
+         const estimate=denied?null:valuations[position.code];
          const price=quote?.price??null;
          const rawPnl=price!==null && price>0 ? price-position.cost_price : NaN;
          const pnl=Number.isFinite(rawPnl) ? Math.sign(rawPnl)*Math.round(Math.abs(rawPnl)*100)/100 : null;
