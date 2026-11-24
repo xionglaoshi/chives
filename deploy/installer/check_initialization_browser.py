@@ -1,5 +1,9 @@
 """Check the installed Chives UI in Chromium from an isolated browser profile."""
+import json
 import sys
+from contextlib import contextmanager
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from threading import Thread
 
 from playwright.sync_api import expect, sync_playwright
 
@@ -17,7 +21,41 @@ def desk(page, method, section, data=None, status=200):
     return response.json()
 
 
-with sync_playwright() as playwright:
+@contextmanager
+def model_provider():
+    class Handler(BaseHTTPRequestHandler):
+        def respond(self, expected_path, body):
+            if self.path != expected_path or self.headers.get("Authorization") != "Bearer ci-mock-key":
+                self.send_error(403)
+                return
+            raw = json.dumps(body).encode("utf-8")
+            self.send_response(200)
+            self.send_header("Content-Type", "application/json")
+            self.send_header("Content-Length", str(len(raw)))
+            self.end_headers()
+            self.wfile.write(raw)
+
+        def do_GET(self):
+            self.respond("/v1/models", {"data": [{"id": "ci-model"}]})
+
+        def do_POST(self):
+            body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            if body.get("model") != "ci-model":
+                self.send_error(400)
+                return
+            self.respond("/v1/chat/completions", {"choices": [{"message": {"content": "OK"}}]})
+
+    with ThreadingHTTPServer(("127.0.0.1", 0), Handler) as server:
+        thread = Thread(target=server.serve_forever, daemon=True)
+        thread.start()
+        try:
+            yield f"http://127.0.0.1:{server.server_port}/v1"
+        finally:
+            server.shutdown()
+            thread.join()
+
+
+with model_provider() as model_url, sync_playwright() as playwright:
     browser = playwright.chromium.launch()
     page = browser.new_page(base_url=sys.argv[1])
     page.goto(sys.argv[1], wait_until="domcontentloaded")
@@ -48,4 +86,14 @@ with sync_playwright() as playwright:
     assert not state["briefingPending"] and state["briefing"]
     expect(panel.get_by_role("button")).to_have_text([STEPS[i] for i in (0, 1, 5, 6)], timeout=25000)
     print("Profile, holdings, watchlist, and confirmed briefing disappear from the Dock after saving.")
+    panel.get_by_role("button", name=STEPS[0]).click()
+    page.get_by_label("API 地址", exact=True).fill(model_url)
+    page.get_by_label("协议", exact=True).select_option("openai-completions")
+    page.get_by_label("API Key", exact=True).fill("ci-mock-key")
+    page.get_by_role("button", name="验证并保存").click()
+    expect(page.get_by_role("button", name="验证并保存")).to_have_count(0, timeout=40000)
+    assert desk(page, "GET", "initialization")["model"]
+    initialize.click()
+    expect(panel.get_by_role("button")).to_have_text([STEPS[i] for i in (1, 5, 6)], timeout=25000)
+    print("Model discovery, API probe, and activation complete through the installed UI.")
     browser.close()
