@@ -298,6 +298,7 @@ def install(root, archive, platform):
     if platform not in NODE_HASHES or (root/".git").exists() or (root/"package.json").exists():
         raise RuntimeError("平台或安装目录不适用")
     (root/"logs").mkdir(exist_ok=True)
+    (root/"tools").mkdir(exist_ok=True)
     core.LOG = root/"logs/install.log"
     releases = root/"releases"
     releases.mkdir(exist_ok=True)

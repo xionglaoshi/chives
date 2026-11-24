@@ -23,7 +23,7 @@ def check(work, target):
     with archive.open("wb") as stream:
         subprocess.run(["git", "archive", "--format=tar.gz", "--prefix=chives-main/", "HEAD"],
                        cwd=REPO, stdout=stream, check=True)
-    subprocess.run([sys.executable, "-I", "-u", str(REPO / "deploy/installer/source.py"),
+    subprocess.run([sys.executable, "-X", "utf8", "-I", "-u", str(REPO / "deploy/installer/source.py"),
                     str(root), str(archive), target],
                    env={**os.environ, "CHIVES_INSTALL_BUILD_ONLY": "1"}, check=True)
     release, = (root / "releases").iterdir()
