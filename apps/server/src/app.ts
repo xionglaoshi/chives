@@ -42,7 +42,7 @@ import { DashboardService } from './dashboard/index.js';
 import {hotspotService} from './dashboard/hotspots.js';
 import {Watchlist, screeningPrompt, valuationDay, valuationInstructions} from './dashboard/watchlist.js';
 import {holdings} from './dashboard/holdings.js';
-import {initialBriefingPrompt,initialBriefingSchedule,initialBriefingTitle} from './routines/initial-briefing.js';
+import {initialBriefingPrompt,initialBriefingSchedule,initialBriefingTitle,subscribeInitialBriefingDelivery} from './routines/initial-briefing.js';
 import {featureDataService} from './dashboard/feature-data.js';
 import {latestHoldingValuation,measureHoldingValuation,type HoldingValuation} from './dashboard/holding-valuations.js';
 import { createSnapshotRunner } from './dashboard/portfolio.js';
@@ -2846,7 +2846,9 @@ export function createApp(options: CreateAppOptions): ChivesApp {
   });
 
   let closed = false;
+  const stopBriefingDelivery = subscribeInitialBriefingDelivery(bus,store,notifications);
   const close = async (): Promise<void> => {
+    stopBriefingDelivery();
     if (closed) return;
     closed = true;
     clearInterval(pump);

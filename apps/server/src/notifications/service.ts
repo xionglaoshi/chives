@@ -21,6 +21,7 @@ export interface NotifyInput {
   title: string;
   body: string;
   level: NotificationLevel;
+  localOnly?: boolean;
 }
 
 export type NotifyResult =
@@ -140,6 +141,7 @@ export class NotificationService {
       botId: input.botId,
       notification: toNotificationDto(notification),
     });
+    if (input.localOnly) return { ok: true, notification };
     const foreground = this.isForegroundTask(input.taskId);
     const settings = readProactiveSettings(this.store);
     if(!foreground && settings.enabled && (!settings.importantOnly || input.level!=='info'))this.forward?.(title,body);

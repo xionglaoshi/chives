@@ -1,3 +1,7 @@
+import type {EventBus} from '../events/index.js';
+import {MAX_NOTIFICATION_BODY,type NotificationService} from '../notifications/service.js';
+import type {Store} from '../store/index.js';
+
 export const initialBriefingTitle = '每日投研简报';
 
 export const initialBriefingSchedule = {
@@ -18,4 +22,26 @@ export function initialBriefingPrompt(additions: string) {
 最多10条，仅列标题及可用的原文链接。
 缺少资料时注明缺项，继续完成有依据的部分。
 ${additions ? '\n## 用户追加事项\n'+additions : ''}`;
+}
+
+
+export function subscribeInitialBriefingDelivery(bus: EventBus, store: Store, notifications: NotificationService) {
+  return bus.subscribe(event => {
+    if (event.type !== 'task.updated' || event.task.status !== 'done' ||
+        event.task.title !== initialBriefingTitle) return;
+    const task = store.tasks.get(event.task.id);
+    if (task?.origin !== 'routine' || store.notifications.countForTask(task.id) > 0) return;
+    const messages = store.messages.listByTask(task.id);
+    const proactive = messages.find(message => message.kind === 'proactive');
+    const routineId = proactive?.meta?.routineId;
+    const routine = typeof routineId === 'string' ? store.routines.get(routineId) : undefined;
+    if (routine?.source !== 'user' || routine.title !== initialBriefingTitle) return;
+    const content = messages.findLast(message => message.role === 'bot' && message.kind === 'text')?.content.trim();
+    if (!content) return;
+    const characters = Array.from(content);
+    const body = characters.length > MAX_NOTIFICATION_BODY
+      ? characters.slice(0, MAX_NOTIFICATION_BODY - 1).join('') + '…'
+      : content;
+    notifications.notify({botId:task.botId,taskId:task.id,title:initialBriefingTitle,body,level:'info',localOnly:true});
+  });
 }
