@@ -153,13 +153,14 @@ class Reader(unittest.TestCase):
     def test_holdings_valuation_boundary(self):
         code = "600001.SH"
         book = {"positions": [dict(code=code, name="示例公司", qty=100, cost_price=10)]}
-        valuations = {code: {"low": 10, "high": 20}}
+        valuations = {code: {"low": 10, "high": 20, "score": -2}}
         for price, expected in [(8, "现价低于估值下限 20%"), (25, "现价高于估值上限 25%"),
                                 (15, None), (None, None)]:
             with self.subTest(price=price):
                 quotes = {"positions": [dict(code=code, name="示例公司", price=price)]}
                 lines = holdings(book, quotes, valuations).lines(160)
                 screen = "\n".join("".join(value for _, value in line) for line in lines)
+                self.assertIn("看跌 ☹☹", screen)
                 if expected:
                     self.assertIn(expected, screen)
                 else:

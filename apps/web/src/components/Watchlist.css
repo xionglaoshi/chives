@@ -22,12 +22,6 @@
   .watchlist .watchlist-mobile-label { display: block; }
 }
 
-.watchlist-faces { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; max-width: 100%; vertical-align: middle; }
-.watchlist-faces__label { white-space: nowrap; margin-inline-end: 2px; }
-.watchlist-faces svg { flex: none; }
-.watchlist-faces--up { color: var(--color-up); }
-.watchlist-faces--down { color: var(--color-down); }
-.watchlist-faces--neutral { color: var(--color-outlook-neutral); }
 
 .watchlist-heading > :last-child { text-align: center; }
 .watchlist-row-actions { display: flex; flex-direction: column; align-items: center; gap: 2px; }

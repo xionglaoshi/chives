@@ -19,7 +19,9 @@ export function readValuationReceipt(data: string, code: string, day: string, id
   if (band != null && !(Number.isFinite(band.low) && Number.isFinite(band.high) && band.low > 0 && band.high >= band.low)) {
     throw new Error('Invalid valuation range');
   }
+  const score = record.outlook?.score;
   return {record, estimate: {
+    score: typeof score === 'number' && Number.isInteger(score) && Math.abs(score) <= 5 ? score : null,
     low: band?.low ?? null, high: band?.high ?? null,
     valuationKind: record.dynamic ? '动态估值' as const : record.static ? '静态参考' as const : '依据不足' as const,
   }};

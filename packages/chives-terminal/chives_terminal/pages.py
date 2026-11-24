@@ -155,6 +155,21 @@ def valuation_position(price, low, high):
     return "ink", None
 
 
+def valuation_outlook(estimate):
+    if not estimate:
+        return "待测算", "ink"
+    score = estimate.get("score")
+    if score is None:
+        direction, color = "依据不足", "ink"
+    elif score == 0:
+        direction, color = "中性 😐︎", "neutral"
+    elif score > 0:
+        direction, color = "看涨 " + "☺" * score, "up"
+    else:
+        direction, color = "看跌 " + "☹" * -score, "down"
+    return direction, color
+
+
 def holdings(book, quotes=None, valuations=None):
     paper = Paper()
     rows = book.get("positions") or []
@@ -184,9 +199,11 @@ def holdings(book, quotes=None, valuations=None):
             price_tone = "up" if pnl > 0 else "down" if pnl < 0 else "ink"
             outcome = ("每股浮盈 " if pnl > 0 else "每股浮亏 ") + f"{abs(pnl):,.2f}元" if pnl else "每股持平 0.00元"
             price_text += " · " + outcome
+        outlook, outlook_tone = valuation_outlook(estimate)
         detail.append([cell(one(row["name"]), "strong"), cell(one(code), "dim"), cell(number(row["qty"])),
-                       cell(number(row["cost_price"], digits=4)), cell(price_text, price_tone), cell(value, tone)])
-    paper.table(["证券", "代码", "持股数", "成本价", "现价", "AI估算的合理股价"], detail)
+                       cell(number(row["cost_price"], digits=4)), cell(price_text, price_tone), cell(value, tone),
+                       cell(outlook, outlook_tone)])
+    paper.table(["证券", "代码", "持股数", "成本价", "现价", "AI估算的合理股价", "后市AI预测"], detail)
     for r in rows:
         note = r.get("note")
         if note and "模拟持仓" not in note:
@@ -305,7 +322,7 @@ def watchlist_page(entries, prices):
             paper.text("测算中" if entry.get("pending") else "待测算")
             continue
         latest = history[-1]
-        low, high, score = latest.get("low"), latest.get("high"), latest.get("score")
+        low, high = latest.get("low"), latest.get("high")
         style = "ink"
         comparison = None
         if not (isinstance(low, (int, float)) and isinstance(high, (int, float)) and 0 < low <= high):
@@ -320,14 +337,7 @@ def watchlist_page(entries, prices):
         paper.text(f"AI估算的合理股价  {value}", style)
         if comparison:
             paper.text(comparison, "dim")
-        if score is None:
-            direction, color = "依据不足", "ink"
-        elif score == 0:
-            direction, color = "中性 😐︎", "neutral"
-        elif score > 0:
-            direction, color = "看涨 " + "☺" * score, "up"
-        else:
-            direction, color = "看跌 " + "☹" * -score, "down"
+        direction, color = valuation_outlook(latest)
         paper.text("后市AI预测  " + direction, color)
         paper.text(f"第 {latest['version']} 版", "dim")
     return paper

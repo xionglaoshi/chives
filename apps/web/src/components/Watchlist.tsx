@@ -1,6 +1,6 @@
 import {useEffect,useState} from 'react';
 import {appPath} from '../appPath';
-import {ValuationNotice,ValuationRange,type EstimateRange} from './ValuationRange';
+import {ValuationNotice,ValuationOutlook,ValuationRange,type EstimateRange} from './ValuationRange';
 import {desk} from './deskApi';
 import './Watchlist.css';
 
@@ -8,24 +8,6 @@ type Estimate=EstimateRange&{version:number;score:number|null;asOf:string;basis:
 type Entry={code:string;name:string;pending?:boolean;estimates:Estimate[]};
 type Quote={price:number;changePct?:number;basis:string};
 const fmt=new Intl.NumberFormat('zh-CN',{maximumFractionDigits:2});
-
-function OutlookFaces({score}:{score:number}) {
-  const direction=score>0?'up':score<0?'down':'neutral';
-  const label=score>0?'看涨':score<0?'看跌':'中性';
-  return <span className={`watchlist-faces watchlist-faces--${direction}`} role="img"
-    aria-label={score===0?label:`${label} ${Math.abs(score)} 档`} title={`未来 20 个交易日 · ${label}`}>
-    <span className="watchlist-faces__label">{label}</span>
-    {Array.from({length:Math.max(1,Math.abs(score))},(_,index)=>
-      <svg key={index} viewBox="0 0 24 24" width="20" height="20" fill="none"
-        stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" aria-hidden="true">
-        <circle cx="12" cy="12" r="10"/>
-        {score===0?<path d="M9.5 9a2.5 2.5 0 1 1 4 2c-1.2.8-1.5 1.2-1.5 2.2m0 3.3h.01"/>:<>
-          <path d="M8 9h.01m8 0h.01"/>
-          <path d={score>0?'M7.5 13.5c2 3.8 7 3.8 9 0':'M7.5 16c2-3 7-3 9 0m1-4.5v1'}/>
-        </>}
-      </svg>)}
-  </span>;
-}
 
 function WatchPrices({code,latest}:{code:string;latest:Estimate|undefined}) {
   const [quote,setQuote]=useState<Quote|null>(null);
@@ -104,12 +86,12 @@ export function Watchlist({onConversation}:{onConversation:()=>void}) {
     <div className="watchlist-grid">
       <div className="watchlist-heading"><span>股票</span><span>行情</span><span>AI估算的合理股价</span><span>后市AI预测</span><span>测算与操作</span></div>
       {entries.map(entry=>{
-        const latest=entry.estimates.at(-1),score=latest?.score;
+        const latest=entry.estimates.at(-1);
         return <article className="watchlist-row" key={entry.code}>
           <div><strong>{entry.name}</strong><small>{entry.code}</small></div>
           <WatchPrices code={entry.code} latest={latest}/>
           <div><small className="watchlist-mobile-label">后市AI预测</small>
-            {score==null?(latest?'依据不足':'待测算'):<OutlookFaces score={score}/>}</div>
+            <ValuationOutlook estimate={latest}/></div>
           <div className="watchlist-row-actions">
             <button type="button" disabled={busy||entry.pending} title={entry.pending?'正在测算AI估算的合理股价':'重新评估AI估算的合理股价'}
               aria-label={'重新评估 '+entry.name} aria-busy={Boolean(entry.pending)} onClick={()=>void act('estimate',entry.code)}>

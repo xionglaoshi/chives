@@ -1544,7 +1544,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
             const saved=new Map(watchlist.read().map(entry=>[entry.code,entry.estimates.at(-1)]));
             result=Object.fromEntries(book.positions.map(({code})=>{
               const estimate=latestHoldingValuation(config.dataDir,code,day)??saved.get(code);
-              return [code,estimate ? {low:estimate.low,high:estimate.high,valuationKind:estimate.valuationKind} : null];
+              return [code,estimate ? {low:estimate.low,high:estimate.high,valuationKind:estimate.valuationKind,score:estimate.score} : null];
             }));
           }else{
             const body=await readJsonObject(request);

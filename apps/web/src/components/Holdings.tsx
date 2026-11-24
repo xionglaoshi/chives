@@ -5,7 +5,7 @@ import {askAiPrompts} from '../utils/askAiPrompts';
 import type {AskExpert} from './askExpert';
 import {desk} from './deskApi';
 import './holdings.css';
-import {ValuationNotice,ValuationRange,type EstimateRange} from './ValuationRange';
+import {ValuationNotice,ValuationOutlook,ValuationRange,type EstimateRange} from './ValuationRange';
 import {HoldingSecurityFields} from './HoldingSecurityFields';
 
 type Position={code:string;name:string;qty:number;cost_price:number;available_qty?:number|null};
@@ -106,7 +106,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
    <div className="holdings-table">
      <table role="table">
        <thead role="rowgroup">
-         <tr role="row">{['证券', quantityLabel, priceLabel, '现价', 'AI估算的合理股价', '今日涨跌', '今日贡献', '操作'].map(label =>
+         <tr role="row">{['证券', quantityLabel, priceLabel, '现价', 'AI估算的合理股价', '后市AI预测', '今日涨跌', '今日贡献', '操作'].map(label =>
            <th key={label} role="columnheader" scope="col">{label}</th>
          )}</tr>
        </thead>
@@ -131,6 +131,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
              {!estimate?.low && valuating!==position.code && /^\d{6}\.(SH|SZ|BJ)$/.test(position.code) &&
                <button type="button" disabled={!!valuating||busy||!!editor} onClick={()=>void measure(position.code)}>测算</button>}
            </div>],
+           ['后市AI预测', valuating===position.code?'测算中…':<ValuationOutlook estimate={estimate}/>],
            ['今日涨跌', formatPercent(quote?.changePct??null), priceDirection(quote?.changePct??null)],
            ['今日贡献', amount(quote?.todayPnl), priceDirection(quote?.todayPnl??null)]
          ] as const;
