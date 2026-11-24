@@ -32,7 +32,7 @@ def run(body):
         return service.get()
     if action in ("quote", "add"):
         directory = Path(__file__).resolve().parents[4] / "apps/web/public/holdings-securities.json"
-        names = json.loads(directory.read_text())
+        names = json.loads(directory.read_text(encoding="utf-8"))
     if action == "quote":
         from portfolio_mcp.workbench_price import read_price
         return {"ok": True, "warnings": [], "data": read_price(body.get("code"), names)}

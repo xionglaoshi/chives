@@ -433,8 +433,15 @@ export function createApp(options: CreateAppOptions): ChivesApp {
     ? featureDataService(featureEndpoint,joinPath(publicData,'chives-cache'))
     : undefined;
 
+  const hadDatabase = existsSync(joinPath(config.dataDir, DATABASE_FILE));
   resetWorkspaceIfUserDataIsMissing(config.dataDir, process.env.CHIVES_WORKSPACE_DIR);
   const store = Store.open(config.dataDir);
+  const browserStateKey = 'browser.state';
+  let browserState = store.settings.get<{ generation: string; adoptLegacy: boolean }>(browserStateKey);
+  if (!browserState) {
+    browserState = { generation: randomUUID(), adoptLegacy: hadDatabase };
+    store.settings.set(browserStateKey, browserState);
+  }
   const registry =
     options.registry ?? loadBots(config.botsDir, buildCatalog(config.repoRoot));
   if (config.botsDir === joinPath(config.repoRoot,'bots') && !registry.get(coordinatorId)) {
@@ -1349,7 +1356,8 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           methodNotAllowed(response, 'GET');
           return;
         }
-        sendJson(response, 200, { ok: true });
+        response.setHeader('cache-control', 'no-store');
+        sendJson(response, 200, { ok: true, browserState });
         return;
       }
 

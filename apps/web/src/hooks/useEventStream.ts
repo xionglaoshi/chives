@@ -1,4 +1,5 @@
 import { appPath } from '../appPath';
+import { syncBrowserState } from '../utils/browserState';
 import { useEffect, useRef, useState } from 'react';
 
 import type { ServerEvent } from '@chives/server/protocol';
@@ -96,6 +97,11 @@ export function useEventStream(
       }
       source = next;
       next.onopen = () => {
+        if (attempt > 0 && factory === undefined) {
+          void syncBrowserState().then(changed => {
+            if (changed && !closed) window.location.reload();
+          });
+        }
         attempt = 0;
         setStatus('open');
       };

@@ -62,7 +62,18 @@ def check(work, target):
             state = read("/api/settings/desk/initialization")
             for key in ("model", "portrait", "profile", "holdings", "watchlist", "weixin", "watch", "briefing"):
                 assert state[key] is False, key
-            assert read("/api/settings/desk/holdings")["positions"] == []
+            try:
+                assert read("/api/settings/desk/holdings")["positions"] == []
+            except OSError:
+                portfolio_env = {key: env[key] for key in ("DSH_HOME", "DSH_FINANCE_PROFILE_DIR", "HOME", "PATH",
+                                                           "SystemRoot", "PYTHONUTF8") if key in env}
+                adapter = subprocess.run(
+                    [env["CALENDAR_PYTHON"], "-m", "portfolio_mcp.workbench"],
+                    cwd=release / "packages/portfolio-mcp", env=portfolio_env,
+                    input='{"action":"get"}', text=True, encoding="utf-8", capture_output=True, timeout=20,
+                )
+                print(f"Portfolio adapter exit {adapter.returncode}: {adapter.stderr}", file=sys.stderr)
+                raise
             assert read("/api/settings/desk/watchlist") == []
             with closing(sqlite3.connect(root / "user-data/chives.sqlite")) as db:
                 assert db.execute("SELECT count(*) FROM messages").fetchone() == (0,)

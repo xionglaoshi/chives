@@ -6,6 +6,7 @@ import './styles/global.css';
 import { App } from './index';
 import {QuestionnairePage} from './components/InterviewForm';
 import { loadAndApplyAppearance } from './theme/appearance';
+import { syncBrowserState } from './utils/browserState';
 
 const rootElement = document.getElementById('root');
 
@@ -15,7 +16,7 @@ if (rootElement === null) {
 
 async function start(): Promise<void> {
   // Apply the saved theme before the first paint; use the system preference if settings are unavailable.
-  await loadAndApplyAppearance();
+  await Promise.all([loadAndApplyAppearance(), syncBrowserState()]);
   createRoot(rootElement as HTMLElement).render(
     <StrictMode>
       {new URLSearchParams(location.search).get('interview')==='1'?<QuestionnairePage/>:<App/>}
