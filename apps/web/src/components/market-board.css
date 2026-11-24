@@ -44,21 +44,27 @@
 .mb-bot-messages ul { list-style: none; margin: 0; padding: 0; }
 .mb-bot-messages li + li { border-top: 1px solid #8882; }
 .market-board .mb-bot-message {
-  display: grid;
-  gap: 4px;
+  display: flex;
+  align-items: baseline;
   width: 100%;
   text-align: left;
   padding: 10px 4px;
-  overflow-wrap: anywhere;
+  white-space: nowrap;
 }
 .mb-bot-message:hover { background: color-mix(in srgb, currentColor 5%, transparent); }
-.market-board .mb-bot-message--unread { font-weight: 700; }
-.mb-bot-message--unread .mb-bot-message-title::before {
-  display: inline-block;
+.mb-bot-message-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.mb-bot-message--unread .mb-bot-message-title { font-weight: 700; }
+.mb-bot-message::before {
+  align-self: center;
+  flex: 0 0 7px;
   width: 7px;
   height: 7px;
   margin-right: 6px;
   border-radius: 50%;
-  background: #198754;
   content: '';
 }
+.mb-bot-message--unread::before { background: #198754; }

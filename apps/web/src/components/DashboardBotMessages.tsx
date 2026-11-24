@@ -1,9 +1,5 @@
 import type { BotSummary, NotificationDto } from '@chives/server/protocol';
 
-function category(title: string): string {
-  return title.match(/盯盘|调研|分析/)?.[0] ?? '通知';
-}
-
 export function DashboardBotMessages({notifications, bots, expanded, loading, error, onLoadMore, onOpen}: {
   notifications: NotificationDto[];
   bots: BotSummary[];
@@ -22,16 +18,18 @@ export function DashboardBotMessages({notifications, bots, expanded, loading, er
     </header>
     {error && <p role="status">未能载入全部未读消息，请重试。</p>}
     {entries.length === 0 ? <p>暂无 Bot 消息</p> : <ul>
-      {entries.map(entry => <li key={entry.id}>
-        <button className={'mb-bot-message' + (entry.readAt === null ? ' mb-bot-message--unread' : '')} onClick={() => onOpen(entry)}>
-          <span className="mb-bot-message-title">
-            {entry.readAt === null && <span className="sr-only">未读 </span>}
-            【{category(entry.title)}】{entry.title}
-          </span>
-          {entry.body && <span>{entry.body}</span>}
-          <small>{botNames.get(entry.botId) ?? entry.botId} · {new Date(entry.createdAt).toLocaleString('zh-CN', {hour12: false})}</small>
-        </button>
-      </li>)}
+      {entries.map(entry => {
+        const sender = botNames.get(entry.botId) ?? entry.botId;
+        const unread = entry.readAt === null;
+        return <li key={entry.id}>
+          <button className={'mb-bot-message' + (unread ? ' mb-bot-message--unread' : '')}
+            title={sender + '：' + entry.title} onClick={() => onOpen(entry)}>
+            {unread && <span className="sr-only">未读 </span>}
+            <span>{sender}：</span>
+            <span className="mb-bot-message-title">{entry.title}</span>
+          </button>
+        </li>;
+      })}
     </ul>}
   </section>;
 }
