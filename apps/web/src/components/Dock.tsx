@@ -89,7 +89,7 @@ function NotificationList({bots, notifications, onOpenNotification, close}: Pick
   );
 }
 
-// Register each built-in once. Tools without defaultPinned appear in the add menu.
+// Register each built-in once. Default tools stay fixed on the Dock.
 const dockTools: readonly DockTool[] = [
   {
     id: 'search', label: '搜索', title: '全局搜索（/ 或 Ctrl/⌘ K）', defaultPinned: true,
@@ -131,7 +131,6 @@ export function Dock(props: DockProps): ReactElement {
   const root = useRef<HTMLElement>(null);
   const expanded = props.searchOpen ? null : open;
   const pinned = dockTools.filter(tool => tool.defaultPinned || addedTools.includes(tool.id));
-  const available = dockTools.filter(tool => !pinned.includes(tool));
   const active = pinned.find(tool => tool.id === expanded);
   const close = () => setOpen(null);
 
@@ -159,11 +158,11 @@ export function Dock(props: DockProps): ReactElement {
     setOpen(current => current === id ? null : id);
   }
 
-  function add(tool: DockTool) {
-    const next = [...addedTools, tool.id];
+  function setPinned(tool: DockTool, shouldPin: boolean) {
+    if (tool.defaultPinned || addedTools.includes(tool.id) === shouldPin) return;
+    const next = shouldPin ? [...addedTools, tool.id] : addedTools.filter(id => id !== tool.id);
     setAddedTools(next);
     try { localStorage.setItem(addedToolsKey, JSON.stringify(next)); } catch { /* Retain the session selection. */ }
-    close();
   }
 
   return <header ref={root} aria-label="启动台" className="chat-header">
@@ -199,13 +198,32 @@ export function Dock(props: DockProps): ReactElement {
             <button type="button" className="chat-header__panel-close" onClick={close}>关闭</button>
           </span>
         </div>
-        {active && 'render' in active ? active.render(props, close) : available.length ? (
-          <ul className="chat-header__notification-list">
-            {available.map(tool => <li key={tool.id}>
-              <button type="button" onClick={() => add(tool)}>{tool.icon}<span>{tool.label}</span></button>
-            </li>)}
+        {active && 'render' in active ? active.render(props, close) : (
+          <ul className="dock-tool-list">
+            {dockTools.map(tool => {
+              const isPinned = pinned.includes(tool);
+              return <li key={tool.id}>
+                <span className="dock-tool-name">{tool.icon}{tool.label}</span>
+                {tool.defaultPinned && <small>固定</small>}
+                {[true, false].map(shouldPin => {
+                  const action = shouldPin ? '添加到 Dock' : '从 Dock 删除';
+                  const unavailable = tool.defaultPinned || shouldPin === isPinned;
+                  const hint = tool.defaultPinned
+                    ? (shouldPin ? '已固定在 Dock' : '固定工具，无法从 Dock 删除')
+                    : unavailable ? (shouldPin ? '已添加到 Dock' : '尚未添加到 Dock') : action;
+                  return <button key={action} type="button" aria-disabled={unavailable}
+                    aria-label={action + '：' + tool.label} title={hint}
+                    onClick={() => setPinned(tool, shouldPin)}>
+                    <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
+                      stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                      <path d={shouldPin ? 'M3 8h10M8 3v10' : 'M3 8h10'}/>
+                    </svg>
+                  </button>;
+                })}
+              </li>;
+            })}
           </ul>
-        ) : <div className="chat-header__panel-empty">无可添加的工具</div>}
+        )}
       </div>
     )}
   </header>;

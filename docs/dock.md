@@ -4,6 +4,6 @@
 
 ## 添加内置工具
 
-在 [Dock 组件](../apps/web/src/components/Dock.tsx)的 `dockTools` 中登记稳定的 `id`、名称和图标。普通工具提供 `render`，由 Dock 统一渲染浮层，如需标题栏操作可提供 `actions`。复用已有独立浮层的工具可提供 `openOverlay`。只有启动台默认工具需要 `defaultPinned: true`，其余内置工具由用户通过「+」添加。用户的新增选择通过工具 ID 保存于本机浏览器。
+在 [Dock 组件](../apps/web/src/components/Dock.tsx)的 `dockTools` 中登记稳定的 `id`、名称和图标。普通工具提供 `render`，由 Dock 统一渲染浮层，如需标题栏操作可提供 `actions`。复用已有独立浮层的工具可提供 `openOverlay`。设为 `defaultPinned: true` 的搜索、通知和盯盘固定在启动台。「+」列出所有已登记工具，每行显示添加与移除图标及悬停说明。普通工具的添加和移除通过工具 ID 保存于本机浏览器。
 
 验证电脑与手机上的打开、工具切换、关闭和添加菜单。被移除的持仓与行情入口如需再用，依据当时需求重新接入当前界面。
