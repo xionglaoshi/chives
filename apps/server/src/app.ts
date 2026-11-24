@@ -42,6 +42,7 @@ import { DashboardService } from './dashboard/index.js';
 import {hotspotService} from './dashboard/hotspots.js';
 import {Watchlist, screeningPrompt, valuationDay, valuationInstructions} from './dashboard/watchlist.js';
 import {holdings} from './dashboard/holdings.js';
+import {initialBriefingPrompt,initialBriefingSchedule,initialBriefingTitle} from './routines/initial-briefing.js';
 import {featureDataService} from './dashboard/feature-data.js';
 import {latestHoldingValuation,measureHoldingValuation,type HoldingValuation} from './dashboard/holding-valuations.js';
 import { createSnapshotRunner } from './dashboard/portfolio.js';
@@ -1145,6 +1146,10 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           if (typeof prompt !== 'string' || prompt.trim() === '') {
             throw new AppError(400, 'validation_error', 'prompt must be a non-empty string');
           }
+          if(title.trim()===initialBriefingTitle && store.settings.get('onboarding.briefing.pending')){
+            sendJson(response,200,{error:'confirmation_required',message:'请等待用户在会话中的简报确认卡提交回复。'});
+            return;
+          }
           const tradingDaysOnly = body.trading_days_only;
           if (tradingDaysOnly !== undefined && typeof tradingDaysOnly !== 'boolean') {
             throw new AppError(400, 'validation_error', 'trading_days_only must be a boolean');
@@ -1608,6 +1613,32 @@ export function createApp(options: CreateAppOptions): ChivesApp {
         }else if(section==='interview'&&method==='GET')result=assessment.questionnaire();
         else if(section==='interview-draft'&&method==='POST')result=assessment.saveDraft(await readJsonObject(request,1024*1024));
         else if(section==='interview-submit'&&method==='POST'){result=await assessment.submitDraft(await readJsonObject(request));}
+        else if(section==='initial-briefing'&&method==='POST'){
+          const body=await readJsonObject(request);
+          const pending='onboarding.briefing.pending';
+          const existing=routines.list(coordinatorId).find(routine=>routine.source==='user'&&
+            routine.title===initialBriefingTitle&&routine.schedule.kind==='cron'&&
+            routine.schedule.expression===initialBriefingSchedule.cron&&
+            routine.schedule.tz===initialBriefingSchedule.tz);
+          if(body.action==='start'){
+            if(!existing?.enabled)store.settings.set(pending,true);
+            result={pending:!existing?.enabled};
+          }else if(body.action==='confirm'){
+            if(!store.settings.get(pending)&&!existing?.enabled)
+              throw new AppError(409,'briefing_not_pending','请先打开每日投研简报初始化。');
+            const reply=typeof body.reply==='string'?body.reply.trim():'';
+            if(!reply||reply.length>1000)
+              throw new AppError(400,'briefing_reply','请填写追加事项，或明确回复「没有」。');
+            const additions=/^(没有|无|不需要)[。！! ]*$/.test(reply)?'':reply;
+            const routine=existing?.enabled?existing:routines.createForBot(coordinatorId,{
+              title:initialBriefingTitle,prompt:initialBriefingPrompt(additions),
+              schedule:initialBriefingSchedule,tradingDaysOnly:false,
+            });
+            if(!routine.enabled)routines.setEnabled(routine.id,true);
+            store.settings.delete(pending);
+            result={pending:false,routineId:routine.id};
+          }else throw new AppError(400,'briefing_action','未知简报操作。');
+        }
         else if(section==='initialization'&&method==='GET'){
           const profile=preferences(store);
           const portfolio=await holdings(config.repoRoot,config.dshHome,{action:'get'})
@@ -1620,9 +1651,11 @@ export function createApp(options: CreateAppOptions): ChivesApp {
             watchlist:watchlist.read().length>0,
             weixin:Boolean(store.settings.get('onboarding.weixin.welcomed')),
             watch:registry.list().some(bot=>store.watches.countActiveByBot(bot.id)>0),
+            briefingPending:Boolean(store.settings.get('onboarding.briefing.pending')),
             briefing:store.routines.list().some(routine=>routine.source==='user'&&routine.enabled&&
               routine.botId===coordinatorId&&routine.title==='每日投研简报'&&
-              routine.schedule.kind==='cron'&&routine.schedule.expression==='0 9 * * 1-5'),
+              routine.schedule.kind==='cron'&&routine.schedule.expression===initialBriefingSchedule.cron&&
+              routine.schedule.tz===initialBriefingSchedule.tz),
           };
         }
         else if(section==='assessment'&&method==='GET')result=assessment.view();

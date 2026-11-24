@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type ReactElement, type ReactNode } from '
 import type { BotSummary, NotificationDto } from '@chives/server/protocol';
 import { formatTime } from '../utils/format';
 import { WatchesPanel, type WatchesPanelProps } from './WatchesPanel';
-import {useInitialization,type InitializationStep} from './DockInitialization';
+import {type InitializationStep} from './DockInitialization';
 import './Dock.css';
 
 const LEVEL_TEXT: Record<NotificationDto['level'], string> = {
@@ -30,6 +30,7 @@ function SearchIcon(): ReactElement {
 }
 
 type DockProps = {
+  initialization: readonly (readonly [InitializationStep,string])[];
   onInitialize: (step: InitializationStep) => void;
   searchOpen: boolean;
   onSearch: () => void;
@@ -128,7 +129,7 @@ function readAddedTools(): string[] {
 }
 
 export function Dock(props: DockProps): ReactElement {
-  const initialization = useInitialization();
+  const {initialization} = props;
   const [addedTools, setAddedTools] = useState(readAddedTools);
   const [open, setOpen] = useState<string | null>(null);
   const root = useRef<HTMLElement>(null);

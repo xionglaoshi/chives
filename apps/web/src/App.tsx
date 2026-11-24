@@ -1,5 +1,5 @@
 import { useFollowupSuggestion } from './hooks/useFollowupSuggestion';
-import {initializationPrompts,type InitializationStep} from './components/DockInitialization';
+import {initializationPrompts,useInitialization,type InitializationStep} from './components/DockInitialization';
 import { Hotspots } from './components/Hotspots';
 import { DashboardBotMessagesDemo } from './components/DashboardBotMessagesDemo';
 import { DashboardBotMessages } from './components/DashboardBotMessages';
@@ -158,6 +158,11 @@ interface ConversationTarget {
 const GlobalSearch = lazy(() => import('./components/GlobalSearch'));
 
 export function App(): ReactElement {
+  const initialization=useInitialization();
+  const [briefingReply,setBriefingReply]=useState('');
+  const [briefingBusy,setBriefingBusy]=useState(false);
+  const [briefingError,setBriefingError]=useState('');
+
   const { bots, loading, error: serverError, setBots, setBotStatus, reload } = useBots();
   const [route, setRoute] = useState<AppRoute>(() => readRoute(window.location.hash));
   const [composerText, setComposerText] = useState('');
@@ -660,7 +665,15 @@ export function App(): ReactElement {
       window.open(url.toString(),'chives-style-interview');
     }else{
       openConversationTarget({botId:'operator'});
-      void send('operator',initializationPrompts[step]);
+      if(step==='watch')void send('operator',initializationPrompts.watch);
+      else if(!initialization.briefingPending){
+        void desk<{pending:boolean}>('initial-briefing','POST',{action:'start'})
+          .then(result=>{
+            initialization.setBriefingPending(result.pending);
+            if(result.pending)void send('operator',initializationPrompts.briefing);
+          })
+          .catch(()=>setNotice('暂时无法打开每日投研简报，请重试。'));
+      }
     }
   }
 
@@ -882,7 +895,7 @@ export function App(): ReactElement {
     <div className="app">
       <ServiceBanner serverError={serverError} eventStatus={eventStatus} onRetry={reload} />
       <Dock
-        onInitialize={openInitialization}
+        initialization={initialization.steps} onInitialize={openInitialization}
         searchOpen={search !== null} onSearch={() => setSearch('global')}
         bots={bots} notifications={notifications.slice(0, 50)} unreadCount={unreadTotal}
         onMarkAllRead={markAllRead} onOpenNotification={notification => void openNotification(notification)}
@@ -991,6 +1004,31 @@ export function App(): ReactElement {
                 {dragActive ? <div className="conversation__drop">松开以上传文件</div> : null}
                 <div className="conversation__body">
                 <div className="conversation__chat">
+                {selectedBot.id==='operator'&&initialization.briefingPending&&
+                  <form className="initial-briefing-confirmation" onSubmit={event=>{
+                    event.preventDefault();
+                    if(briefingBusy||!briefingReply.trim())return;
+                    setBriefingBusy(true);
+                    setBriefingError('');
+                    void desk('initial-briefing','POST',{action:'confirm',reply:briefingReply})
+                      .then(()=>{
+                        initialization.setBriefingPending(false);
+                        setBriefingReply('');
+                        setNotice('每日投研简报已启用，每周一至周五北京时间 09:00。');
+                      })
+                      .catch(()=>setBriefingError('暂时无法创建每日投研简报，请重试。'))
+                      .finally(()=>setBriefingBusy(false));
+                  }}>
+                    <strong>每日投研简报</strong>
+                    <p>每周一至周五北京时间 09:00，汇报持仓与关注、机会榜单精选、A股新闻及全球市场新闻。</p>
+                    <label>你还想增加什么？
+                      <input value={briefingReply} onChange={event=>setBriefingReply(event.target.value)}
+                        placeholder="填写追加事项，或回复「没有」" maxLength={1000} required/>
+                    </label>
+                    <button type="submit" disabled={briefingBusy||!briefingReply.trim()}>提交并创建任务</button>
+                    {briefingError&&<p role="alert">{briefingError}</p>}
+                  </form>}
+
                 {selectedBot.hired === false ? (
                   <div className="bots-overview__quiet" role="status">这位 Bot 待聘，历史记录可继续查看。
                     <button type="button" className="bots-overview__action" onClick={() => navigate({name:'overview'})}>去Bot市场聘用</button>
