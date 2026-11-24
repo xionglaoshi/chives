@@ -172,8 +172,9 @@ def holdings(book, quotes=None, valuations=None):
                        cell(number(row["cost_price"], digits=4)), cell(number(price)), cell(value, tone)])
     paper.table(["证券", "代码", "持股数", "成本价", "现价", "合理估值"], detail)
     for r in rows:
-        if r.get("note"):
-            paper.text(one(r["name"]) + " · " + one(r["note"]), "dim")
+        note = r.get("note")
+        if note and "模拟持仓" not in note:
+            paper.text(one(r["name"]) + " · " + one(note), "dim")
     paper.heading("持仓估值")
     if isinstance(quotes, Exception):
         paper.text("暂时取不到报价，账本明细见上。", "dim")

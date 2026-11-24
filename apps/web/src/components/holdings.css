@@ -6,7 +6,7 @@
 .holdings .holdings-primary{color:white;background:#306551}.holdings-totals,.holdings form{margin:24px 0;padding:20px;background:color-mix(in srgb,currentColor 4%,transparent);border-radius:12px}
 .holdings-totals strong,.holdings small{display:block}.holdings-totals strong{margin-top:5px;font-size:1.25rem}.holdings-totals span,.holdings small{opacity:.75}
 .holdings fieldset{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(160px,100%),1fr));gap:12px;border:0;margin:0;padding:0}.holdings label{display:grid;gap:5px}.holdings input{min-width:0}.holdings-actions{justify-content:flex-end;margin-top:15px}
-.holdings-table{overflow:auto}.holdings table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.holdings th,.holdings td{text-align:right;padding:12px 6px;border-bottom:1px solid #8884;white-space:nowrap}.holdings th:first-child,.holdings td:first-child{text-align:left}.holdings th{font-size:.85rem;font-weight:500}.holdings [role=alert]{color:var(--color-danger,#b14646)}
+.holdings-table{overflow:auto}.holdings table{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}.holdings th,.holdings td{text-align:center;vertical-align:middle;padding:12px 8px;border-bottom:1px solid #8884;white-space:nowrap}.holdings th{font-size:.85rem;font-weight:500}.holdings [role=alert]{color:var(--color-danger,#b14646)}
 
 .holdings form fieldset{display:grid;grid-template-columns:1fr;gap:16px}
 .holding-form-row,.holding-valuation{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
@@ -42,7 +42,8 @@
   }
   .holdings-table tbody tr {
     display: grid;
-    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px 8px;
     margin-bottom: 12px;
     padding: 14px 16px;
     border: 1px solid var(--color-line);
@@ -50,16 +51,17 @@
   }
   .holdings-table td {
     display: flex;
-    justify-content: space-between;
-    align-items: baseline;
-    gap: 8px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
     padding: 0;
     border: 0;
     white-space: normal;
     overflow-wrap: anywhere;
   }
-  .holdings-table td:first-child { justify-content: start; flex-wrap: wrap; padding-bottom: 4px; }
-  .holdings-table td:last-child { justify-content: end; margin-top: 2px; }
+  .holdings-table td:first-child { grid-column: 1 / -1; padding-bottom: 6px; border-bottom: 1px solid var(--color-line); }
+  .holdings-table td:last-child { margin-top: 2px; }
   .holding-mobile-label { display: inline; color: var(--color-text-secondary); font-size: .85em; }
   .holdings button { min-height: 40px; }
   .holdings form { padding: 14px; }

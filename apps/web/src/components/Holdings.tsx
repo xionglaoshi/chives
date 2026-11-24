@@ -8,7 +8,7 @@ import './holdings.css';
 import {ValuationRange,type EstimateRange} from './ValuationRange';
 import {HoldingSecurityFields} from './HoldingSecurityFields';
 
-type Position={note?:string|null;code:string;name:string;qty:number;cost_price:number;available_qty?:number|null};
+type Position={code:string;name:string;qty:number;cost_price:number;available_qty?:number|null};
 type Ledger={positions:Position[];cash:number|null};
 const money=new Intl.NumberFormat('zh-CN',{style:'currency',currency:'CNY'});
 const quantityLabel = '持股数';
@@ -116,7 +116,6 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
            ['现价', formatPrice(quote?.price??null)],
            ['合理估值', <div className="holding-estimate">
              {valuating===position.code?'测算中…':<ValuationRange estimate={estimate} price={quote?.price}/>}
-             {estimate?.low!=null && estimate.valuationKind && <small>{estimate.valuationKind}</small>}
              {!estimate?.low && valuating!==position.code && /^\d{6}\.(SH|SZ|BJ)$/.test(position.code) &&
                <button type="button" disabled={!!valuating||busy||!!editor} onClick={()=>void measure(position.code)}>测算</button>}
            </div>],
@@ -126,7 +125,6 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
          return <tr role="row" key={position.code}>
            <td role="cell">
              <b>{position.name}</b><small>{position.code}</small>
-             {position.note?.startsWith('模拟持仓') && <small>模拟持仓</small>}
            </td>
            {metrics.map(([label, value, direction]) =>
              <td role="cell" key={label} className={direction?'holding-'+direction:undefined}>
