@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import shutil
 import socket
 import sqlite3
 import subprocess
@@ -9,7 +10,7 @@ import sys
 import tempfile
 import time
 import urllib.request
-from contextlib import closing
+from contextlib import closing, contextmanager
 
 import install as installer
 
@@ -45,54 +46,80 @@ def check(work, target):
             return json.load(response)
 
     log = work / "server.log"
-    with log.open("w", encoding="utf-8") as output:
-        process = subprocess.Popen([str(node), "dist/main.js"], cwd=release / "apps/server",
-                                   env=env, stdout=output, stderr=output)
-        try:
-            for _ in range(40):
-                if process.poll() is not None:
-                    raise RuntimeError("Installed server exited prematurely")
-                try:
-                    read("/api/health")
-                    break
-                except OSError:
-                    time.sleep(.25)
-            else:
-                raise RuntimeError("Installed server did not become healthy")
-            state = read("/api/settings/desk/initialization")
-            for key in ("model", "portrait", "profile", "holdings", "watchlist", "weixin", "watch", "briefing"):
-                assert state[key] is False, key
+    @contextmanager
+    def running_server():
+        with log.open("a", encoding="utf-8") as output:
+            process = subprocess.Popen([str(node), "dist/main.js"], cwd=release / "apps/server",
+                                       env=env, stdout=output, stderr=output)
             try:
-                assert read("/api/settings/desk/holdings")["positions"] == []
-            except OSError:
-                portfolio_env = {key: env[key] for key in ("DSH_HOME", "DSH_FINANCE_PROFILE_DIR", "HOME", "PATH",
-                                                           "SystemRoot", "PYTHONUTF8") if key in env}
-                adapter = subprocess.run(
-                    [env["CALENDAR_PYTHON"], "-m", "portfolio_mcp.workbench"],
-                    cwd=release / "packages/portfolio-mcp", env=portfolio_env,
-                    input='{"action":"get"}', text=True, encoding="utf-8", capture_output=True, timeout=20,
-                )
-                print(f"Portfolio adapter exit {adapter.returncode}: {adapter.stderr}", file=sys.stderr)
+                for _ in range(40):
+                    if process.poll() is not None:
+                        raise RuntimeError("Installed server exited prematurely")
+                    try:
+                        read("/api/health")
+                        break
+                    except OSError:
+                        time.sleep(.25)
+                else:
+                    raise RuntimeError("Installed server did not become healthy")
+                yield
+            except BaseException:
+                print(log.read_text(encoding="utf-8", errors="replace")[-3000:], file=sys.stderr)
                 raise
-            assert read("/api/settings/desk/watchlist") == []
-            channels = read("/api/settings/desk/channels")
-            weixin, = (channel for channel in channels if channel["id"] == "weixin")
-            assert weixin["qr"] and not weixin["configured"] and not weixin["enabled"]
-            with closing(sqlite3.connect(root / "user-data/chives.sqlite")) as db:
-                assert db.execute("SELECT count(*) FROM messages").fetchone() == (0,)
-            assert not (root / "data").exists()
-            print("Installed backend is healthy; all eight onboarding steps and personal records are empty.")
-        except BaseException:
-            print(log.read_text(encoding="utf-8", errors="replace")[-3000:], file=sys.stderr)
+            finally:
+                if process.poll() is None:
+                    process.terminate()
+                    try:
+                        process.wait(timeout=10)
+                    except subprocess.TimeoutExpired:
+                        process.kill()
+                        process.wait()
+
+    with running_server():
+        initial_generation = read("/api/health")["browserState"]["generation"]
+        state = read("/api/settings/desk/initialization")
+        for key in ("model", "portrait", "profile", "holdings", "watchlist", "weixin", "watch", "briefing"):
+            assert state[key] is False, key
+        try:
+            assert read("/api/settings/desk/holdings")["positions"] == []
+        except OSError:
+            portfolio_env = {key: env[key] for key in ("DSH_HOME", "DSH_FINANCE_PROFILE_DIR", "HOME", "PATH",
+                                                       "SystemRoot", "PYTHONUTF8") if key in env}
+            adapter = subprocess.run(
+                [env["CALENDAR_PYTHON"], "-m", "portfolio_mcp.workbench"],
+                cwd=release / "packages/portfolio-mcp", env=portfolio_env,
+                input='{"action":"get"}', text=True, encoding="utf-8", capture_output=True, timeout=20,
+            )
+            print(f"Portfolio adapter exit {adapter.returncode}: {adapter.stderr}", file=sys.stderr)
             raise
-        finally:
-            if process.poll() is None:
-                process.terminate()
-                try:
-                    process.wait(timeout=10)
-                except subprocess.TimeoutExpired:
-                    process.kill()
-                    process.wait()
+        assert read("/api/settings/desk/watchlist") == []
+        channels = read("/api/settings/desk/channels")
+        weixin, = (channel for channel in channels if channel["id"] == "weixin")
+        assert weixin["qr"] and not weixin["configured"] and not weixin["enabled"]
+        with closing(sqlite3.connect(root / "user-data/chives.sqlite")) as db:
+            assert db.execute("SELECT count(*) FROM messages").fetchone() == (0,)
+        assert not (root / "data").exists()
+        print("Installed backend is healthy; all eight onboarding steps and personal records are empty.")
+
+    workspace = root / "workspace" / "bots" / "operator"
+    workspace.mkdir(parents=True, exist_ok=True)
+    (workspace / "prior-report.md").write_text("prior user deliverable", encoding="utf-8")
+    cache = root / "public-data" / "mechanical-cache" / "reset-check"
+    cache.parent.mkdir(parents=True, exist_ok=True)
+    cache.write_text("public data", encoding="utf-8")
+    shutil.rmtree(root / "user-data")
+    with running_server():
+        browser_state = read("/api/health")["browserState"]
+        assert browser_state["generation"] != initial_generation
+        assert browser_state["adoptLegacy"] is False
+        state = read("/api/settings/desk/initialization")
+        for key in ("model", "portrait", "profile", "holdings", "watchlist", "weixin", "watch", "briefing"):
+            assert state[key] is False, key
+        assert not (workspace / "prior-report.md").exists()
+        recovered, = (root / "runtime").glob("user-reset-*/workspace/bots/operator/prior-report.md")
+        assert recovered.read_text(encoding="utf-8") == "prior user deliverable"
+        assert cache.read_text(encoding="utf-8") == "public data"
+        print("Factory reset starts a new browser generation and empty workspace while preserving public cache.")
 
 
 if __name__ == "__main__":

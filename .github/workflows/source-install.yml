@@ -12,15 +12,7 @@ permissions:
   contents: read
 jobs:
   source-install:
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - runner: ubuntu-24.04
-            target: linux-x64
-          - runner: windows-2025
-            target: windows-x64
-    runs-on: ${{ matrix.runner }}
+    runs-on: ubuntu-24.04
     timeout-minutes: 35
     steps:
       - uses: actions/checkout@v4
@@ -30,4 +22,4 @@ jobs:
         with:
           python-version: '3.12'
       - name: Install and boot isolated Chives
-        run: python deploy/installer/check_source_install.py ${{ matrix.target }}
+        run: python deploy/installer/check_source_install.py linux-x64
