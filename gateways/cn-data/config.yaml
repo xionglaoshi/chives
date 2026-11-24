@@ -1,7 +1,7 @@
 # A 股只读数据网关。公告原文由 cn_extra 提供。
 name: cn_data
 upstream:
-  command: /Users/xiong/.agents/venvs/chives/bin/python
+  command: /Users/xiong/.chives/.venv/bin/python
   args: [/Users/xiong/.chives/gateways/cn-data/provider.py]
   cwd: null
   inherit_env: true

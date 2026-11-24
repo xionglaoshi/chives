@@ -146,7 +146,7 @@ def portable_paths(release, python, *, direct_dsh=False):
         text = gateway.read_text(encoding="utf-8")
         text = re.sub(r"command: /Users/xiong/\.agents/venvs/chives/bin/python",
                       lambda _: "command: " + json.dumps(str(python), ensure_ascii=False), text)
-        text = re.sub(r"command: /Users/xiong/\.chives/[^\r\n]*/\.venv/bin/([^\r\n]+)",
+        text = re.sub(r"command: /Users/xiong/\.chives/(?:[^\r\n]*/)?\.venv/bin/([^\r\n]+)",
                       lambda m: "command: " + json.dumps(str(python.with_name(m[1] + (".exe" if WINDOWS else ""))), ensure_ascii=False), text)
         text = re.sub(r"(cwd: |\[)/Users/xiong/\.chives/([^\r\n\]]+)",
                       lambda m: m[1] + json.dumps(str(release / m[2]), ensure_ascii=False), text)
