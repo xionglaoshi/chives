@@ -15,6 +15,21 @@ GATEWAY_DIR="$ROOT/packages/cn-market-gateway"
 STRATEGY_PORT="${STRATEGY_HUB_PORT:-8869}"
 STRATEGY_DIR="$ROOT/packages/strategy-hub"
 export CHIVES_DATA_DIR="${CHIVES_DATA_DIR:-$ROOT/data}"
+# Keep existing workspaces readable until the migration has been prepared.
+if [[ -z "${CHIVES_WORKSPACE_DIR:-}" && "$CHIVES_DATA_DIR" == "$ROOT/data" ]]; then
+  workspace_ready=true
+  if [[ ! -d "$ROOT/workspace/bots" ]]; then
+    for legacy_workspace in "$CHIVES_DATA_DIR"/bots/*/workspace; do
+      if [[ -d "$legacy_workspace" ]]; then
+        workspace_ready=false
+        break
+      fi
+    done
+  fi
+  if "$workspace_ready"; then
+    export CHIVES_WORKSPACE_DIR="$ROOT/workspace"
+  fi
+fi
 export DSH_FINANCE_HOME="${DSH_FINANCE_HOME:-$ROOT/data/dsh}"
 export DSH_FINANCE_OVERLAY="${DSH_FINANCE_OVERLAY:-}"
 export CHIVES_DEFAULT_ROUTE="${CHIVES_DEFAULT_ROUTE:-huosan/deepseek-v4.1-flash}"

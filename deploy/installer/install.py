@@ -58,6 +58,16 @@ def run(*args, cwd, env, label=None):
                 raise RuntimeError(f'{label}失败（退出码 {result}）。详细日志 {LOG}')
     print(f'    ✓ {label}',flush=True)
 
+def workspace_directory(root):
+    workspace = root / "workspace"
+    if (workspace / "bots").is_dir():
+        return workspace
+    old_bots = root / "data/bots"
+    if old_bots.is_dir() and any((bot / "workspace").is_dir() for bot in old_bots.iterdir()):
+        return None
+    return workspace
+
+
 def runtime(root, release):
     config = json.loads((release / "runtime-paths.json").read_text(encoding="utf-8"))
     node, npx = Path(config["node"]), Path(config["npx"])
@@ -76,6 +86,10 @@ def runtime(root, release):
         "PLAYWRIGHT_BROWSERS_PATH": str(release / "runtime/ms-playwright/browsers"),
         "npm_config_cache": config.get("npm_cache", str(release / "offline/npm")), "CHIVES_NPX_JS": str(npx),
     })
+    env.pop("CHIVES_WORKSPACE_DIR", None)
+    workspace = workspace_directory(root)
+    if workspace is not None:
+        env["CHIVES_WORKSPACE_DIR"] = str(workspace)
     if config.get("dsh_js"):
         env["CHIVES_DSH_JS"] = config["dsh_js"]
     if (release / "runtime/ms-playwright/use-private-libs").is_file():
