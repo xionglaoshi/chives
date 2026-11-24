@@ -3,7 +3,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 runtime="$PWD/runtime/ms-playwright"
-python="$HOME/.agents/venvs/chives/bin/python"
+python="$PWD/.venv/bin/python"
 export HTTPS_PROXY="${HTTPS_PROXY:-http://127.0.0.1:7897}"
 export PLAYWRIGHT_BROWSERS_PATH="$runtime/browsers"
 export PLAYWRIGHT_NODEJS_PATH="$runtime/python/playwright/driver/node"
@@ -20,7 +20,7 @@ export PYTHONPATH="$runtime/python"
 export PLAYWRIGHT_NODEJS_PATH="$runtime/python/playwright/driver/node"
 export PLAYWRIGHT_BROWSERS_PATH="$runtime/browsers"
 cd "$runtime"
-exec "$HOME/.agents/venvs/chives/bin/python" -s -P -m playwright "$@"
+exec "$runtime/../../.venv/bin/python" -s -P -m playwright "$@"
 ENTRY
 chmod +x "$runtime/python/bin/playwright"
 cat > "$runtime/bin/playwright" <<'ENTRY'

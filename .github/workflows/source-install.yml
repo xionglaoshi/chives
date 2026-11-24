@@ -8,6 +8,9 @@ on:
       - 'deploy/installer/install.py'
       - 'deploy/installer/source.py'
       - 'deploy/installer/check_source_install.py'
+      - 'scripts/install-chives.sh'
+      - 'scripts/install-browser.sh'
+      - 'apps/server/src/settings/channels.ts'
 permissions:
   contents: read
 jobs:

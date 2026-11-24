@@ -99,7 +99,6 @@ import { SessionTokenRegistry } from './delegations/tokens.js';
 import { approvedOnly, describeEntry, installed, manageConnection, mountConnections, templates } from './settings/mcp-connections.js';
 import { assets, assetOptions, saveAssets, type AssetProfile } from './harness/bot-assets.js';
 import { basename, dirname, join as joinPath } from 'node:path';
-import { homedir as userHome } from 'node:os';
 import { KernelManager } from './harness/kernel-manager.js';
 
 import { FakeDriver } from './harness/fake.js';
@@ -581,7 +580,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
               effectiveBot: configuredBot,
               extraServers: (bot,api,token) => {
                 const {tools,databases,skills,skillMode,mcp} = assets(config.dataDir,registry.get(bot.id) ?? bot);
-                return [{name:'bot_assets',command:joinPath(userHome(),'.agents/venvs/chives/bin/python'),
+                return [{name:'bot_assets',command:(process.env.CALENDAR_PYTHON ?? joinPath(config.repoRoot,'.venv/bin/python')),
                 args:[joinPath(config.repoRoot,'scripts/bot-assets.py'),config.dataDir,bot.id],
                 env:[
                   {name:'CHIVES_BOT_WORKSPACE',value:botWorkspace(config.dataDir,bot.id)},
@@ -1598,7 +1597,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
             const key=day+'/'+code;
             const existing=holdingValuations.get(key);
             if(!existing && holdingValuations.size>0)throw new AppError(409,'valuation_busy','另有持仓估值正在测算，请稍后再试。');
-            const pending=existing??measureHoldingValuation(joinPath(userHome(),'.agents/venvs/chives/bin/python'),config.repoRoot,config.dataDir,code,day);
+            const pending=existing??measureHoldingValuation((process.env.CALENDAR_PYTHON ?? joinPath(config.repoRoot,'.venv/bin/python')),config.repoRoot,config.dataDir,code,day);
             holdingValuations.set(key,pending);
             try{result=await pending;}catch{throw new AppError(503,'valuation_unavailable','持仓估值暂不可用，请稍后重试。');}
             finally{if(holdingValuations.get(key)===pending)holdingValuations.delete(key);}

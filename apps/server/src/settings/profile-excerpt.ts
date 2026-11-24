@@ -1,5 +1,4 @@
 import {execFile} from 'node:child_process';
-import {homedir} from 'node:os';
 import {join,extname,basename} from 'node:path';
 import {AppError} from '../errors.js';
 
@@ -10,7 +9,7 @@ export async function previewExcerpt(root:string, data:Record<string,unknown>){
   const bytes=Buffer.from(data.base64,'base64');
   if(!bytes.length||bytes.length>4*1024*1024)throw new AppError(400,'size','每份文件须小于等于 4 MB。');
   return new Promise<{name:string,text:string,truncated:boolean}>((resolve,reject)=>{
-    const child=execFile(join(homedir(),'.agents/venvs/chives/bin/python'),[join(root,'scripts/profile-excerpt.py'),kind],{timeout:30000,maxBuffer:256000},(error,stdout)=>{
+    const child=execFile((process.env.CALENDAR_PYTHON ?? join(root,'.venv/bin/python')),[join(root,'scripts/profile-excerpt.py'),kind],{timeout:30000,maxBuffer:256000},(error,stdout)=>{
       try{
         if(error)throw Error('解析超时或文档读取工具不可用。');
         const result=JSON.parse(stdout);

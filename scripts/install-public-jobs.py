@@ -8,7 +8,7 @@ import tempfile
 root = Path(__file__).resolve().parents[1]
 directory = Path.home() / "Library/LaunchAgents"
 domain = f"gui/{os.getuid()}"
-python = str(Path.home() / ".agents/venvs/chives/bin/python")
+python = str(root / ".venv/bin/python")
 node = "/opt/homebrew/bin/node"
 jobs = {
     "local.chives.workbench": (["/bin/bash", str(root / "scripts/serve-chives.sh")], dict(KeepAlive=True)),

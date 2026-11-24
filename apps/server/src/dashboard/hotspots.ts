@@ -1,6 +1,5 @@
 import {spawn, type ChildProcess} from 'node:child_process';
 import {readFileSync} from 'node:fs';
-import {homedir} from 'node:os';
 import {join} from 'node:path';
 
 export function hotspotService(root:string, data:string) {
@@ -20,7 +19,7 @@ export function hotspotService(root:string, data:string) {
   }
   async function start(){
     if(current().status.state==='running')return {state:'running'};
-    const child=spawn(join(homedir(),'.agents/venvs/chives/bin/python'),[join(root,'scripts/hotspots/generate.py'),'--data',dir],{stdio:'ignore'});
+    const child=spawn((process.env.CALENDAR_PYTHON ?? join(root,'.venv/bin/python')),[join(root,'scripts/hotspots/generate.py'),'--data',dir],{stdio:'ignore'});
     worker=child;
     child.once('close',()=>{if(worker===child)worker=undefined;});
     await new Promise<void>((resolve,reject)=>{child.once('spawn',resolve);child.once('error',reject);});

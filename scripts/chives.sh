@@ -45,6 +45,7 @@ fi
 export DSH_FINANCE_OVERLAY="${DSH_FINANCE_OVERLAY:-}"
 export CHIVES_DEFAULT_ROUTE="${CHIVES_DEFAULT_ROUTE:-huosan/deepseek-v4.1-flash}"
 export CHIVES_PORT="$SERVER_PORT"
+export CALENDAR_PYTHON="${CALENDAR_PYTHON:-$ROOT/.venv/bin/python}"
 
 ENGINES=0
 for a in "$@"; do [ "$a" = "--engines" ] && ENGINES=1; done

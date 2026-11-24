@@ -24,7 +24,7 @@ case "${1:-status}" in
     if curl -s --max-time 1 -o /dev/null "http://127.0.0.1:$PORT/health"; then echo "端口 $PORT 已被占用（不是本脚本启动的引擎），未启动"; exit 1; fi
     CAL="$ROOT/config/trade_calendar.json"
     if grep -q "source: file" "$CFG" 2>/dev/null && { [ ! -f "$CAL" ] || [ -n "$(find "$CAL" -mtime +20 2>/dev/null)" ]; }; then
-      VPY="${CALENDAR_PYTHON:-$HOME/.agents/venvs/chives/bin/python}"
+      VPY="${CALENDAR_PYTHON:-$ROOT/.venv/bin/python}"
       "$VPY" -I "$ROOT/scripts/refresh-trade-calendar.py" || echo "警告：交易日历刷新失败，沿用现有文件" >&2
     fi
     "$0" check >/dev/null || { echo "配置校验失败："; "$0" check; exit 2; }

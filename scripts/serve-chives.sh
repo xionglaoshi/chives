@@ -14,7 +14,7 @@ export CN_DAILY_STORE_DB="$mechanical_dir/marketdata/daily.sqlite"
 export CHIVES_HARNESS=dsh
 mkdir -p "$PWD/runtime/tmp"
 export TMPDIR="$PWD/runtime/tmp/" npm_config_cache="$PWD/runtime/npm-cache"
-export DSH_HOME="$DSH_FINANCE_HOME" CALENDAR_PYTHON="$HOME/.agents/venvs/chives/bin/python"
+export DSH_HOME="$DSH_FINANCE_HOME" CALENDAR_PYTHON="$PWD/.venv/bin/python"
 export PLAYWRIGHT_BROWSERS_PATH="$PWD/runtime/ms-playwright/browsers"
 export PATH="$HOME/.local/bin:$HOME/.agents/bin:/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin"
 trap 'bash scripts/chives.sh stop --engines; exit' TERM INT
