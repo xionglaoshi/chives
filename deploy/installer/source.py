@@ -242,7 +242,7 @@ def configure(root, release, node, npm, npx, proxy):
     projects = sorted(p.parent for p in (release / "packages").glob("*/pyproject.toml"))
     run([sys.executable, "-I", "-m", "venv", release/".venv"], release, env, "创建专用 Python 环境")
     pip = [python, "-I", "-m", "pip", "install", "--index-url", PYPI]
-    run([*pip, "qrcode[pil]", "websockets>=15,<17", *(x for p in projects for x in ("-e", p))],
+    run([*pip, "qrcode[pil]", "cryptography>=42", "websockets>=15,<17", *(x for p in projects for x in ("-e", p))],
         release, env, "从 PyPI 配置 Python 依赖")
     core.link_projects(projects, release, env)
     manager = json.loads((release / "package.json").read_text())["packageManager"].split("@")[1].split("+")[0]

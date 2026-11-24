@@ -75,6 +75,9 @@ def check(work, target):
                 print(f"Portfolio adapter exit {adapter.returncode}: {adapter.stderr}", file=sys.stderr)
                 raise
             assert read("/api/settings/desk/watchlist") == []
+            channels = read("/api/settings/desk/channels")
+            weixin, = (channel for channel in channels if channel["id"] == "weixin")
+            assert weixin["qr"] and not weixin["configured"] and not weixin["enabled"]
             with closing(sqlite3.connect(root / "user-data/chives.sqlite")) as db:
                 assert db.execute("SELECT count(*) FROM messages").fetchone() == (0,)
             assert not (root / "data").exists()

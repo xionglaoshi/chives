@@ -10,9 +10,9 @@ export class Channels {
   constructor(private root:string,private data:string){}
   private run(op:string,input:Record<string,unknown>,extra:string[]=[]):Promise<unknown> {
     return new Promise((res,rej)=>{
-      const child=execFile(join(homedir(),'.agents/venvs/chives/bin/python'),
+      const child=execFile(process.env.CALENDAR_PYTHON ?? join(homedir(),'.agents/venvs/chives/bin/python'),
         [join(this.root,'scripts/settings-channels.py'),this.data,op,...extra],
-        {timeout:op==='pair'?270000:45000,maxBuffer:200000,env:{...process.env,PYTHONUNBUFFERED:'1',HTTPS_PROXY:'http://127.0.0.1:7897',HTTP_PROXY:'http://127.0.0.1:7897'}},
+        {timeout:op==='pair'?270000:45000,maxBuffer:200000,env:{...process.env,PYTHONUNBUFFERED:'1',PYTHONUTF8:'1'}},
         (err,out)=>{try{const r=JSON.parse(out);if(err||r.error)throw Error();res(r);}catch{rej(new AppError(400,'channel_failed','通讯平台未确认，请核对授权资料、会话和网络'));}});
       child.stdin?.on('error',()=>{});child.stdin?.end(JSON.stringify(input));
     });

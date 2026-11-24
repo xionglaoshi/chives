@@ -561,7 +561,7 @@ def configure(root, release, base_python, node_pair):
            "--no-index", "--find-links", offline / "wheels"]
     projects = sorted(p.parent for p in (release / "packages").glob("*/pyproject.toml"))
     run(*pip, "hatchling", "editables", "setuptools", "wheel", cwd=release, env=env, label="安装离线构建工具")
-    run(*pip, "--no-build-isolation", "qrcode[pil]", "websockets>=15,<17",
+    run(*pip, "--no-build-isolation", "qrcode[pil]", "cryptography>=42", "websockets>=15,<17",
         *(arg for p in projects for arg in ("-e", p)), cwd=release, env=env, label="安装并链接 Python 组件")
     run(python, "-I", "-m", "pip", "check", cwd=release, env=env, label="核对 Python 依赖")
     link_projects(projects, release, env)

@@ -149,7 +149,7 @@ def build(out, work, code):
                 folder.unlink()
     projects = [p.parent for p in sorted((app / "packages").glob("*/pyproject.toml"))]
     run(*pip, "wheel", "--wheel-dir", offline / "wheels", "hatchling", "editables", "setuptools", "wheel",
-        "qrcode[pil]", "websockets>=15,<17", *projects, cwd=app, env=env)
+        "qrcode[pil]", "cryptography>=42", "websockets>=15,<17", *projects, cwd=app, env=env)
     run(*pip, "install", "--no-compile", "--target", browser / "python", "playwright==1.65.2", env=env)
     pw = dict(env, PYTHONPATH=str(browser / "python"))
     run(python, "-m", "playwright", "install", *(["--with-deps"] if osname=="linux" else []), "chromium", env=pw)
