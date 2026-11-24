@@ -248,8 +248,8 @@ export interface ResolvedProfileServer {
 
 /**
  * Reads the command, args and cwd from `overlays/profile.cordis.yml`. The
- * overlay's `env` is deliberately not copied: only DSH_HOME from the server
- * configuration is passed to the child.
+ * overlay's `env` is deliberately not copied: the child receives the local
+ * DSH home and the configured profile directory.
  */
 export function resolveProfileServer(repoRoot: string, dshHome: string): ResolvedProfileServer {
   try {
@@ -260,6 +260,8 @@ export function resolveProfileServer(repoRoot: string, dshHome: string): Resolve
     }
     const env = getDefaultEnvironment();
     if (dshHome !== '') env['DSH_HOME'] = dshHome;
+    const profileDir = process.env.DSH_FINANCE_PROFILE_DIR;
+    if (profileDir) env['DSH_FINANCE_PROFILE_DIR'] = profileDir;
     return {
       config: {
         command: config.command,

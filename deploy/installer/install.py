@@ -100,6 +100,9 @@ def runtime(root, release):
         "PLAYWRIGHT_BROWSERS_PATH": str(release / "runtime/ms-playwright/browsers"),
         "npm_config_cache": config.get("npm_cache", str(release / "offline/npm")), "CHIVES_NPX_JS": str(npx),
     })
+    env.pop("DSH_FINANCE_PROFILE_DIR", None)
+    if user.name == "user-data":
+        env["DSH_FINANCE_PROFILE_DIR"] = str(user / "profile")
     env.pop("CHIVES_WORKSPACE_DIR", None)
     workspace = workspace_directory(root)
     if workspace is not None:

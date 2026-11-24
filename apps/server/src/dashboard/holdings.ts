@@ -6,7 +6,8 @@ export function holdings(repoRoot:string,dshHome:string,body:Record<string,unkno
  const cwd=join(repoRoot,'packages','portfolio-mcp');
  return new Promise<unknown>((resolve,reject)=>{
   const child=execFile(join(cwd,'.venv','bin','python'),['-m','portfolio_mcp.workbench'],{
-   cwd,env:{DSH_HOME:dshHome,HOME:process.env.HOME,PATH:process.env.PATH},timeout:15000
+   cwd,env:{DSH_HOME:dshHome,DSH_FINANCE_PROFILE_DIR:process.env.DSH_FINANCE_PROFILE_DIR,
+    HOME:process.env.HOME,PATH:process.env.PATH},timeout:15000
   },(error,output)=>{
    if(error)return reject(new AppError(500,'ledger','读取或保存持仓失败，请重试。'));
    try{

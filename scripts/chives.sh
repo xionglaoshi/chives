@@ -38,6 +38,9 @@ if [[ -z "${CHIVES_WORKSPACE_DIR:-}" && "$CHIVES_DATA_DIR" == "$default_user_dir
   fi
 fi
 export DSH_FINANCE_HOME="${DSH_FINANCE_HOME:-$CHIVES_DATA_DIR/dsh}"
+if [[ "$CHIVES_DATA_DIR" == "$ROOT/user-data" ]]; then
+  export DSH_FINANCE_PROFILE_DIR="$CHIVES_DATA_DIR/profile"
+fi
 export DSH_FINANCE_OVERLAY="${DSH_FINANCE_OVERLAY:-}"
 export CHIVES_DEFAULT_ROUTE="${CHIVES_DEFAULT_ROUTE:-huosan/deepseek-v4.1-flash}"
 export CHIVES_PORT="$SERVER_PORT"
