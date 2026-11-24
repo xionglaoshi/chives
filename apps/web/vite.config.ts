@@ -9,7 +9,7 @@ export default defineConfig({
     port: 8888,
     strictPort: true,
     fs: {
-      deny: ['.env', '.env.*', '*.{crt,pem,key,p12,pfx,cer,der}', '.npmrc', '.yarnrc.yml', '**/.git/**', '**/midas-contrib/**', '**/data/profile/**', '**/data/personal-backups/**', '**/data/secrets/**', '**/.credentials.yaml', '**/.credentials.yaml.*'],
+      deny: ['.env', '.env.*', '*.{crt,pem,key,p12,pfx,cer,der}', '.npmrc', '.yarnrc.yml', '**/.git/**', '**/midas-contrib/**', '**/data/**', '**/user-data/**', '**/public-data/**', '**/workspace/**', '**/runtime/**', '**/.credentials.yaml', '**/.credentials.yaml.*'],
     },
     proxy: {
       '/api': `http://127.0.0.1:${CHIVES_SERVER_PORT}`

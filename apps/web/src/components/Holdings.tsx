@@ -83,7 +83,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
  }
  return <section className="holdings"><header><h1>用户持仓</h1><div>
  <button disabled={busy||!!editor||!!valuating} onClick={()=>{void refresh();setQuoteRevision(value=>value+1);}}>刷新</button>
- <button disabled={!book||busy||!!editor} className="holdings-primary" onClick={()=>{setError('');setEditor('new');}}>添加持仓</button></div></header>
+ <button data-init-target="holdings" disabled={!book||busy||!!editor} className="holdings-primary" onClick={()=>{setError('');setEditor('new');}}>添加持仓</button></div></header>
  {error&&<p role="alert">{error}</p>}
  {valuationError&&<p role="status">{valuationError}</p>}
  {book&&<><div className="holdings-totals">

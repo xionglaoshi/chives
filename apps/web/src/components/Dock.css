@@ -293,3 +293,11 @@
 .initial-briefing-confirmation p { margin: 0; }
 .initial-briefing-confirmation label { display: grid; gap: 4px; }
 .initial-briefing-confirmation button { justify-self: start; }
+
+.app[data-initialization-focus="holdings"] [data-init-target="holdings"],
+.app[data-initialization-focus="watchlist"] [data-init-target="watchlist"],
+.app[data-initialization-focus="profile"] [data-init-target="profile"],
+.app[data-initialization-focus="weixin"] [data-init-target="weixin"] {
+  outline: 2px solid #df2929;
+  outline-offset: 2px;
+}

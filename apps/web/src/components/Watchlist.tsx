@@ -74,7 +74,7 @@ export function Watchlist({onConversation}:{onConversation:()=>void}) {
   return <section className="watchlist">
     <header><h1>用户关注</h1><div className="watchlist-actions">
       <button disabled={busy} onClick={()=>void act('screen')}>股票筛选器</button>
-      <button disabled={busy} onClick={()=>setAdding(!adding)}>{adding?'收起添加':'添加关注'}</button>
+      <button data-init-target="watchlist" disabled={busy} onClick={()=>setAdding(!adding)}>{adding?'收起添加':'添加关注'}</button>
     </div></header>
     <ValuationNotice/>
     {adding&&<div className="watchlist-search"><label>股票代码或名称
