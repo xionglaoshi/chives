@@ -146,6 +146,15 @@ def portfolio(paper, quotes):
          delta(r.get("changePct")), delta(r.get("todayPnl"), " 元"), delta(r.get("pnl"), " 元")] for r in rows])
 
 
+def valuation_position(price, low, high):
+    if isinstance(price, (int, float)) and price > 0:
+        if price < low:
+            return "up", f"现价低于估值下限 {number((1 - price / low) * 100)}%"
+        if price > high:
+            return "down", f"现价高于估值上限 {number((price / high - 1) * 100)}%"
+    return "ink", None
+
+
 def holdings(book, quotes=None, valuations=None):
     paper = Paper()
     rows = book.get("positions") or []
@@ -166,8 +175,9 @@ def holdings(book, quotes=None, valuations=None):
         value, tone = ("依据不足" if estimate else "待测算"), "ink"
         if isinstance(low, (int, float)) and isinstance(high, (int, float)) and 0 < low <= high:
             value = f"{number(low)}–{number(high)}"
-            if isinstance(price, (int, float)) and price > 0:
-                tone = "up" if price < low else "down" if price > high else "ink"
+            tone, comparison = valuation_position(price, low, high)
+            if comparison:
+                value += " · " + comparison
         price_text, price_tone = number(price), "ink"
         if isinstance(price, (int, float)) and price > 0:
             pnl = round(price - row["cost_price"], 2)
@@ -298,18 +308,13 @@ def watchlist_page(entries, prices):
         low, high, score = latest.get("low"), latest.get("high"), latest.get("score")
         style = "ink"
         comparison = None
-        if low is None or high is None:
+        if not (isinstance(low, (int, float)) and isinstance(high, (int, float)) and 0 < low <= high):
             value = "依据不足"
         else:
             value = f"{number(low)}–{number(high)}"
             price = prices.get(code)
             if isinstance(price, (int, float)) and price > 0:
-                if price < low:
-                    style = "up"
-                    comparison = f"现价低于估值下限 {number((1 - price / low) * 100)}%"
-                elif price > high:
-                    style = "down"
-                    comparison = f"现价高于估值上限 {number((price / high - 1) * 100)}%"
+                style, comparison = valuation_position(price, low, high)
             elif code in prices:
                 value += "（暂无行情）"
         paper.text(f"合理股价  {value}", style)

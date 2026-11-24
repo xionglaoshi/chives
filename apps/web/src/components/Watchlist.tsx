@@ -1,6 +1,6 @@
 import {useEffect,useState} from 'react';
 import {appPath} from '../appPath';
-import {ValuationRange,valuationComparison,type EstimateRange} from './ValuationRange';
+import {ValuationRange,type EstimateRange} from './ValuationRange';
 import {desk} from './deskApi';
 import './Watchlist.css';
 
@@ -39,9 +39,6 @@ function WatchPrices({code,latest}:{code:string;latest:Estimate|undefined}) {
   },[code]);
   const price=quote?.price;
   const hasPrice=typeof price==='number' && Number.isFinite(price) && price>0;
-  const range=valuationComparison(latest,price);
-  const below=range?.below;
-  const boundary=range?.below?range.low:range?.above?range.high:null;
   const change=quote?.changePct;
   return <>
     <div>{quote && hasPrice ? <>
@@ -50,8 +47,7 @@ function WatchPrices({code,latest}:{code:string;latest:Estimate|undefined}) {
       <small>{quote.basis}</small>
     </> : '暂无行情'}</div>
     <div><small className="watchlist-mobile-label">合理股价</small>
-      <ValuationRange estimate={latest} price={price} showCurrency={false}/>
-      {hasPrice && boundary!==null && <small>现价{below?'低于估值下限':'高于估值上限'} {fmt.format(Math.abs(price/boundary-1)*100)}%</small>}
+      <ValuationRange estimate={latest} price={price} showCurrency={false} showComparison/>
     </div>
   </>;
 }

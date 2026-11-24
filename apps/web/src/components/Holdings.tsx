@@ -125,7 +125,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
              </span>}
            </div>],
            ['合理股价', <div className="holding-estimate">
-             {valuating===position.code?'测算中…':<ValuationRange estimate={estimate} price={price} showCurrency={false}/>}
+             {valuating===position.code?'测算中…':<ValuationRange estimate={estimate} price={price} showCurrency={false} showComparison/>}
              {!estimate?.low && valuating!==position.code && /^\d{6}\.(SH|SZ|BJ)$/.test(position.code) &&
                <button type="button" disabled={!!valuating||busy||!!editor} onClick={()=>void measure(position.code)}>测算</button>}
            </div>],
