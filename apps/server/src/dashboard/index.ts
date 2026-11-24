@@ -21,6 +21,10 @@ export interface DashboardOptions {
   now?: () => Date;
 }
 
+type RankedStock = { code: string; name: string; change_pct: number | null };
+type RankingQuote = { code: string; price: number | null; limit_down: number | null; volume_shares: number | null };
+
+const RANKING_SIZE = 20;
 const PORTFOLIO_TTL_MS = 15_000;
 
 function failure(code: string, message: string): DashboardResult {
@@ -44,13 +48,14 @@ export class DashboardService {
 
   private readonly boardCaches = new Map<string, CoalescedTtlCache<unknown>>();
 
-  async board(part: 'gainers' | 'active' | 'sectors' | 'world' | 'limit-up'): Promise<DashboardResult> {
+  async board(part: 'gainers' | 'active' | 'sectors' | 'world' | 'limit-up' | 'limit-down'): Promise<DashboardResult> {
     const cache = this.boardCaches.get(part) ?? new CoalescedTtlCache<unknown>(() => this.now().getTime());
     this.boardCaches.set(part, cache);
     try {
       const body = await cache.get(30_000, async () => {
         if (part === 'world') return worldIndices();
         if (part === 'limit-up') return this.limitUp();
+        if (part === 'limit-down') return this.limitDown();
         const sector = part === 'sectors';
         const result = await callGateway<{rows: unknown[]}>(this.gateway,
           sector ? 'market_sectors' : 'market_movers',
@@ -91,6 +96,46 @@ export class DashboardService {
       .sort((a, b) => (b.volume_shares ?? -1) - (a.volume_shares ?? -1) || a.code.localeCompare(b.code))
       .slice(0, 20);
     return { rows, asOf: pool.as_of, stale, tradingDate: pool.data.date };
+  }
+
+  private async limitDown() {
+    const overview = await this.market();
+    if (overview.status !== 200) throw new Error('Market breadth unavailable');
+    const market = overview.body as MarketDashboardDto;
+    const count = market.limit.limitDown;
+    if (count == null) throw new Error('Limit-down count unavailable');
+
+    const limitOnly = count >= RANKING_SIZE;
+    const losers = await callGateway<{ rows: RankedStock[] }>(this.gateway, 'market_movers', {
+      kind: 'losers', limit: limitOnly ? 200 : RANKING_SIZE, include_bj: false,
+    });
+    const candidates = [...new Map(losers.data.rows.map(row => [row.code, row])).values()]
+      .filter(row => row.change_pct !== null && row.change_pct < 0)
+      .sort((a, b) => (a.change_pct ?? 0) - (b.change_pct ?? 0) || a.code.localeCompare(b.code));
+
+    const rows: Array<RankedStock & { volume_shares: number | null }> = [];
+    let stale = market.stale || losers.stale === true;
+    for (let start = 0; start < candidates.length; start += RANKING_SIZE) {
+      const batch = candidates.slice(start, start + RANKING_SIZE);
+      const quotes = await callGateway<{ quotes: RankingQuote[] }>(this.gateway, 'market_quote', {
+        codes: batch.map(row => row.code),
+      });
+      stale ||= quotes.stale === true;
+      const byCode = new Map(quotes.data.quotes.map(quote => [quote.code, quote]));
+      for (const row of batch) {
+        const quote = byCode.get(row.code);
+        if (limitOnly && (quote?.price == null || quote.limit_down == null || quote.price !== quote.limit_down)) continue;
+        rows.push({...row, volume_shares: quote?.volume_shares ?? null});
+      }
+      if (!limitOnly || rows.length >= count) break;
+    }
+    if (limitOnly && rows.length < count) throw new Error('Incomplete limit-down coverage');
+    const byVolume = count > RANKING_SIZE;
+    if (byVolume) {
+      if (rows.some(row => row.volume_shares == null)) throw new Error('Incomplete trading volumes');
+      rows.sort((a, b) => (b.volume_shares ?? 0) - (a.volume_shares ?? 0));
+    }
+    return { rows: rows.slice(0, RANKING_SIZE), asOf: losers.as_of, stale, order: byVolume ? 'volume' : 'change' };
   }
 
   invalidatePortfolio(): void {

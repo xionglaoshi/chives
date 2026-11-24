@@ -1336,7 +1336,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
       }
 
       const boardPart = path.slice('/api/dashboard/'.length);
-      if (path.startsWith('/api/dashboard/') && (boardPart === 'gainers' || boardPart === 'active' || boardPart === 'sectors' || boardPart === 'world' || boardPart === 'limit-up')) {
+      if (path.startsWith('/api/dashboard/') && (boardPart === 'gainers' || boardPart === 'active' || boardPart === 'sectors' || boardPart === 'world' || boardPart === 'limit-up' || boardPart === 'limit-down')) {
         if (method !== 'GET') { methodNotAllowed(response,'GET'); return; }
         const result = await dashboard.board(boardPart);
         response.setHeader('cache-control','no-store');

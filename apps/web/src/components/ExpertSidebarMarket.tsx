@@ -15,6 +15,7 @@ import { ExpertSidebarSparkline } from './ExpertSidebarSparkline';
 
 export interface ExpertSidebarMarketProps {
   state: SectionState<MarketDashboardDto>;
+  embedded?: boolean;
 }
 
 function MarketSkeleton(): ReactElement {
@@ -43,11 +44,11 @@ function IndexRow({ index }: { index: MarketIndexDto }): ReactElement {
   );
 }
 
-export function ExpertSidebarMarket({ state }: ExpertSidebarMarketProps): ReactElement {
+export function ExpertSidebarMarket({ state, embedded = false }: ExpertSidebarMarketProps): ReactElement {
   if (state.status === 'loading' || state.data === null) {
     return (
-      <section className="expert-sidebar__section" aria-label="大盘">
-        <h3 className="expert-sidebar__heading">大盘</h3>
+      <section className={embedded ? "mb-market-overview" : "expert-sidebar__section"} aria-label="大盘">
+        {!embedded && <h3 className="expert-sidebar__heading">大盘</h3>}
         {state.status === 'error' ? (
           <p className="expert-sidebar__error" role="status">
             暂时取不到，稍后自动重试
@@ -61,8 +62,8 @@ export function ExpertSidebarMarket({ state }: ExpertSidebarMarketProps): ReactE
 
   const market = state.data;
   return (
-    <section className="expert-sidebar__section" aria-label="大盘">
-      <h3 className="expert-sidebar__heading">大盘</h3>
+    <section className={embedded ? "mb-market-overview" : "expert-sidebar__section"} aria-label="大盘">
+      {!embedded && <h3 className="expert-sidebar__heading">大盘</h3>}
       {state.status === 'error' ? (
         <p className="expert-sidebar__error" role="status">
           暂时取不到，稍后自动重试

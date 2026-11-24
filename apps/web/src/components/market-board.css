@@ -68,3 +68,25 @@
   content: '';
 }
 .mb-bot-message--unread::before { background: #198754; }
+
+.mb-market-overview { display: grid; gap: 12px; }
+.mb-market-overview .expert-sidebar__index {
+  grid-template-columns: minmax(4em, auto) minmax(20px, 1fr) minmax(5em, auto) minmax(3.6em, auto);
+  gap: 8px;
+  padding: 6px 0;
+}
+.mb-market-overview .expert-sidebar__index-price { text-align: right; }
+.mb-market-overview .expert-sidebar__stats { padding-top: 10px; border-top: 1px solid #8883; }
+.mb-market-overview .expert-sidebar__asof { margin: 0; }
+.mb-world .mb-world-quotes { display: grid; grid-template-columns: minmax(0, 1fr); list-style: none; margin: 0; padding: 0; gap: 0; }
+.mb-world-quotes li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content minmax(3.8em, max-content);
+  column-gap: 12px;
+  row-gap: 3px;
+  align-items: baseline;
+  padding: 7px 0;
+}
+.mb-world-quotes li + li { border-top: 1px solid #8882; }
+.mb-world-quotes li > b { text-align: right; }
+.mb-world-quotes li > small { grid-column: 1 / -1; }
