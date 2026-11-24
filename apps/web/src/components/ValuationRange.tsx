@@ -24,5 +24,5 @@ export function ValuationRange({estimate,price,showCurrency=true,showComparison=
 }
 
 export function ValuationNotice() {
-  return <small className="valuation-notice">合理股价由Chives基于该股公开数据、近一年交易数据、外围对标市场、行业动态及国家政策等37个因素复合估算而出，历史数据回测准确率目前仅为64.7%。AI会犯错，数据仅供投研参考，请勿作为投资依据。</small>;
+  return <small className="valuation-notice">AI估算的合理股价及后市AI预测均由Chives基于该股公开数据、近一年交易数据、外围对标市场、行业动态及国家政策等37个因素复合估算而出，历史数据回测平均准确率仅为64.7%。AI会犯错，数据仅供投研参考，请勿作为投资依据。</small>;
 }

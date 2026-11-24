@@ -122,7 +122,7 @@ class KeyFlow(unittest.IsolatedAsyncioTestCase):
         await self.key("\r", lambda: self.showing("资金流入榜"))
         self.assertIn("中A公司", self.body())
         self.assertIn("-2.08%", self.body())
-        for expected, text in [("行情看板","测试指数"),("用户持仓","测试持仓"),("用户关注","后市涨跌预测"),("风格评估","人物生平")]:
+        for expected, text in [("行情看板","测试指数"),("用户持仓","测试持仓"),("用户关注","后市AI预测"),("风格评估","人物生平")]:
             await self.key("\x1b", lambda: not desk.in_dialog)
             await self.key("\x1b[B\r", lambda: self.showing(expected))
             self.assertIn(text, self.body())
@@ -177,7 +177,7 @@ class Reader(unittest.TestCase):
             lines = watchlist_page([entry], {entry["code"]: price}).lines(70)
             parts = [part for line in lines for part in line]
             self.assertTrue(any(style=="class:"+value_style and "¥10–20" in txt for style,txt in parts))
-            self.assertTrue(any(style=="class:"+direction_style and "后市涨跌预测  "+label in txt for style,txt in parts))
+            self.assertTrue(any(style=="class:"+direction_style and "后市AI预测  "+label in txt for style,txt in parts))
 
     def test_width_direction_and_unknown_personal_report(self):
         api = FixtureAPI()

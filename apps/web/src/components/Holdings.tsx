@@ -42,7 +42,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
   let active=true;
   void desk<Record<string,EstimateRange|null>>('holdings-valuations')
    .then(result=>{if(active){setValuations(result);setValuationError('');}})
-   .catch(()=>{if(active)setValuationError('暂时无法读取合理股价。');});
+   .catch(()=>{if(active)setValuationError('暂时无法读取AI估算的合理股价。');});
   return ()=>{active=false;};
  },[book]);
  async function measure(code:string){
@@ -106,7 +106,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
    <div className="holdings-table">
      <table role="table">
        <thead role="rowgroup">
-         <tr role="row">{['证券', quantityLabel, priceLabel, '现价', '合理股价', '今日涨跌', '今日贡献', '操作'].map(label =>
+         <tr role="row">{['证券', quantityLabel, priceLabel, '现价', 'AI估算的合理股价', '今日涨跌', '今日贡献', '操作'].map(label =>
            <th key={label} role="columnheader" scope="col">{label}</th>
          )}</tr>
        </thead>
@@ -126,7 +126,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
                {hidden?'每股盈亏 ••••':pnl===0?'每股持平 0.00元':(pnl>0?'每股浮盈 ':'每股浮亏 ')+pnlNumber.format(Math.abs(pnl))+'元'}
              </span>}
            </div>],
-           ['合理股价', <div className="holding-estimate">
+           ['AI估算的合理股价', <div className="holding-estimate">
              {valuating===position.code?'测算中…':<ValuationRange estimate={estimate} price={price} showCurrency={false} showComparison/>}
              {!estimate?.low && valuating!==position.code && /^\d{6}\.(SH|SZ|BJ)$/.test(position.code) &&
                <button type="button" disabled={!!valuating||busy||!!editor} onClick={()=>void measure(position.code)}>测算</button>}

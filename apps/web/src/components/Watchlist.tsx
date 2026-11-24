@@ -46,7 +46,7 @@ function WatchPrices({code,latest}:{code:string;latest:Estimate|undefined}) {
         <span className={change>0?'watchlist-up':change<0?'watchlist-down':''}> {change>0?'+':''}{fmt.format(change)}%</span>}
       <small>{quote.basis}</small>
     </> : '暂无行情'}</div>
-    <div><small className="watchlist-mobile-label">合理股价</small>
+    <div><small className="watchlist-mobile-label">AI估算的合理股价</small>
       <ValuationRange estimate={latest} price={price} showCurrency={false} showComparison/>
     </div>
   </>;
@@ -102,16 +102,16 @@ export function Watchlist({onConversation}:{onConversation:()=>void}) {
     {notice&&<p role="status">{notice}</p>}
     {entries===null?<p>正在读取关注列表…</p>:entries.length===0?<p>还没有关注的股票。可直接添加，也可请总调度筛选。</p>:
     <div className="watchlist-grid">
-      <div className="watchlist-heading"><span>股票</span><span>行情</span><span>合理股价</span><span>后市涨跌预测</span><span>测算与操作</span></div>
+      <div className="watchlist-heading"><span>股票</span><span>行情</span><span>AI估算的合理股价</span><span>后市AI预测</span><span>测算与操作</span></div>
       {entries.map(entry=>{
         const latest=entry.estimates.at(-1),score=latest?.score;
         return <article className="watchlist-row" key={entry.code}>
           <div><strong>{entry.name}</strong><small>{entry.code}</small></div>
           <WatchPrices code={entry.code} latest={latest}/>
-          <div><small className="watchlist-mobile-label">后市涨跌预测</small>
+          <div><small className="watchlist-mobile-label">后市AI预测</small>
             {score==null?(latest?'依据不足':'待测算'):<OutlookFaces score={score}/>}</div>
           <div className="watchlist-row-actions">
-            <button type="button" disabled={busy||entry.pending} title={entry.pending?'正在测算合理股价':'重新评估合理股价'}
+            <button type="button" disabled={busy||entry.pending} title={entry.pending?'正在测算AI估算的合理股价':'重新评估AI估算的合理股价'}
               aria-label={'重新评估 '+entry.name} aria-busy={Boolean(entry.pending)} onClick={()=>void act('estimate',entry.code)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 13-2l2 3M19 16a8 8 0 0 1-13 2l-2-3"/>

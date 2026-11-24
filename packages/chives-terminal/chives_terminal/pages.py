@@ -186,7 +186,7 @@ def holdings(book, quotes=None, valuations=None):
             price_text += " · " + outcome
         detail.append([cell(one(row["name"]), "strong"), cell(one(code), "dim"), cell(number(row["qty"])),
                        cell(number(row["cost_price"], digits=4)), cell(price_text, price_tone), cell(value, tone)])
-    paper.table(["证券", "代码", "持股数", "成本价", "现价", "合理股价"], detail)
+    paper.table(["证券", "代码", "持股数", "成本价", "现价", "AI估算的合理股价"], detail)
     for r in rows:
         note = r.get("note")
         if note and "模拟持仓" not in note:
@@ -317,7 +317,7 @@ def watchlist_page(entries, prices):
                 style, comparison = valuation_position(price, low, high)
             elif code in prices:
                 value += "（暂无行情）"
-        paper.text(f"合理股价  {value}", style)
+        paper.text(f"AI估算的合理股价  {value}", style)
         if comparison:
             paper.text(comparison, "dim")
         if score is None:
@@ -328,7 +328,7 @@ def watchlist_page(entries, prices):
             direction, color = "看涨 " + "☺" * score, "up"
         else:
             direction, color = "看跌 " + "☹" * -score, "down"
-        paper.text("后市涨跌预测  " + direction, color)
+        paper.text("后市AI预测  " + direction, color)
         paper.text(f"第 {latest['version']} 版", "dim")
     return paper
 
