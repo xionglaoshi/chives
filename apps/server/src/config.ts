@@ -171,8 +171,7 @@ export function loadConfig(env: NodeJS.ProcessEnv = process.env): ChivesConfig {
       DEFAULT_TASK_IDLE_CLOSE_MS,
     ),
   };
-  const paperStateDir = env.CHIVES_PAPER_STATE_DIR?.trim();
-  if (paperStateDir !== undefined && paperStateDir !== '') config.paperStateDir = paperStateDir;
+  config.paperStateDir = env.CHIVES_PAPER_STATE_DIR?.trim() || join(dataDir, 'paper');
   if (route !== undefined) config.defaultRoute = route;
   return config;
 }

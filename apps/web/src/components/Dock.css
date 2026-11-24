@@ -264,13 +264,24 @@
 .dock-tool-list button:not([aria-disabled="true"]):hover { background: var(--color-line); }
 .dock-tool-list button[aria-disabled="true"] { color: var(--color-text-muted); cursor: default; }
 
-.chat-header__icon.dock-initialization,
-.dock-initialization-steps button { color: #df2929; }
+.chat-header__icon.dock-initialization { color: #df2929; }
 .dock-initialization { animation: dock-initialization-blink 1s steps(1) infinite; }
 @keyframes dock-initialization-blink { 50% { opacity: .4; } }
 @media (prefers-reduced-motion: reduce) { .dock-initialization { animation: none; } }
+.dock-initialization-note {
+  margin: 0 0 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--color-line);
+  border-radius: 8px;
+  background: var(--color-surface-muted, var(--color-bg));
+  color: var(--color-text);
+  font-size: 13px;
+  line-height: 1.6;
+}
+.dock-initialization-note p { margin: 5px 0 0; }
 .dock-initialization-steps { margin: 0; padding: 0; list-style: none; }
 .dock-initialization-steps button {
+  color: var(--color-text);
   display: block;
   width: 100%;
   text-align: left;

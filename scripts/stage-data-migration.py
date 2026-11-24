@@ -29,7 +29,7 @@ def destination(relative):
     if top in MECHANICAL_ENTRIES:
         return Path("public-data/mechanical-cache") / relative
     if top == "hotspots":
-        return Path("public-data/chives-build") / relative
+        return Path("review") / relative
     return Path("review") / relative
 
 

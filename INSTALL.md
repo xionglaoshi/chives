@@ -46,11 +46,22 @@ Tab 或左右键切换「选 Bot」「工作台」「设置」，上下键选择
 
 ## 第一次使用
 
-在模型设置中添加自己的连接，填写供应商的地址、协议、模型 ID 和密钥。验证连接并设为默认后，打开「总调度」，选一家熟悉的公司试问。 [模型设置](http://127.0.0.1:8888/#/settings?tab=models) · [总调度](http://127.0.0.1:8888/#/bot/operator)
+全新用户安装首次打开工作台时，Dock 左端会显示「请先完成初始化」。点击后可逐项打开对应入口。八项均完成时，入口自动收起。
+
+| 待办项 | 完成条件 |
+| --- | --- |
+| 添加模型 | 填写 API 地址和 API Key，选择协议，点击「验证并保存」。Chives 自动发现并启用通过验证的模型。也可以在同一窗口手动指定模型 ID。 |
+| 完成用户画像评测问卷 | 回答并提交问卷，等正式画像生成。 |
+| 填写用户基本信息 | 在用户资料中上传头像，填写姓名、邮箱、电话并保存。 |
+| 添加持仓股票 | 至少保存一条持仓。 |
+| 添加关注股票 | 至少保存一只关注股票。 |
+| 连接微信 | 扫码授权后，从绑定微信向 Chives 发一段文字，收到欢迎消息。 |
+| 创建盯盘任务 | 在总调度会话中回答希望监控的股票和条件，等任务创建并启用。 |
+| 创建每日投研简报任务 | 从总调度会话打开简报确认，填写追加事项或明确回复「没有」。确认后创建周一至周五北京时间 09:00 执行的任务。 |
+
+模型启用后，可以打开「总调度」选一家熟悉的公司试问。收到回答后，点开公告核对数字。若能聊天但查不到数据，可检查 Bot 的工具授权和数据源连接。 [设置中心](docs/设置中心.md) · [投研工具](docs/投研工具.md)
 
 > 请核对这家公司最近一期已披露的合并报表。列出报告期、归母净利润和经营活动现金流量净额，给出公告链接、页码和数据单位。找不到的项目请注明。
-
-收到回答后，点开公告核对数字。如果能聊天但查不到数据，可分别检查 Bot 的工具授权和数据源连接。 [设置中心](docs/设置中心.md) · [投研工具](docs/投研工具.md)
 
 ## 代理与依赖
 
@@ -76,9 +87,30 @@ Tab 或左右键切换「选 Bot」「工作台」「设置」，上下键选择
 
 ## 更新与备份
 
+### 安装根目录分工
+
+| 目录 | 用途 |
+| --- | --- |
+| `user-data/` | 本机用户状态。数据库 `chives.sqlite` 保存会话、任务及设置等结构化状态。用户画像、参数和持仓在 `profile/`，关注在 `user/`，Bot 档案和记忆在 `bots/`，模型与频道凭证在 `secrets/`，模型运行状态在 `dsh/`、`harness/`，盯盘引擎的规则、计划和告警在 `watch-engine/`，Hub 的个人设置与处理状态在 `hub/`。 |
+| `workspace/` | Agent 和 Bot 的任务工作区。Bot 的输入、任务产物和交付文件保存于 `workspace/bots/<Bot ID>/`。这些文件也属于用户数据。 |
+| `public-data/mechanical-cache/` | 第三方机械数据缓存。行情和日线在 `marketdata/`，资讯、市场监控缓存和公开图表快照在 `market/`。 |
+| `public-data/chives-cache/` | 每次启动即从发布源拉取完整特色数据快照，并在后台检查更新，包含机会榜单、合理股价和后市判断。 |
+| `runtime/` | 日志、进程信息、浏览器、专用 Python、下载缓存和临时目录，也保存迁移批次与可回滚副本。 |
+| `credentials/` | 开发机本地发行凭证，独立于用户模型和频道凭证。 |
+| `data/` | 迁移前的旧混合目录。已迁移的本机保留它作回滚，日常读写使用分层后的目录。 |
+| `apps/`、`packages/` | Web、服务端及各工具包源码。 |
+| `bots/`、`skills/`、`presets/`、`config/` | 随应用分发的 Bot 定义、技能、预设及公共配置。 |
+| `gateways/`、`overlays/`、`patches/` | 数据网关配置、内核工具接入配置和兼容补丁。 |
+| `deploy/`、`scripts/`、`docs/` | 安装、发布、运维程序及文档。 |
+| `.git/`、`.github/` | 版本库和 CI 工作流。 |
+| `.venv/`、`node_modules/`、`.pnpm-store/` | 专用 Python 环境、Node.js 依赖及 pnpm 缓存。 |
+| `.pytest_cache/`、`.ruff_cache/` | 开发工具缓存。 |
+
 ### 数据目录迁移预检
 
-新安装的用户状态和日线缓存分别使用安装根内的 `user-data/` 和 `public-data/mechanical-cache/`。已有 `data/` 的安装在迁移前继续读取旧目录。
+发行版升级时，安装器在停服后迁移旧版本的盯盘状态、Hub 数据库和市场监控缓存。前两者进入 `user-data/`，市场监控进入 `public-data/mechanical-cache/market/`。已有目标文件优先保留，旧版本副本可供回滚。来源不明确时，旧副本留待人工核对。
+
+新安装的用户状态和日线缓存分别使用安装根内的 `user-data/` 和 `public-data/mechanical-cache/`。已有 `data/` 的安装在迁移前继续读取旧目录。清空用户数据时，`public-data/` 下两类公共数据均保留。资讯等机械数据按各自更新频率拉取。
 
 `python3 scripts/stage-data-migration.py` 默认只统计旧目录的拟迁移条目。隔离演练可加 `--root <测试安装根> --stage`。正式存量的暂存应在数据写入停止后运行。暂存批次位于安装根的 `runtime/`，包含 SQLite 一致快照、校验摘要和迁移清单。未确认归属的内容保存在该批次的 `review/`。暂存步骤保留原件。历史交付若在旧路径缺失，可通过可重复的 `--workspace-backup <备份中的 bots 目录>` 提供已核实的备份。恢复按 Bot 和完整相对路径匹配，多个副本的内容须一致。会话与内核的旧工作区路径在暂存副本中更新，`verification.json` 汇总改写数量及历史交付文件能否从新路径读回。停服后可用同一命令加 `--activate runtime/data-migration-…` 启用已校验且目的目录为空的批次。确认所有数据读取入口已经接入分类目录后再用于正式安装。停服后使用 `--rollback runtime/data-migration-…` 可恢复旧路径，切换后产生的新数据保存在批次中，供人工核对后合并。
 
@@ -99,6 +131,12 @@ python3 scripts/user_archive.py reindex
 用户库以 `data/user/` 和 `data/user-archive-state/` 一起备份和恢复，问卷原件、旧持仓、原消息另随 `data/` 全量备份。设置页的个人配置导出只覆盖它所列的旧版资料。恢复时使用相同版本的属性定义，停服恢复整份备份，重新运行初始化和索引命令，再读回一条带出处的记录。档案管理员通过本机 `python3 scripts/user_archive.py apply` 从标准输入接收带来源的赋值单。普通 Bot 用 `read_user_attributes`、`find_user_memory` 查询，凭本人原句用 `propose_user_attribute` 提案。独立模型审证后，本人明确说明的长期方法偏好可按版本和取值规则自动合并。风险、仓位与行为统计等项目保留给管理员按原始依据复核。任务复盘和三小时摘要由工作台在后台运行；停机期间进度保存在本机。[用户记忆写入规则](docs/user-wiki-rules.md)
 
 旧版源码安装如果曾直接启动服务，数据可能位于安装目录中的第二层 `.chives/`。迁移前先停服并备份。若只有旧库，将旧目录的内容整体迁至 `data/`，包含 SQLite 数据库及同名的 WAL、SHM 文件。若 `data/` 已有业务文件，先核对重名文件和两处会话、画像、持仓及计划，保留当前有效记录，避免用旧库覆盖新库。确认启动后能读到原记录，再移除旧目录。
+
+### 恢复出厂
+
+先在设置中停止 Chives。本机开发检出可运行 `./start stop`，等服务退出后再操作。将 `user-data/` 移出安装根并保留作备份，然后重新启动。Chives 会重建空白用户状态，并将旧 `workspace/` 转移到 `runtime/user-reset-*/workspace/`，让新会话从空白工作区开始。
+
+保留整个 `public-data/`。缓存中的行情、资讯及已发布特色数据仍可使用和继续更新。迁移前的 `data/`、迁移批次和旧工作区恢复副本仍用于回滚，也可能包含历史用户内容。全新用户安装会重新显示八项初始化，开发和测试环境依照环境设置隐藏入口。
 
 ## 卸载
 
@@ -138,12 +176,18 @@ bash scripts/install-chives.sh
 
 「问AI」的预设集中在 [config/ask-ai-prompts.json](config/ask-ai-prompts.json)。每张榜单、卡片与报告段落有自己的条目，金额显示等分支也可分别修改。保留需要的双花括号变量，例如 `{{榜单名}}`，修改后刷新本机开发网页或重建静态网页使之生效。
 
+Git 检出的本机启动脚本默认使用开发环境。独立测试实例可设置 `CHIVES_ENVIRONMENT=test`。两种环境的 Dock 均按初始化已完成处理，用户安装版仍按八项实际完成状态显示引导。
+
 ### 开发与发布验收
 
 Chives 开发测试统一使用 GitHub Actions 的临时虚拟机，验收环境固定为 `linux-x64`、`windows-x64`、`macos-arm64`。本次数据分层与发布改造也采用这三个环境。跨平台源码安装、空白初始化与恢复出厂由 [源码安装工作流](.github/workflows/source-install.yml) 验证。填写验收记录时附上工作流链接和提交号。
 
 ### 特色数据发布试点
 
-开发侧可用服务端安装的 `tsx` 运行 `scripts/build-feature-publication.ts`，传入 `--source`、`--output`、`--day`，以及明确批准发布的 `--board`、`--code`（可多次指定）。例如用已有公共榜单的产出目录，先选择一张榜和一只证券演练。导出器只写内容摘要命名的快照及 `manifest.json`。将该目录单独映射到静态只读下载路径，先发布快照，再发布清单。
+Codex 在股票 AGENT 工作区下生产特色数据。以 `/Users/xiong/.agents/workspace/股票AGENT/Chives特色数据/` 为例：
 
-发行版安装器默认设置 `CHIVES_FEATURE_DATA_URL=https://150.158.11.154/chives-features/`。设置发布地址后，机会榜单、用户关注和用户持仓从同一发布源读取，缓存位于用户数据目录的同级 `public-data/chives-cache/`。刷新失败时使用上次通过验证的版本。未配置发布源时，开发环境沿用现有本机计算入口。
+1. 原件放在 `production/`。生成榜单时向 `scripts/hotspots/generate.py` 传入 `--data "$production/hotspots"`。生成待发布估值时，在生产进程中将 `CHIVES_RESEARCH_LIBRARY` 设为 `"$production/equity-research"`。
+2. 从 Chives 源码目录用 `apps/server/node_modules/.bin/tsx scripts/build-feature-publication.ts` 导出。传入 `--source "$production"`、`--output "$publication"` 和估值日期 `--day YYYY-MM-DD`。两条路径均位于股票 AGENT 工作区内。用可重复的 `--board` 和 `--code` 明确指定本次准予公开的榜单和证券。发布包只包含 SHA-256 文件名的快照以及 `manifest.json`。
+3. 核对发布包所含范围。先上传快照，再更新服务器的 `manifest.json`，最后在 Chives 点击「刷新榜单」查看已发布结果。应用内缓存位于 `public-data/chives-cache/snapshot.json`。
+
+发行版安装器默认设置 `CHIVES_FEATURE_DATA_URL=https://150.158.11.154/chives-features/`。包括首次安装在内，每次启动都会立即在后台拉取发布清单和本次发布的完整快照，随后每分钟检查发布摘要，有新版本或本机缓存缺失时重新下载。缓存位于 `public-data/chives-cache/`，刷新失败时保留上次通过验证的版本。开发、测试和用户安装的机会榜单、关注和持仓均读取该缓存。服务器没有发布的估值或榜单显示为缺失。

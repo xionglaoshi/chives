@@ -8,6 +8,7 @@ import logging
 import signal
 import sys
 import threading
+from dataclasses import replace
 from datetime import datetime
 from pathlib import Path
 from typing import Sequence
@@ -31,6 +32,7 @@ def build_parser() -> argparse.ArgumentParser:
         default=None,
         help="runtime directory (pid/log live here for scripts/market-watch.sh)",
     )
+    parser.add_argument("--db-path", type=Path, help="override the market cache database path")
     parser.add_argument("--check-config", action="store_true", help="validate configuration and exit")
     parser.add_argument("--once", action="store_true", help="run one tick, print /overview, exit")
     return parser
@@ -59,6 +61,8 @@ def main(argv: Sequence[str] | None = None) -> int:
     except ConfigError as exc:
         print(f"配置错误: {exc}", file=sys.stderr)
         return 2
+    if args.db_path:
+        config = replace(config, runtime=replace(config.runtime, db_path=args.db_path.resolve()))
     if args.out_dir:
         Path(args.out_dir).mkdir(parents=True, exist_ok=True)
     if args.check_config:

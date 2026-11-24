@@ -7,7 +7,9 @@
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 RUN="$ROOT/runtime/chives"
-mkdir -p "$RUN"
+mkdir -p "$RUN" "$ROOT/runtime/tmp"
+export TMPDIR="$ROOT/runtime/tmp/"
+export npm_config_cache="${npm_config_cache:-$ROOT/runtime/npm-cache}"
 SERVER_PORT="${CHIVES_PORT:-8880}"
 WEB_PORT="${CHIVES_WEB_PORT:-8888}"
 GATEWAY_PORT="${CN_MARKET_PORT:-8868}"
@@ -45,6 +47,7 @@ fi
 export DSH_FINANCE_OVERLAY="${DSH_FINANCE_OVERLAY:-}"
 export CHIVES_DEFAULT_ROUTE="${CHIVES_DEFAULT_ROUTE:-huosan/deepseek-v4.1-flash}"
 export CHIVES_PORT="$SERVER_PORT"
+export CHIVES_ENVIRONMENT="${CHIVES_ENVIRONMENT:-development}"
 export CALENDAR_PYTHON="${CALENDAR_PYTHON:-$ROOT/.venv/bin/python}"
 
 ENGINES=0

@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { mkdir, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import type { HoldingValuation } from './holding-valuations.js';
 
@@ -59,6 +59,7 @@ export function featureDataService(endpoint: string, cache: string) {
   const cached = join(cache, 'snapshot.json');
   let snapshot: Snapshot | null = null;
   let refreshed = 0;
+  let downloadedHash: string | undefined;
   let pending: Promise<Snapshot | null> | undefined;
 
   async function refresh(): Promise<Snapshot | null> {
@@ -71,6 +72,10 @@ export function featureDataService(endpoint: string, cache: string) {
       if (!isRecord(manifest) || manifest.schema !== 1 ||
           typeof manifest.sha256 !== 'string' || !/^[a-f0-9]{64}$/.test(manifest.sha256)) {
         throw new Error('Invalid featured data manifest');
+      }
+      if (snapshot && downloadedHash === manifest.sha256 &&
+          (await stat(cached).catch(() => undefined))?.isFile()) {
+        return snapshot;
       }
       const bytes = await download(new URL(manifest.sha256 + '.json', base), sizeLimit);
       if (createHash('sha256').update(bytes).digest('hex') !== manifest.sha256) {
@@ -86,10 +91,12 @@ export function featureDataService(endpoint: string, cache: string) {
         await rm(temporary, { force: true });
       }
       snapshot = next;
+      downloadedHash = manifest.sha256;
     } catch {
       // Keep serving the last verified release during publication or network failures.
+    } finally {
+      refreshed = Date.now();
     }
-    refreshed = Date.now();
     return snapshot;
   }
 

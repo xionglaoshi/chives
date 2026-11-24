@@ -105,6 +105,10 @@ def generate(folder,due):
 
 if __name__=='__main__':
     parser=argparse.ArgumentParser()
-    parser.add_argument('--data',type=Path,default=sources.ROOT/'data/hotspots')
+    parser.add_argument('--data', type=Path, required=True, help='production workspace outside the Chives installation')
     parser.add_argument('--due',action='store_true')
-    args=parser.parse_args();generate(args.data,args.due)
+    args=parser.parse_args()
+    destination=args.data.resolve()
+    if destination.is_relative_to(sources.ROOT) or destination.is_relative_to(Path.home()/'.chives'):
+        parser.error('--data 必须指向 Chives 安装根之外的生产工作区')
+    generate(destination,args.due)

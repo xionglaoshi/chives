@@ -9,7 +9,7 @@ if [[ -d "$PWD/data" && ! -d "$CHIVES_DATA_DIR" ]] &&
   mechanical_dir="$PWD/data"
 fi
 export DSH_FINANCE_HOME="$CHIVES_DATA_DIR/dsh"
-export DSH_FINANCE_OVERLAY="" CHIVES_PAPER_STATE_DIR="$PWD/runtime/paper"
+export DSH_FINANCE_OVERLAY="" CHIVES_PAPER_STATE_DIR="$CHIVES_DATA_DIR/paper"
 export CN_DAILY_STORE_DB="$mechanical_dir/marketdata/daily.sqlite"
 export CHIVES_HARNESS=dsh
 mkdir -p "$PWD/runtime/tmp"

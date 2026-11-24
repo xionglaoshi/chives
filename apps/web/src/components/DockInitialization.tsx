@@ -17,18 +17,19 @@ type Status = Record<InitializationStep,boolean> & {briefingPending:boolean};
 
 export function useInitialization() {
   const [status,setStatus]=useState<Status|null>(null);
+  const preview=new URLSearchParams(window.location.search).get('preview')==='initialization';
   useEffect(()=>{
     let active=true, timer:number;
     const refresh=async()=>{
       try {
-        const next=await desk<Status>('initialization');
+        const next=await desk<Status>(preview?'initialization?preview=1':'initialization');
         if(active)setStatus(next);
       } catch { /* The next poll can recover once the service is available. */ }
       finally {if(active)timer=window.setTimeout(refresh,10000);}
     };
     void refresh();
     return ()=>{active=false;window.clearTimeout(timer);};
-  },[]);
+  },[preview]);
   return {
     steps:status?steps.filter(([id])=>!status[id]):[],
     briefingPending:status?.briefingPending??false,

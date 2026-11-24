@@ -2,11 +2,11 @@
 import {createRequire} from 'node:module';
 import {join,dirname} from 'node:path';
 import {homedir} from 'node:os';
-import {pathToFileURL} from 'node:url';
+import {fileURLToPath,pathToFileURL} from 'node:url';
 import {existsSync,readdirSync,readFileSync} from 'node:fs';
 const [home,version,action,model]=process.argv.slice(2);
 const id='openai-codex';
-const cache=join(process.env.npm_config_cache||join(homedir(),'.agents/state/chives-npm'),'_npx');
+const cache=join(process.env.npm_config_cache||fileURLToPath(new URL('../runtime/npm-cache/',import.meta.url)),'_npx');
 const emit=value=>console.log(JSON.stringify(value));
 // The CLI account catalog can advertise new chat models before the kernel ships them.
 function subscriptionCatalog(models, getSupportedThinkingLevels) {

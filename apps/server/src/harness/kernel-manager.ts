@@ -2,7 +2,7 @@ import { execFile } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
 import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
 import { mkdtemp, rm } from 'node:fs/promises';
-import { homedir, tmpdir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { promisify } from 'node:util';
 import semver from 'semver';
@@ -11,6 +11,7 @@ import { AppError } from '../errors.js';
 
 const run = promisify(execFile);
 const registry = 'https://registry.npmjs.org';
+const runtime = fileURLToPath(new URL('../../../../runtime/',import.meta.url));
 const baseline = readFileSync(new URL('../../../../config/dsh-version',import.meta.url),'utf8').trim();
 const versionFile = (data:string) => join(data,'harness','dsh','version');
 
@@ -26,7 +27,7 @@ export function selectedVersion(data:string):string {
 }
 function downloadEnv(){
   return { ...process.env, npm_config_registry:registry,
-    npm_config_cache:process.env.npm_config_cache ?? join(homedir(),'.agents/state/chives-npm'),
+    npm_config_cache:process.env.npm_config_cache ?? join(runtime,'npm-cache'),
     HTTPS_PROXY:process.env.HTTPS_PROXY || 'http://127.0.0.1:7897',
     HTTP_PROXY:process.env.HTTP_PROXY || 'http://127.0.0.1:7897' };
 }
@@ -39,7 +40,9 @@ async function latestRelease(){
   return version;
 }
 async function verifyRelease(version:string){
-  const home=await mkdtemp(join(tmpdir(),'chives-dsh-upgrade-'));
+  const temporary=join(runtime,'tmp');
+  mkdirSync(temporary,{recursive:true});
+  const home=await mkdtemp(join(temporary,'chives-dsh-upgrade-'));
   const pkg='@deepseek-ai/dsh@'+version;
   const env={...downloadEnv(),DSH_HOME:home};
   try {

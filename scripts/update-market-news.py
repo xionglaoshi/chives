@@ -1,4 +1,5 @@
 """Publish a compact reading list from publisher public front pages."""
+import argparse
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
@@ -13,7 +14,7 @@ from bs4 import BeautifulSoup
 import requests
 
 ROOT = Path(__file__).resolve().parents[1]
-OUTPUT = ROOT / 'apps/web/public/market-news.json'
+OUTPUT = ROOT / 'public-data/mechanical-cache/market/market-news.json'
 SHANGHAI = ZoneInfo('Asia/Shanghai')
 DOMESTIC = {
     '证券时报': ('https://www.stcn.com/', r'/article/detail/\d+\.html'),
@@ -115,9 +116,10 @@ def select(candidates, now, global_news=False):
     return selected
 
 
-def main():
+def main(output):
     now = datetime.now(SHANGHAI)
-    previous = json.loads(OUTPUT.read_text()) if OUTPUT.exists() else {}
+    output.parent.mkdir(parents=True, exist_ok=True)
+    previous = json.loads(output.read_text(encoding="utf-8")) if output.exists() else {}
     snapshot = {}
     with ThreadPoolExecutor(max_workers=12) as pool:
         pending = {
@@ -148,11 +150,13 @@ def main():
         raise SystemExit('No usable news snapshot')
     if snapshot == previous:
         return
-    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=OUTPUT.parent, delete=False) as handle:
+    with tempfile.NamedTemporaryFile(mode='w', encoding='utf-8', dir=output.parent, delete=False) as handle:
         json.dump(snapshot, handle, ensure_ascii=False, separators=(',', ':'))
         pending_file = Path(handle.name)
-    pending_file.replace(OUTPUT)
+    pending_file.replace(output)
 
 
 if __name__ == '__main__':
-    main()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--output', type=Path, default=OUTPUT)
+    main(parser.parse_args().output)

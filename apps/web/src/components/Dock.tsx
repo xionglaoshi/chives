@@ -201,11 +201,15 @@ export function Dock(props: DockProps): ReactElement {
       </button>
     </div>
     {expanded === 'initialize' && <div className="chat-header__panel" role="dialog" aria-label="请先完成初始化">
+      <div className="dock-initialization-note">
+        <strong>为什么要完成初始化？</strong>
+        <p>Chives 需要依据您的真实资料、持仓和关注来分析和回答。缺少这些信息时，它更容易作出错误判断，给出的建议也可能不适合您。在阶段性测试中，建立完整用户数据后，Chives 的建议准确率较空白状态提高了 300% 以上。请耐心完成下列待办，让 Chives 建立为您工作所需的用户数据。</p>
+      </div>
       <ul className="dock-initialization-steps">
-        {initialization.map(([id,label])=><li key={id}><button type="button" onClick={()=>{
+        {initialization.map(([id,label],index)=><li key={id}><button type="button" onClick={()=>{
           close();
           props.onInitialize(id);
-        }}>{label}</button></li>)}
+        }}>待办项{index + 1}：{label}</button></li>)}
       </ul>
     </div>}
     {(expanded === 'add' || (active && 'render' in active)) && (

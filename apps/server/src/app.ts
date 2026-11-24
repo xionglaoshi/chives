@@ -40,12 +40,11 @@ import {
 } from './bots/index.js';
 import type { ChivesConfig } from './config.js';
 import { DashboardService } from './dashboard/index.js';
-import {hotspotService} from './dashboard/hotspots.js';
-import {Watchlist, screeningPrompt, valuationDay, valuationInstructions} from './dashboard/watchlist.js';
+import {marketNewsService} from './dashboard/market-news.js';
+import {Watchlist, screeningPrompt} from './dashboard/watchlist.js';
 import {holdings} from './dashboard/holdings.js';
 import {initialBriefingPrompt,initialBriefingSchedule,initialBriefingTitle,subscribeInitialBriefingDelivery} from './routines/initial-briefing.js';
 import {featureDataService} from './dashboard/feature-data.js';
-import {latestHoldingValuation,measureHoldingValuation,type HoldingValuation} from './dashboard/holding-valuations.js';
 import { createSnapshotRunner } from './dashboard/portfolio.js';
 import {
   toAlertEventDto,
@@ -98,7 +97,7 @@ import {
 import { SessionTokenRegistry } from './delegations/tokens.js';
 import { approvedOnly, describeEntry, installed, manageConnection, mountConnections, templates } from './settings/mcp-connections.js';
 import { assets, assetOptions, saveAssets, type AssetProfile } from './harness/bot-assets.js';
-import { basename, dirname, join as joinPath } from 'node:path';
+import { dirname, join as joinPath } from 'node:path';
 import { KernelManager } from './harness/kernel-manager.js';
 
 import { FakeDriver } from './harness/fake.js';
@@ -426,12 +425,9 @@ export function createApp(options: CreateAppOptions): ChivesApp {
     throw new Error('检测到旧版数据库。请先停服，按 INSTALL.md「更新与备份」将旧数据迁至 data/，再启动 Chives。');
   }
   const publicData=joinPath(dirname(config.dataDir),'public-data');
-  const featureBuild=basename(config.dataDir)==='user-data'?joinPath(publicData,'chives-build'):config.dataDir;
-  const hotspots=hotspotService(config.repoRoot,featureBuild);
-  const featureEndpoint=process.env.CHIVES_FEATURE_DATA_URL?.trim();
-  const features=featureEndpoint
-    ? featureDataService(featureEndpoint,joinPath(publicData,'chives-cache'))
-    : undefined;
+  const marketNews=marketNewsService(config.repoRoot,joinPath(publicData,'mechanical-cache'));
+  const featureEndpoint=process.env.CHIVES_FEATURE_DATA_URL?.trim() || 'https://150.158.11.154/chives-features/';
+  const features=featureDataService(featureEndpoint,joinPath(publicData,'chives-cache'));
 
   const hadDatabase = existsSync(joinPath(config.dataDir, DATABASE_FILE));
   resetWorkspaceIfUserDataIsMissing(config.dataDir, taskWorkspaceRoot(config.dataDir));
@@ -541,7 +537,14 @@ export function createApp(options: CreateAppOptions): ChivesApp {
   const driver =
     options.driver ?? (config.harness === 'fake' ? new FakeDriver() : undefined);
   const watchlist = new Watchlist(config.repoRoot,config.dataDir);
-  const holdingValuations = new Map<string, Promise<HoldingValuation>>();
+  async function publishedWatchlist() {
+    const entries=watchlist.read();
+    if (!entries.length) return [];
+    const publication=await features.read();
+    return entries.map(({code,name,addedAt,source,note})=>({
+      code,name,addedAt,source,note,publicEstimate:publication?.valuations[code]??null,
+    }));
+  }
   const orchestrator = new Orchestrator({
     executionFor: effectiveModel,
     styleReportTurn: (botId, text, attachment, messageId, sink) => {
@@ -846,6 +849,14 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           methodNotAllowed(response, 'POST');
           return;
         }
+        if (path === '/api/internal/published-valuation') {
+          const body=await readJsonObject(request);
+          const code=String(body.code??'').trim().toUpperCase();
+          if(!/^\d{6}\.(SH|SZ|BJ)$/.test(code))throw new AppError(400,'security','请输入完整沪深北证券代码。');
+          const publication=await features.read();
+          sendJson(response,200,{code,estimate:publication?.valuations[code]??null});
+          return;
+        }
         if (path === '/api/internal/operator/watchlist') {
           const bot=registry.get(identity.botId);
           const task=store.tasks.get(identity.taskId);
@@ -856,16 +867,13 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           const body=await readJsonObject(request);
           const user=store.messages.listByTask(task.id).findLast(message=>message.role==='user');
           if (body.action==='read') {
-            sendJson(response,200,watchlist.read());return;
+            sendJson(response,200,await publishedWatchlist());return;
           }
           if (body.action==='add') {
             const codes=user?.content.trim().match(/^确认加入(?:用户关注|自选股)[：:]\s*((?:\d{6}\.(?:SH|SZ|BJ)[、，,\s]*)+)$/i)?.[1]
               ?.match(/\d{6}\.(?:SH|SZ|BJ)/gi);
             if (!codes?.length || codes.length>50) throw new AppError(403,'watchlist_confirm','请用户发出明确确认及完整证券代码。');
             sendJson(response,200,watchlist.add([...new Set(codes.map(code=>code.toUpperCase()))],'screen',now()));return;
-          }
-          if (body.action==='estimate' && user) {
-            sendJson(response,200,watchlist.saveEstimate(user.id,body,task.id,bot.id,now()));return;
           }
           throw new AppError(400,'watchlist_action','未知用户关注操作。');
         }
@@ -1361,6 +1369,13 @@ export function createApp(options: CreateAppOptions): ChivesApp {
         return;
       }
 
+      if (path === '/api/dashboard/market-news') {
+        if (method !== 'GET') { methodNotAllowed(response, 'GET'); return; }
+        response.setHeader('cache-control', 'no-store');
+        sendJson(response, 200, await marketNews());
+        return;
+      }
+
       if (path === '/api/dashboard/sector-leaders') {
         if (method !== 'GET') { methodNotAllowed(response,'GET'); return; }
         const result = await dashboard.sectorLeaders(url.searchParams.get('name'));
@@ -1539,47 +1554,29 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           }
           result=employment.list();
         }else if(section==='hotspots' && (method==='GET'||method==='POST')){
-          if(features){
-            const publication=await features.read(method==='POST');
-            result={mode:'published',snapshot:publication?.hotspots??null,status:{state:publication?.hotspots?'ready':'idle'}};
-          }else result=method==='GET'?hotspots.current():await hotspots.start();
+          const publication=await features.read(method==='POST');
+          result={mode:'published',snapshot:publication?.hotspots??null,status:{state:publication?.hotspots?'ready':'idle'}};
         }else if(section==='watchlist' && (method==='GET'||method==='POST')){
           if(method==='GET'){
-            const publication=await features?.read();
-            result=watchlist.read().map(entry=>({...entry,
-              ...(features?{publicEstimate:publication?.valuations[entry.code]??null}:{}),
-              pending:entry.pending &&
-              (()=>{const taskId=store.messages.get(entry.pending)?.taskId;return taskId && store.tasks.get(taskId)?.status==='running';})()}));
+            result=await publishedWatchlist();
           }else{
             const body=await readJsonObject(request), code=String(body.code??'');
             if(body.action==='add')result=watchlist.add([code],'manual',now());
             else if(body.action==='remove') {watchlist.remove(code);result={ok:true};}
             else if(body.action==='screen') result=await orchestrator.submitMessage(coordinatorId,screeningPrompt);
-            else if(body.action==='estimate' && features) {
+            else if(body.action==='estimate') {
               watchlist.get(code);
-              await features.read(true);
+              const publication=await features.read(true);
+              if(!publication?.valuations[code])throw new AppError(404,'valuation_unavailable','暂无已发布估值。');
               result={ok:true};
-            }else if(body.action==='estimate') {
-              const entry=watchlist.get(code);
-              const id=randomUUID();
-              if(orchestrator.runningTaskId(coordinatorId))throw new AppError(409,'bot_busy','总调度正在处理任务，请稍后再试。');
-              const day=valuationDay(now());
-              watchlist.pending(code,id,day);
-              try {
-                result=await orchestrator.submitMessage(coordinatorId,
-                  `请测算用户关注中的 ${entry.name}（${entry.code}）。核对每股人民币估值区间及未来20个交易日的方向。${valuationInstructions} 以 ${day} 作为 as_of 调用测算器。把 valuation_id 交给 save_watchlist_estimate，附依据和失效条件。完成后简洁回复。`,[],id);
-              }catch(error){watchlist.pending(code,null);throw error;}
             }else throw new AppError(400,'watchlist_action','未知用户关注操作。');
           }
         }else if(section==='holdings-valuations' && (method==='GET'||method==='POST')){
           const book=await holdings(config.repoRoot,config.dshHome,{action:'get'}) as {positions:{code:string}[]};
-          const day=valuationDay(now());
           if(method==='GET'){
-            const publication=await features?.read();
-            const saved=new Map(watchlist.read().map(entry=>[entry.code,entry.estimates.at(-1)]));
+            const publication=await features.read();
             result=Object.fromEntries(book.positions.map(({code})=>{
-              const estimate=features ? publication?.valuations[code]
-                : latestHoldingValuation(config.dataDir,code,day)??saved.get(code);
+              const estimate=publication?.valuations[code];
               return [code,estimate ? {low:estimate.low,high:estimate.high,valuationKind:estimate.valuationKind,score:estimate.score} : null];
             }));
           }else{
@@ -1587,20 +1584,10 @@ export function createApp(options: CreateAppOptions): ChivesApp {
             const code=String(body.code??'');
             if(!/^\d{6}\.(SH|SZ|BJ)$/.test(code) || !book.positions.some(position=>position.code===code))
               throw new AppError(400,'security','请选择账本中的沪深北证券。');
-            if(features){
-              const publication=await features.read(true);
-              const estimate=publication?.valuations[code];
-              if(!estimate)throw new AppError(404,'valuation_unavailable','暂无已发布估值。');
-              sendJson(response,200,estimate);
-              return;
-            }
-            const key=day+'/'+code;
-            const existing=holdingValuations.get(key);
-            if(!existing && holdingValuations.size>0)throw new AppError(409,'valuation_busy','另有持仓估值正在测算，请稍后再试。');
-            const pending=existing??measureHoldingValuation((process.env.CALENDAR_PYTHON ?? joinPath(config.repoRoot,'.venv/bin/python')),config.repoRoot,config.dataDir,code,day);
-            holdingValuations.set(key,pending);
-            try{result=await pending;}catch{throw new AppError(503,'valuation_unavailable','持仓估值暂不可用，请稍后重试。');}
-            finally{if(holdingValuations.get(key)===pending)holdingValuations.delete(key);}
+            const publication=await features.read(true);
+            const estimate=publication?.valuations[code];
+            if(!estimate)throw new AppError(404,'valuation_unavailable','暂无已发布估值。');
+            result=estimate;
           }
         }else if(section==='holdings' && (method==='GET'||method==='POST')){
           const body=method==='GET'?{action:'get'}:await readJsonObject(request);
@@ -1650,6 +1637,12 @@ export function createApp(options: CreateAppOptions): ChivesApp {
             store.settings.delete(pending);
             result={pending:false,routineId:routine.id};
           }else throw new AppError(400,'briefing_action','未知简报操作。');
+        }
+        else if(section==='initialization'&&method==='GET'&&
+          (process.env.CHIVES_ENVIRONMENT==='development'||process.env.CHIVES_ENVIRONMENT==='test')){
+          const complete=url.searchParams.get('preview')!=='1';
+          result={model:complete,portrait:complete,profile:complete,holdings:complete,watchlist:complete,
+            weixin:complete,watch:complete,briefing:complete,briefingPending:false};
         }
         else if(section==='initialization'&&method==='GET'){
           const profile=preferences(store);
@@ -2855,12 +2848,21 @@ export function createApp(options: CreateAppOptions): ChivesApp {
     void handle(request, response);
   });
 
+  let featureRefresh: ReturnType<typeof setInterval> | undefined;
+  server.once('listening', () => {
+    const sync = () => { void features.read(true); };
+    sync();
+    featureRefresh = setInterval(sync, 60_000);
+    featureRefresh.unref();
+  });
+
   let closed = false;
   const stopBriefingDelivery = subscribeInitialBriefingDelivery(bus,store,notifications);
   const close = async (): Promise<void> => {
     stopBriefingDelivery();
     if (closed) return;
     closed = true;
+    clearInterval(featureRefresh);
     clearInterval(pump);
     archiveMemory?.stop();
     while(inFlight.size)await new Promise(resolve=>setTimeout(resolve,25));

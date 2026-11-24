@@ -1,4 +1,3 @@
-import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
@@ -52,16 +51,4 @@ export function latestHoldingValuation(data: string, code: string, today: string
     }
   }
   return undefined;
-}
-
-export function measureHoldingValuation(python: string, root: string, data: string, code: string, day: string): Promise<HoldingValuation> {
-  return new Promise((resolve, reject) => {
-    execFile(python, ['-c', 'import sys; from equity_evidence.valuation import estimate_equity_value; print(estimate_equity_value(*sys.argv[1:])["valuation_id"])', code, day], {
-      cwd: root, env: {...process.env, CHIVES_RESEARCH_LIBRARY:join(data,'equity-research')}, timeout:120_000,
-    }, (error, stdout) => {
-      if (error) { reject(error); return; }
-      try { resolve(readValuationReceipt(data, code, day, stdout.trim().split('\n').at(-1)!).estimate); }
-      catch (failure) { reject(failure); }
-    });
-  });
 }

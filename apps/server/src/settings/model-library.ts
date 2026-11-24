@@ -132,11 +132,24 @@ export class ModelLibrary {
       if(!input||!['openai-completions','openai-responses','anthropic-messages'].includes(String(input.api)))
         throw new AppError(400,'model_protocol','请选择可用的 API 协议。');
       const config={baseURL:input.baseURL,api:input.api};
-      const discovered=await this.perform('discover',{config,key:body.key}) as {models:string[]};
-      const model=discovered.models[0];
-      if(!model)throw new AppError(400,'model_unavailable','供应商未返回可用模型。');
-      const selected={...config,model};
-      await this.perform('probe',{config:selected,key:body.key});
+      const manualModel=typeof body.manualModel==='string'?body.manualModel.trim():'';
+      const discovered=manualModel
+        ? {models:[manualModel]}
+        : await this.perform('discover',{config,key:body.key}) as {models:string[]};
+      const candidates=[...new Set(discovered.models.map(model=>model.trim()).filter(Boolean))].slice(0,5);
+      if(!candidates.length)throw new AppError(400,'model_unavailable','供应商未返回可用模型。');
+      let selected:typeof config & {model:string}|undefined;
+      for(const model of candidates){
+        const candidate={...config,model};
+        try{
+          await this.perform('probe',{config:candidate,key:body.key});
+          selected=candidate;
+          break;
+        }catch(error){
+          if(manualModel||!(error instanceof AppError)||error.code!=='model_probe_unsupported')throw error;
+        }
+      }
+      if(!selected)throw new AppError(400,'model_unavailable','自动选择的模型未通过验证。请核对 API 协议，或手动填写供应商提供的模型 ID。');
       const entries=await this.perform('save',{config:selected,key:body.key}) as ReturnType<ModelLibrary['list']>;
       const entry=entries.at(-1);
       if(entry&&!entry.active)return this.perform('activate',{id:entry.id});
@@ -190,13 +203,16 @@ export class ModelLibrary {
     const path=action==='discover'?'/models':anth?'/messages':cfg.api==='openai-responses'?'/responses':'/chat/completions';
     const payload=action==='discover'?undefined:cfg.api==='openai-responses'?{model:cfg.model,input:'Reply OK',max_output_tokens:32}:{model:cfg.model,messages:[{role:'user',content:'Reply OK'}],max_tokens:cfg.reasoningEffort?512:32,...(cfg.reasoningEffort?{thinking:{type:'enabled'},reasoning_effort:cfg.reasoningEffort}:{})};
     const resp=await fetch(endpoint+path,{method:payload?'POST':'GET',headers,...(payload?{body:JSON.stringify(payload)}:{}),redirect:'error',signal:AbortSignal.timeout(25000)});
-    if(!resp.ok)throw new AppError(400,'provider_error','供应商返回 HTTP '+resp.status+'，请检查地址、权限和模型 ID');
+    if(!resp.ok){
+      const code=action==='probe'&&[400,403,404,422].includes(resp.status)?'model_probe_unsupported':'provider_error';
+      throw new AppError(400,code,'供应商返回 HTTP '+resp.status+'，请检查地址、权限和模型 ID');
+    }
     const result=await resp.json() as {data?:{id:string}[];choices?:unknown[];output?:unknown[];content?:unknown[]};
     if(action==='discover'){
       if(!Array.isArray(result.data))throw new AppError(400,'provider_error','服务没有返回模型清单');
       return {models:result.data.map(m=>m.id).filter(id=>typeof id==='string')};
     }
-    if(!(result.choices?.length||result.output?.length||result.content?.length))throw new AppError(400,'provider_error','推理端点未返回有效结果');
+    if(!(result.choices?.length||result.output?.length||result.content?.length))throw new AppError(400,'model_probe_unsupported','推理端点未返回有效结果');
     return {message:'模型已响应测试请求'};
   }
 }

@@ -317,10 +317,9 @@ def watchlist_page(entries, prices):
     for entry in entries:
         code = entry["code"]
         paper.text(f"{entry['name']}  {code}", "accent")
-        history = entry.get("estimates") or []
-        latest = entry.get("publicEstimate") if "publicEstimate" in entry else (history[-1] if history else None)
+        latest = entry.get("publicEstimate")
         if latest is None:
-            paper.text("暂无已发布估值" if "publicEstimate" in entry else "测算中" if entry.get("pending") else "待测算")
+            paper.text("暂无已发布估值")
             continue
         low, high = latest.get("low"), latest.get("high")
         style = "ink"
@@ -356,7 +355,7 @@ async def browse(api, view, page, *, replace_page):
         i = 0
         while True:
             key, name = sections[i]
-            path = "/market-news.json" if key in ("domestic", "global") else MARKET + ("market" if key == "breadth" else key)
+            path = "/api/dashboard/market-news" if key in ("domestic", "global") else MARKET + ("market" if key == "breadth" else key)
             try:
                 paper = market_page(key, await api(path))
             except (OSError, RuntimeError, ValueError) as err:
@@ -371,8 +370,8 @@ async def browse(api, view, page, *, replace_page):
         entries = await api(DESK+"watchlist")
         prices = {}
         current = watchlist_page(entries, prices)
-        codes = [e["code"] for e in entries if e.get("estimates") and
-                 all(e["estimates"][-1].get(k) is not None for k in ("low", "high"))]
+        codes = [entry["code"] for entry in entries if
+                 all((entry.get("publicEstimate") or {}).get(key) is not None for key in ("low", "high"))]
         if not codes:
             return await view("用户关注", current)
 

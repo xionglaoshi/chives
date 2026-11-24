@@ -1,7 +1,6 @@
 import { execFile } from 'node:child_process';
 import { createHash, randomUUID } from 'node:crypto';
-import { existsSync, lstatSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
+import { existsSync, lstatSync, mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { promisify } from 'node:util';
 import { AppError } from '../errors.js';
@@ -105,8 +104,11 @@ export class Updates {
     if(id!=='all'&&!Object.hasOwn(scopes,id))throw new AppError(400,'bad_component','未知的更新组件');
     if(this.busy)throw new AppError(409,'busy','已有更新操作');
     this.busy=true;
-    const temp=mkdtempSync(join(tmpdir(),'chives-update-'));
+    let temp:string|undefined;
     try{
+      const directory=join(this.root,'runtime','tmp');
+      mkdirSync(directory,{recursive:true});
+      temp=mkdtempSync(join(directory,'chives-update-'));
       const snapshot=await this.snapshot(true);
       if('revision' in target && snapshot.revision!==target.revision)throw new AppError(409,'changed','远端版本已变化，请重新检查');
       const selected=id==='all'?snapshot.items:snapshot.items.filter(i=>i.id===id);
@@ -127,6 +129,9 @@ export class Updates {
         writeFileSync(path,JSON.stringify(snapshot.installed),{mode:0o600});renameSync(path,snapshot.stateFile);
       }
       return {...await this.check(false),updated:items.filter(item=>item.files.length>0).map(item=>item.id)};
-    }finally{rmSync(temp,{recursive:true,force:true});this.busy=false;}
+    }finally{
+      this.busy=false;
+      if(temp)rmSync(temp,{recursive:true,force:true});
+    }
   }
 }

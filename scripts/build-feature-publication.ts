@@ -1,7 +1,9 @@
 /** Export explicitly selected public research into a static, content-addressed directory. */
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdirSync, readFileSync, renameSync, writeFileSync } from 'node:fs';
-import { join } from 'node:path';
+import { existsSync, mkdirSync, readFileSync, realpathSync, renameSync, writeFileSync } from 'node:fs';
+import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path';
+import { homedir } from 'node:os';
+import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
 import { latestHoldingValuation } from '../apps/server/src/dashboard/holding-valuations.js';
 
@@ -31,6 +33,22 @@ if (!source || !output || !day || !/^\d{4}-\d{2}-\d{2}$/.test(day) || (!board.le
   throw new Error('Specify --source, --output, --day and explicit --board or --code selections');
 }
 
+const installation = fileURLToPath(new URL('../', import.meta.url));
+const standardRoot = join(homedir(), '.chives');
+function resolvedPath(path: string): string {
+  return existsSync(path) ? realpathSync(path) : join(resolvedPath(dirname(path)), basename(path));
+}
+const sourcePath = realpathSync(source);
+const outputPath = resolvedPath(resolve(output));
+for (const root of [installation, standardRoot]) {
+  for (const path of [sourcePath, outputPath]) {
+    const position = relative(root, path);
+    if (!isAbsolute(position) && position !== '..' && !position.startsWith('..' + sep)) {
+      throw new Error('Feature source and release output must be outside the Chives installation');
+    }
+  }
+}
+
 const valuations = Object.fromEntries([...new Set(code)].map(id => {
   const estimate = latestHoldingValuation(source,id,day);
   if (!estimate) throw new Error('Missing approved valuation: ' + id);
@@ -52,13 +70,13 @@ if (board.length) {
     })),
   };
 }
+mkdirSync(outputPath, { recursive: true });
 const bytes = Buffer.from(JSON.stringify({hotspots,valuations}) + '\n');
 const sha256 = createHash('sha256').update(bytes).digest('hex');
-mkdirSync(output,{recursive:true});
 function publish(name: string, value: string | Buffer) {
-  const temporary = join(output,randomUUID()+'.tmp');
+  const temporary = join(outputPath,randomUUID()+'.tmp');
   writeFileSync(temporary,value,{flag:'wx'});
-  renameSync(temporary,join(output,name));
+  renameSync(temporary,join(outputPath,name));
 }
 publish(sha256+'.json',bytes);
 publish('manifest.json',JSON.stringify({schema:1,sha256})+'\n');

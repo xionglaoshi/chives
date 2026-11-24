@@ -13,7 +13,7 @@ function valuationComparison(estimate: EstimateRange|undefined|null, price: numb
 
 export function ValuationRange({estimate,price,showCurrency=true,showComparison=false}: {estimate:EstimateRange|undefined|null;price:number|undefined|null;showCurrency?:boolean;showComparison?:boolean}) {
   const range=valuationComparison(estimate,price);
-  if(!range)return estimate?'依据不足':'待测算';
+  if(!range)return estimate?'依据不足':'暂无已发布估值';
   const tone=range.below?'below':range.above?'above':range.priced?'inside':'unpriced';
   const boundary=range.below?range.low:range.above?range.high:null;
   return <>

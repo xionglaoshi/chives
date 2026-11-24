@@ -39,7 +39,7 @@ export function ModelsDesk({initialize=false,onInitialized}:{initialize?:boolean
    const [connections, roster]=await Promise.all([desk<Entry[]>('models'),listBots()]);
    set(connections);setBots(roster);await refreshReceipts();
  };useEffect(()=>{void load().catch(e=>note(e.message));},[]);
- async function act(action:string,target=id){wait(true);note('');try{const r=await desk<{models?:string[];message?:string}>('models','POST',{action,id:target,config,key});
+ async function act(action:string,target=id){wait(true);note('');try{const r=await desk<{models?:string[];message?:string}>('models','POST',{action,id:target,config,key,...(mode==='initialize-manual'?{manualModel:config.model}:{})});
  if(action==='discover'){list(r.models??[]);note('已拉取 '+(r.models?.length??0)+' 个模型');}
  else if(action==='probe')note(r.message||'连接成功');else{await load();show('');setKey('');if(action==='initialize-save')onInitialized?.();note(action==='delete'?'模型已删除':'模型配置已更新');}}catch(e){note(String(e));}finally{wait(false);}}
  function start(e?:Entry){sel(e?.id??'');edit(e?{...tuningOf(e),model:e.model,api:e.api,baseURL:e.baseURL,displayName:e.displayName??'',deepseekThinking:e.deepseekThinking,...(e.contextWindow?{contextWindow:e.contextWindow}:{}),...(e.maxTokens?{maxTokens:e.maxTokens}:{})}:blank);setKey('');list([]);note('');show(e?(e.api==='openai-codex-subscription'?'auth':'manual'):'choose');}
@@ -84,11 +84,15 @@ export function ModelsDesk({initialize=false,onInitialized}:{initialize?:boolean
  {grant&&!grant.code&&<button disabled={busy} onClick={()=>void login(true)}>改用设备码授权</button>}</>}
  <details><summary>其他供应商与 API Key</summary>{[['DeepSeek','https://platform.deepseek.com/api_keys'],['OpenAI','https://platform.openai.com/api-keys'],['Anthropic','https://console.anthropic.com/settings/keys']].map(([name,url])=><p key={name}><a href={url} target="_blank" rel="noreferrer">{name} 控制台 ↗</a></p>)}<button onClick={()=>{edit(blank);sel('');show('manual');}}>填写 API 连接</button></details></>}
  {mode==='remove'&&<><p>将移除这条连接和它在 Chives 中保存的密钥。</p><button disabled={busy} onClick={()=>void act('delete')}>确认删除</button></>}
- {mode==='initialize'&&<form onSubmit={e=>{e.preventDefault();void act('initialize-save');}}>
+ {(mode==='initialize'||mode==='initialize-manual')&&<form onSubmit={e=>{e.preventDefault();void act('initialize-save');}}>
  {txt('baseURL','API 地址')}
  <label>协议<select value={config.api} onChange={e=>changeModel({api:e.target.value})}>{['openai-completions','openai-responses','anthropic-messages'].map(a=><option key={a}>{a}</option>)}</select></label>
  <label>API Key<input required type="password" autoComplete="new-password" value={key} onChange={e=>setKey(e.target.value)}/></label>
- <button className="desk-primary" disabled={busy||!config.baseURL.trim()||!key.trim()}>验证并保存</button></form>}
+ {mode==='initialize-manual'&&txt('model','模型 ID')}
+ <div className="desk-end"><button type="button" disabled={busy} onClick={()=>{
+   if(mode==='initialize-manual')show('initialize');
+   else{changeModel({model:''});show('initialize-manual');}
+ }}>{mode==='initialize-manual'?'自动选择模型':'手动指定模型'}</button><button className="desk-primary" disabled={busy||!config.baseURL.trim()||!key.trim()||(mode==='initialize-manual'&&!config.model.trim())}>验证并保存</button></div></form>}
  {mode==='manual'&&<form onSubmit={e=>{e.preventDefault();void act('save');}}>{txt('displayName','显示名称')}{txt('baseURL','API 地址')}<label>协议<select value={config.api} onChange={e=>changeModel({api:e.target.value})}>{['openai-completions','openai-responses','anthropic-messages'].map(a=><option key={a}>{a}</option>)}</select></label>
  <label>API Key<input type="password" autoComplete="new-password" value={key} placeholder={id?'同一地址可留空沿用密钥':''} onChange={e=>setKey(e.target.value)}/></label>{txt('model','模型 ID')}
  {!!models.length&&<label>可用模型<select value={config.model} onChange={e=>changeModel({model:e.target.value})}><option value="">请选择</option>{models.map(v=><option key={v}>{v}</option>)}</select></label>}

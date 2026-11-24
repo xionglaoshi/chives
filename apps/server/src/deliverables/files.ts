@@ -1,6 +1,6 @@
 /** Resolves deliverable paths inside one bot workspace and enforces limits. */
 
-import { existsSync, readdirSync, realpathSync, statSync } from 'node:fs';
+import { existsSync, lstatSync, readdirSync, realpathSync, statSync } from 'node:fs';
 import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 
 import type { WorkspaceFileDto, WorkspaceFileList } from '../api/protocol.js';
@@ -20,7 +20,19 @@ export function taskWorkspaceRoot(dataDir: string, configured = process.env.CHIV
 
 export function botWorkspace(dataDir: string, botId: string): string {
   const workspaceRoot = taskWorkspaceRoot(dataDir);
-  return workspaceRoot ? resolve(workspaceRoot, 'bots', botId) : join(dataDir, 'bots', botId, 'workspace');
+  if (!workspaceRoot) return join(dataDir, 'bots', botId, 'workspace');
+
+  const root = resolve(workspaceRoot);
+  const bots = join(root, 'bots');
+  const workspace = resolve(bots, botId);
+  if (dirname(workspace) !== bots) throw new AppError(400, 'invalid_workspace', 'Bot 工作区标识无效');
+  // Do not let an existing link at any workspace level redirect task writes.
+  for (const directory of [root, bots, workspace]) {
+    if (lstatSync(directory, { throwIfNoEntry: false })?.isSymbolicLink()) {
+      throw new AppError(409, 'linked_workspace', 'Bot 工作区目录使用了符号链接，请恢复为安装根下的实际目录');
+    }
+  }
+  return workspace;
 }
 
 function isInside(root: string, target: string): boolean {

@@ -12,6 +12,10 @@ STEPS = (
     "添加关注股票", "连接微信", "创建盯盘任务", "创建每日投研简报任务",
 )
 
+def numbered(labels):
+    return [f"待办项{index}：{label}" for index, label in enumerate(labels, 1)]
+
+
 def desk(page, method, section, data=None, status=200):
     response = page.request.fetch(
         f"/api/settings/desk/{section}", method=method, data=data,
@@ -64,7 +68,7 @@ with model_provider() as model_url, sync_playwright() as playwright:
     expect(initialize).to_be_visible(timeout=30000)
     initialize.click()
     panel = dock.get_by_role("dialog", name="请先完成初始化")
-    expect(panel.get_by_role("button")).to_have_text(list(STEPS))
+    expect(panel.get_by_role("button")).to_have_text(numbered(STEPS))
     print("Chromium shows all eight initialization actions in order.")
     # Save through the same APIs as the UI. The Dock must refresh from persisted backend state.
     desk(page, "PATCH", "prefs", {
@@ -84,9 +88,9 @@ with model_provider() as model_url, sync_playwright() as playwright:
     desk(page, "POST", "initial-briefing", {"action": "confirm", "reply": "没有"})
     state = desk(page, "GET", "initialization")
     assert not state["briefingPending"] and state["briefing"]
-    expect(panel.get_by_role("button")).to_have_text([STEPS[i] for i in (0, 1, 5, 6)], timeout=25000)
+    expect(panel.get_by_role("button")).to_have_text(numbered(STEPS[i] for i in (0, 1, 5, 6)), timeout=25000)
     print("Profile, holdings, watchlist, and confirmed briefing disappear from the Dock after saving.")
-    panel.get_by_role("button", name=STEPS[0]).click()
+    panel.get_by_role("button", name=numbered(STEPS[:1])[0]).click()
     page.get_by_label("API 地址", exact=True).fill(model_url)
     page.get_by_label("协议", exact=True).select_option("openai-completions")
     page.get_by_label("API Key", exact=True).fill("ci-mock-key")
@@ -94,6 +98,6 @@ with model_provider() as model_url, sync_playwright() as playwright:
     expect(page.get_by_role("button", name="验证并保存")).to_have_count(0, timeout=40000)
     assert desk(page, "GET", "initialization")["model"]
     initialize.click()
-    expect(panel.get_by_role("button")).to_have_text([STEPS[i] for i in (1, 5, 6)], timeout=25000)
+    expect(panel.get_by_role("button")).to_have_text(numbered(STEPS[i] for i in (1, 5, 6)), timeout=25000)
     print("Model discovery, API probe, and activation complete through the installed UI.")
     browser.close()

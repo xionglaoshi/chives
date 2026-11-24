@@ -105,9 +105,13 @@ def inspect_database(database: str, table: str = '', limit: int = 10) -> dict:
     folder=data/'library'
     installed=Path(__file__).resolve().parents[1]
     stores['bot-library']=library
+    market_monitor=data.parent/'public-data/mechanical-cache/market/market.db'
+    if market_monitor.is_file():
+        stores['market-monitor']=market_monitor
+    elif data==installed/'data':
+        stores['market-monitor']=installed/'runtime/market/market.db'
     if data==installed/'data':
-        stores.update({'strategy-results':installed/'runtime/strategy-hub/strategy.sqlite',
-                       'market-monitor':installed/'runtime/market/market.db'})
+        stores['strategy-results']=installed/'runtime/strategy-hub/strategy.sqlite'
     path=stores.get(database,folder/database)
     if path.resolve()!=path or (database not in stores and (path.parent!=folder or not re.fullmatch(r'[\w-]+\.sqlite', database))):
         raise ValueError('未知数据库')
@@ -222,15 +226,14 @@ for tool in tools:
         server.tool()(tool)
 if bot == 'operator':
     @server.tool()
+    def published_valuation(code: str) -> dict:
+        """读取服务器已发布的合理股价和后市判断。证券代码带交易所后缀，未发布则返回空。"""
+        return internal_call("published-valuation", {"code": code})
+
+    @server.tool()
     def user_watchlist(action: str = "read") -> dict | list:
         """读取用户关注（自选股）。用户明确发出「确认加入用户关注：完整证券代码」后才用 add。"""
         return internal_call("operator/watchlist", {"action": action})
-
-    @server.tool()
-    def save_watchlist_estimate(valuation_id: str, basis: str, invalidation: str, score: int | None = None) -> dict:
-        """保存 estimate_equity_value 回执。价格和 20 日方向由服务读回；旧回执兼容 score。"""
-        return internal_call("operator/watchlist", dict(action="estimate", valuationId=valuation_id,
-                                                       score=score, basis=basis, invalidation=invalidation))
 
     from research_bridge import ResearchBridge
     research = ResearchBridge(json.loads(os.environ.get('CHIVES_RESEARCH_SERVERS', '[]')))

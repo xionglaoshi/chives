@@ -45,7 +45,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
    .catch(()=>{if(active)setValuationError('暂时无法读取AI估算的合理股价。');});
   return ()=>{active=false;};
  },[book]);
- async function measure(code:string){
+ async function refreshPublishedValuation(code:string){
   setValuating(code);setValuationError('');
   try{
    const result=await desk<EstimateRange>('holdings-valuations','POST',{code});
@@ -73,10 +73,17 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
     '持仓市值：'+amount(snapshot.summary.totalMarketValue),
     '累计浮盈亏：'+amount(snapshot.summary.totalPnl)
    ]),
-   ...snapshot.positions.map(position=>[
-    position.name,position.code,'现价 '+formatPrice(position.price),'今日涨跌 '+formatPercent(position.changePct),
-    ...(hidden?[]:['今日贡献 '+amount(position.todayPnl)])
-   ].join(' · '))
+   ...snapshot.positions.map(position=>{
+    const estimate=valuations[position.code];
+    return [
+     position.name,position.code,'现价 '+formatPrice(position.price),'今日涨跌 '+formatPercent(position.changePct),
+     ...(hidden?[]:['今日贡献 '+amount(position.todayPnl)]),
+     estimate?.low!=null&&estimate.high!=null
+      ? 'Chives 已发布合理股价 '+formatPrice(estimate.low)+'–'+formatPrice(estimate.high)
+      : '暂无已发布合理股价区间',
+     ...(typeof estimate?.score==='number'?['Chives 已发布后市判断 '+(estimate.score>0?'看涨':estimate.score<0?'看跌':'中性')]:[]),
+    ].join(' · ');
+   })
   ];
   onAskExpert(askAiPrompts['行情看板']['我的持仓'][snapshot.empty?'空仓':hidden?'隐藏金额':'显示金额'],
    new File([lines.join('\n\n')],'用户持仓.md',{type:'text/markdown'}));
@@ -127,11 +134,11 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
              </span>}
            </div>],
            ['AI估算的合理股价', <div className="holding-estimate">
-             {valuating===position.code?'测算中…':<ValuationRange estimate={estimate} price={price} showCurrency={false} showComparison/>}
+             {valuating===position.code?'同步中…':<ValuationRange estimate={estimate} price={price} showCurrency={false} showComparison/>}
              {!estimate?.low && valuating!==position.code && /^\d{6}\.(SH|SZ|BJ)$/.test(position.code) &&
-               <button type="button" disabled={!!valuating||busy||!!editor} onClick={()=>void measure(position.code)}>测算</button>}
+               <button type="button" disabled={!!valuating||busy||!!editor} onClick={()=>void refreshPublishedValuation(position.code)}>同步</button>}
            </div>],
-           ['后市AI预测', valuating===position.code?'测算中…':<ValuationOutlook estimate={estimate}/>],
+           ['后市AI预测', valuating===position.code?'同步中…':<ValuationOutlook estimate={estimate}/>],
            ['今日涨跌', formatPercent(quote?.changePct??null), priceDirection(quote?.changePct??null)],
            ['今日贡献', amount(quote?.todayPnl), priceDirection(quote?.todayPnl??null)]
          ] as const;

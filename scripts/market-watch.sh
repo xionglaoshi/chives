@@ -13,6 +13,7 @@ DEFAULT_CFG="$PKG/config.yaml"
 # 未显式指定且本机配置尚未创建时，直接用示例配置（示例里的相对路径指向仓库 runtime/ 与 config/）。
 if [ "$CFG" = "$DEFAULT_CFG" ] && [ ! -f "$CFG" ]; then CFG="$PKG/config.example.yaml"; fi
 RUN="$ROOT/runtime/market"
+CACHE="$ROOT/public-data/mechanical-cache/market/market.db"
 PID="$RUN/engine.pid"
 LOG="$RUN/engine.log"
 PORT="$(sed -n 's/^[[:space:]]*port:[[:space:]]*\([0-9]*\).*/\1/p' "$CFG" 2>/dev/null | head -1)"
@@ -37,8 +38,25 @@ case "${1:-status}" in
     elif [ -n "$(find "$CAL" -mtime +30 2>/dev/null)" ]; then
       echo "警告：交易日历超过 30 天未更新，请确认 $CAL" >&2
     fi
-    mkdir -p "$RUN"; rm -f "$PID"
-    ( cd "$PKG" && PYTHONPATH="$PKG/src" exec nohup "$PY" -m market_watch --config "$CFG" --out-dir "$RUN" >>"$LOG" 2>&1 ) &
+    mkdir -p "$RUN" "$(dirname "$CACHE")" || exit 1
+    if [[ ! -f "$RUN/.mechanical-cache-migrated" && -f "$RUN/market.db" && ! -e "$CACHE" ]]; then
+      "$PY" - "$RUN/market.db" "$CACHE" <<'PYTHON' || exit 1
+from contextlib import closing
+from pathlib import Path
+import sqlite3
+import sys
+
+source, target = map(Path, sys.argv[1:])
+temporary = target.with_suffix(".migrating")
+with closing(sqlite3.connect(source.as_uri() + "?mode=ro", uri=True)) as old:
+    with closing(sqlite3.connect(temporary)) as new:
+        old.backup(new)
+temporary.replace(target)
+PYTHON
+    fi
+    touch "$RUN/.mechanical-cache-migrated" || exit 1
+    rm -f "$PID"
+    ( cd "$PKG" && PYTHONPATH="$PKG/src" exec nohup "$PY" -m market_watch --config "$CFG" --out-dir "$RUN" --db-path "$CACHE" >>"$LOG" 2>&1 ) &
     echo $! >"$PID"
     for _ in $(seq 1 120); do sleep 0.5; health >/dev/null && break; done
     if alive && health >/dev/null; then

@@ -93,9 +93,7 @@ class LocalAPI:
 
     @contextmanager
     def open(self, path, body=None, method=None):
-        # The news edition is published by the web workbench as a static JSON file.
-        port = 8888 if path == "/market-news.json" else self.port
-        conn = http.client.HTTPConnection("127.0.0.1", port, timeout=60)
+        conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=60)
         try:
             data = None if body is None else json.dumps(body, ensure_ascii=False).encode()
             conn.request(method or ("GET" if body is None else "POST"), path, data,

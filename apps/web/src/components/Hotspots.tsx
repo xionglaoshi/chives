@@ -9,7 +9,7 @@ import './hotspots.css';
 
 type Entry={name:string;code:string;url:string;metric:string;r5?:number;r30?:number;shareChange?:number|null};
 type Board={note:string;url:string;title:string;asOf:string;rows:Entry[];columns:[string,string]};
-type Payload={mode?:'published';snapshot:{publishedAt:string;boards:Record<string,Board>;retained:string[]}|null;status:{state:string;startedAt?:string;finishedAt?:string}};
+type Payload={snapshot:{publishedAt:string;boards:Record<string,Board>;retained:string[]}|null;status:{state:string;startedAt?:string;finishedAt?:string}};
 const boardPrompts: Partial<Record<string, {提示词: string}>> = askAiPrompts['热门榜单'];
 const headers={'x-chives-kernel-manager':'local'};
 const api=appPath('/api/settings/desk/hotspots');
@@ -52,15 +52,13 @@ export function Hotspots({onAskExpert}:{onAskExpert:AskExpert}){
     if (template !== undefined) onAskExpert(fillAskPrompt(template, {榜单名: b.title}), file);
   }
   const [data,setData]=useState<Payload|null>(null),[error,setError]=useState(''),[pending,setPending]=useState(false);
-  const running=pending||data?.status.state==='running';
   useEffect(()=>{
     const ctrl=new AbortController();let timer:number;
     async function read(){
-      let busy=false;
       try{const r=await fetch(api,{headers,signal:ctrl.signal,cache:'no-store'});if(!r.ok)throw Error();
-        const v:Payload=await r.json();busy=v.status.state==='running';if(!ctrl.signal.aborted){setData(v);setError('');}}
+        const v:Payload=await r.json();if(!ctrl.signal.aborted){setData(v);setError('');}}
       catch{if(!ctrl.signal.aborted)setError('暂时无法读取榜单，正在重试');}
-      finally{if(!ctrl.signal.aborted)timer=window.setTimeout(read,busy?1800:15000);}
+      finally{if(!ctrl.signal.aborted)timer=window.setTimeout(read,15000);}
     }
     void read();return ()=>{ctrl.abort();window.clearTimeout(timer);};
   },[pending]);
@@ -68,10 +66,10 @@ export function Hotspots({onAskExpert}:{onAskExpert:AskExpert}){
     setPending(true);
     try{const r=await fetch(api,{method:'POST',headers});if(!r.ok)throw Error();
       const next:Payload=await r.json();
-      setData(v=>next.mode==='published'?next:v?{...v,status:{state:'running'}}:v);}
-    catch{setError('更新任务启动失败，请重试');}finally{setPending(false);}
+      setData(next);}
+    catch{setError('刷新榜单失败，请重试');}finally{setPending(false);}
   }
-  return <article className="market-board hotspots"><header className="mb-title"><div><small>工作台</small><h1>{workbenchTools.trends}</h1></div><div className="hs-actions"><small></small><button disabled={running||!data} onClick={update}>{data?.mode==='published'?(pending?'正在刷新…':'刷新榜单'):running?'正在生成…':'重新生成榜单'}</button></div></header>
-    <div role="status">{error|| (data?.status.state==='error'?'本次更新未完成，保留最近发布版本。':data?.status.state==='partial'?'部分榜单沿用上次结果。':running?'后台更新中，您可以继续查看榜单。':'')}</div>
-    {data?.snapshot?<div className="mb-grid">{Object.entries(data.snapshot.boards).map(([id,b])=><Ranking key={id} id={id} b={b} onAsk={()=>void ask(id,b)}/>)}</div>:<p>{data?'等待首版榜单发布':'正在读取本地榜单…'}</p>}</article>;
+  return <article className="market-board hotspots"><header className="mb-title"><div><small>工作台</small><h1>{workbenchTools.trends}</h1></div><div className="hs-actions"><small></small><button disabled={pending||!data} onClick={update}>{pending?'正在刷新…':'刷新榜单'}</button></div></header>
+    <div role="status">{error|| (data?.status.state==='error'?'本次更新未完成，保留最近发布版本。':data?.status.state==='partial'?'部分榜单沿用上次结果。':pending?'正在同步已发布榜单。':'')}</div>
+    {data?.snapshot?<div className="mb-grid">{Object.entries(data.snapshot.boards).map(([id,b])=><Ranking key={id} id={id} b={b} onAsk={()=>void ask(id,b)}/>)}</div>:<p>{data?'等待首版榜单发布':'正在读取已发布榜单…'}</p>}</article>;
 }

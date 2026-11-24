@@ -4,8 +4,7 @@ import {ValuationNotice,ValuationOutlook,ValuationRange,type EstimateRange} from
 import {desk} from './deskApi';
 import './Watchlist.css';
 
-type Estimate=EstimateRange&{version:number;score:number|null;asOf:string;basis:string;invalidation:string;measuredAt:string;horizon:number};
-type Entry={code:string;name:string;pending?:boolean;estimates:Estimate[];publicEstimate?:EstimateRange|null};
+type Entry={code:string;name:string;publicEstimate:EstimateRange|null};
 type Quote={price:number;changePct?:number;basis:string};
 const fmt=new Intl.NumberFormat('zh-CN',{maximumFractionDigits:2});
 
@@ -86,15 +85,15 @@ export function Watchlist({onConversation}:{onConversation:()=>void}) {
     <div className="watchlist-grid">
       <div className="watchlist-heading"><span>股票</span><span>行情</span><span>AI估算的合理股价</span><span>后市AI预测</span><span>测算与操作</span></div>
       {entries.map(entry=>{
-        const latest=entry.publicEstimate===undefined?entry.estimates.at(-1):entry.publicEstimate;
+        const latest=entry.publicEstimate;
         return <article className="watchlist-row" key={entry.code}>
           <div><strong>{entry.name}</strong><small>{entry.code}</small></div>
           <WatchPrices code={entry.code} latest={latest}/>
           <div><small className="watchlist-mobile-label">后市AI预测</small>
             <ValuationOutlook estimate={latest}/></div>
           <div className="watchlist-row-actions">
-            <button type="button" disabled={busy||entry.pending} title={entry.pending?'正在测算AI估算的合理股价':'重新评估AI估算的合理股价'}
-              aria-label={'重新评估 '+entry.name} aria-busy={Boolean(entry.pending)} onClick={()=>void act('estimate',entry.code)}>
+            <button type="button" disabled={busy} title="同步已发布的合理股价"
+              aria-label={'同步已发布估值 '+entry.name} aria-busy={busy} onClick={()=>void act('estimate',entry.code)}>
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M20 7v5h-5M4 17v-5h5M5 8a8 8 0 0 1 13-2l2 3M19 16a8 8 0 0 1-13 2l-2-3"/>
               </svg>

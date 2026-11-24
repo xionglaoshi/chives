@@ -41,7 +41,7 @@ export function MarketNews({ask}:{ask:AskButton}){
     const controller=new AbortController();
     async function refresh(){
       try {
-        const response=await fetch(appPath('/market-news.json'),{signal:controller.signal,cache:'no-store'});
+        const response=await fetch(appPath('/api/dashboard/market-news'),{signal:controller.signal,cache:'no-store'});
         if(!response.ok)throw new Error('news unavailable');
         const snapshot:Snapshot=await response.json();
         if(!controller.signal.aborted){setData(snapshot);setFailed(false);}

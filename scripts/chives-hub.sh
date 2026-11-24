@@ -12,6 +12,8 @@ case "$CFG" in /*) ;; *) CFG="$(cd "$(dirname "$CFG")" 2>/dev/null && pwd)/$(bas
 DEFAULT_CFG="$PKG/config.yaml"
 if [ "$CFG" = "$DEFAULT_CFG" ] && [ ! -f "$CFG" ]; then CFG="$PKG/config.example.yaml"; fi
 RUN="$ROOT/runtime/hub"
+USER_DATA="${CHIVES_DATA_DIR:-$ROOT/user-data}"
+STATE="$USER_DATA/hub/hub.db"
 PID="$RUN/hub.pid"
 LOG="$RUN/hub.log"
 PORT="$(sed -n 's/^[[:space:]]*port:[[:space:]]*\([0-9]*\).*/\1/p' "$CFG" 2>/dev/null | head -1)"
@@ -37,9 +39,26 @@ case "${1:-status}" in
       || echo "警告：market-watch (127.0.0.1:8866) 未响应，板块告警暂不可用" >&2
     # 持仓文件按 DSH_HOME 解析（与 dsh 实例一致）；默认使用 Chives 的本地内核目录，只用于定位 finance-portfolio.json。
     export DSH_HOME="${DSH_HOME:-${DSH_FINANCE_HOME:-${DSH_FINANCE_TRIAL:+$DSH_FINANCE_TRIAL/home}}}"
-    export DSH_HOME="${DSH_HOME:-$ROOT/data/dsh}"
-    mkdir -p "$RUN"; rm -f "$PID"
-    ( cd "$PKG" && PYTHONPATH="$PKG/src" exec nohup "$PY" -m chives_hub --config "$CFG" --out-dir "$RUN" >>"$LOG" 2>&1 ) &
+    export DSH_HOME="${DSH_HOME:-$USER_DATA/dsh}"
+    mkdir -p "$RUN" "$(dirname "$STATE")" || exit 1
+    if [[ ! -f "$RUN/.user-state-migrated" && -f "$RUN/hub.db" && ! -e "$STATE" ]]; then
+      "$PY" - "$RUN/hub.db" "$STATE" <<'PYTHON' || exit 1
+from contextlib import closing
+from pathlib import Path
+import sqlite3
+import sys
+
+source, target = map(Path, sys.argv[1:])
+temporary = target.with_suffix(".migrating")
+with closing(sqlite3.connect(source.as_uri() + "?mode=ro", uri=True)) as old:
+    with closing(sqlite3.connect(temporary)) as new:
+        old.backup(new)
+temporary.replace(target)
+PYTHON
+    fi
+    touch "$RUN/.user-state-migrated" || exit 1
+    rm -f "$PID"
+    ( cd "$PKG" && PYTHONPATH="$PKG/src" exec nohup "$PY" -m chives_hub --config "$CFG" --out-dir "$RUN" --db-path "$STATE" >>"$LOG" 2>&1 ) &
     echo $! >"$PID"
     for _ in $(seq 1 120); do sleep 0.5; health >/dev/null && break; done
     if alive && health >/dev/null; then

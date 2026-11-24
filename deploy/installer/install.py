@@ -1,7 +1,7 @@
 """GitHub release installer and local Chives service supervisor (CPython 3.12)."""
 from __future__ import annotations
 
-from contextlib import contextmanager
+from contextlib import closing, contextmanager
 import getpass
 import hashlib
 import json
@@ -11,6 +11,7 @@ import re
 import shutil
 import signal
 import socket
+import sqlite3
 import subprocess
 import sys
 import tarfile
@@ -166,7 +167,7 @@ def portable_paths(release, python, *, direct_dsh=False):
         patch_once(dsh, "      process.env.CHIVES_NPX_JS!,\n      '-y',",
                    "      process.env.CHIVES_NPX_JS!,\n      ...(selectedVersion(options.dataDir) === " +
                    json.dumps(version) + " ? ['--offline'] : []),\n      '-y',")
-    for name in ("app.ts", "settings/channels.ts", "settings/profile-excerpt.ts", "dashboard/hotspots.ts"):
+    for name in ("app.ts", "settings/channels.ts", "settings/profile-excerpt.ts"):
         file = release / "apps/server/src" / name
         text = file.read_text(encoding="utf-8")
         text, changed = re.subn(
@@ -227,7 +228,7 @@ def healthy(name):
         return False
 
 
-def service_specs(release, node, python):
+def service_specs(release, node, python, user):
     packages = release / "packages"
     apps = release / "apps"
     specs = {
@@ -241,8 +242,13 @@ def service_specs(release, node, python):
         ("market", "market-watch", "market_watch", packages / "market-watch/config.example.yaml"),
         ("hub", "chives-hub", "chives_hub", packages / "chives-hub/config.example.yaml"),
     ):
-        specs[name] = (packages / package, [python, "-m", module, "--config", config,
-                                          "--out-dir", release / "runtime" / name])
+        output = user / "watch-engine" if name == "watch" else release / "runtime" / name
+        args = [python, "-m", module, "--config", config, "--out-dir", output]
+        if name == "hub":
+            args += ["--db-path", user / "hub/hub.db"]
+        if name == "market":
+            args += ["--db-path", user.parent / "public-data/mechanical-cache/market/market.db"]
+        specs[name] = (packages / package, args)
     return specs
 
 
@@ -252,7 +258,7 @@ def supervise(root, release):
     shutdown = root / "stop"
     children = []
     try:
-        for name, (cwd, args) in service_specs(release, node, python).items():
+        for name, (cwd, args) in service_specs(release, node, python, Path(env["CHIVES_DATA_DIR"])).items():
             with (logs / f"{name}.log").open("wb") as stream:
                 child = subprocess.Popen([str(arg) for arg in args], cwd=cwd, env=env,
                                          stdin=subprocess.DEVNULL, stdout=stream, stderr=stream,
@@ -327,13 +333,63 @@ def stop_service(root):
     (root / "ready").unlink(missing_ok=True)
 
 
+def migrate_release_engine_state(root, release, previous):
+    marker = root / "runtime/engine-state-migrated"
+    if marker.is_file():
+        return
+    releases = root / "releases"
+    if previous and Path(previous).name == previous and previous not in (".", ".."):
+        old = releases / previous
+    else:
+        candidates = [path for path in releases.iterdir()
+                      if path != release and (path / ".installed").is_file()
+                      and ((path / "runtime/watch").is_dir()
+                           or (path / "runtime/hub/hub.db").is_file()
+                           or (path / "runtime/market/market.db").is_file())]
+        if len(candidates) > 1:
+            print("    保留多份旧引擎状态，待核对来源后迁移。", flush=True)
+        old = candidates[0] if len(candidates) == 1 else None
+    if old is not None and old.is_dir():
+        user, _ = storage_directories(root)
+        state = user / "watch-engine"
+        if (old / "runtime/watch").is_dir():
+            state.mkdir(parents=True, exist_ok=True)
+            for name in ("alerts.jsonl", "polls.jsonl", "state.json", "plans.runtime.json",
+                         "watchlist.runtime.json", "rules.runtime.json"):
+                source, target = old / "runtime/watch" / name, state / name
+                if source.is_file() and not source.is_symlink() and not target.exists():
+                    temporary = target.with_suffix(target.suffix + ".migrating")
+                    shutil.copy2(source, temporary)
+                    temporary.replace(target)
+
+        databases = (
+            (old / "runtime/hub/hub.db", user / "hub/hub.db"),
+            (old / "runtime/market/market.db", root / "public-data/mechanical-cache/market/market.db"),
+        )
+        for source, target in databases:
+            if not source.is_file() or source.is_symlink() or target.exists():
+                continue
+            target.parent.mkdir(parents=True, exist_ok=True)
+            temporary = target.with_suffix(".migrating")
+            with closing(sqlite3.connect(source.as_uri() + "?mode=ro", uri=True)) as current:
+                with closing(sqlite3.connect(temporary)) as migrated:
+                    current.backup(migrated)
+            temporary.replace(target)
+
+    marker.parent.mkdir(parents=True, exist_ok=True)
+    marker.touch()
+
+
 def control(root, release, action):
     with command_lock(root):
-        if action == "open" and (root / "running").exists() and (root / "ready").exists():
+        ready = root / "ready"
+        if action == "open" and (root / "running").exists() and ready.exists():
             if healthy("server") and healthy("web"):
                 return
+        previous = ready.read_text(encoding="utf-8").strip() if ready.is_file() else ""
         stop_service(root)
         if action != "stop":
+            migrate_release_engine_state(root, release, previous)
             start(root, release)
 
 
