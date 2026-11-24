@@ -68,6 +68,14 @@ def workspace_directory(root):
     return workspace
 
 
+def storage_directories(root):
+    user = root / "user-data"
+    legacy = root / "data"
+    if legacy.is_dir() and not user.is_dir():
+        return legacy, legacy
+    return user, root / "public-data/mechanical-cache"
+
+
 def runtime(root, release):
     config = json.loads((release / "runtime-paths.json").read_text(encoding="utf-8"))
     node, npx = Path(config["node"]), Path(config["npx"])
@@ -76,13 +84,14 @@ def runtime(root, release):
     for key in ("CHIVES_INSTALL_CODE", "CHIVES_SETUP_PROXY"):
         env.pop(key, None)
     env.setdefault("HOME", str(Path.home()))
+    user, mechanical = storage_directories(root)
     env.update({
         "PYTHONUTF8": "1", "CALENDAR_PYTHON": str(python),
         "PATH": os.pathsep.join([str(node.parent), str(python.parent), env.get("PATH", "")]),
-        "CHIVES_DATA_DIR": str(root / "data"), "DSH_HOME": str(root / "data/dsh"),
-        "DSH_FINANCE_HOME": str(root / "data/dsh"), "DSH_FINANCE_OVERLAY": "",
-        "CHIVES_HARNESS": "dsh", "CHIVES_PAPER_STATE_DIR": str(root / "data/paper"),
-        "CN_DAILY_STORE_DB": str(root / "data/marketdata/daily.sqlite"),
+        "CHIVES_DATA_DIR": str(user), "DSH_HOME": str(user / "dsh"),
+        "DSH_FINANCE_HOME": str(user / "dsh"), "DSH_FINANCE_OVERLAY": "",
+        "CHIVES_HARNESS": "dsh", "CHIVES_PAPER_STATE_DIR": str(user / "paper"),
+        "CN_DAILY_STORE_DB": str(mechanical / "marketdata/daily.sqlite"),
         "PLAYWRIGHT_BROWSERS_PATH": str(release / "runtime/ms-playwright/browsers"),
         "npm_config_cache": config.get("npm_cache", str(release / "offline/npm")), "CHIVES_NPX_JS": str(npx),
     })
@@ -550,7 +559,7 @@ def configure(root, release, base_python, node_pair):
         run(python, "-s", "-c", BROWSER_CHECK, cwd=release, env=browser_env, label="使用随包 Linux 浏览器动态库复查")
         (libs.parent / "use-private-libs").touch()
     if (release / "scripts/user_archive.py").is_file():
-        run(python, "scripts/user_archive.py", "--data", root / "data", "init", cwd=release, env=env, label="初始化共享用户档案")
+        run(python, "scripts/user_archive.py", "--data", env["CHIVES_DATA_DIR"], "init", cwd=release, env=env, label="初始化共享用户档案")
 
 
 def activate(root, release):
@@ -558,7 +567,8 @@ def activate(root, release):
     ready = root / "ready"
     previous = ready.read_text().strip() if ready.is_file() else ""
     try:
-        (root / "data/dsh").mkdir(parents=True, exist_ok=True)
+        user, _ = storage_directories(root)
+        (user / "dsh").mkdir(parents=True, exist_ok=True)
         control(root, release, "restart")
         _, python, _ = runtime(root, release)
         subprocess.run([python, release / "scripts/chives_cli.py", "release", "--register"], check=True)
