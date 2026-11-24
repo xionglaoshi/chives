@@ -1,3 +1,4 @@
+import { workbenchTools } from '../utils/routes';
 import { askAiPrompts, fillAskPrompt } from '../utils/askAiPrompts';
 import content from '../../../../packages/chives-terminal/chives_terminal/workbench-content.json';
 import {useEffect,useState,type ReactNode} from 'react';
@@ -66,7 +67,7 @@ export function MarketBoard({onAskExpert}:{onAskExpert:AskExpert}){
   const amount=(n:number|null|undefined)=>hidden?'••••':n==null?'—':n.toLocaleString('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
   const ratio=m?.breadth.upRatioPct;
   return <article className="market-board">
-    <div className="mb-title"><div><small>工作台</small><h1>行情看板</h1></div><small>{m?SESSION_TEXT[m.session]+' · '+stamp(m.asOf)+' 北京时间':'A 股市场'}</small></div>
+    <div className="mb-title"><div><small>工作台</small><h1>{workbenchTools.market}</h1></div><small>{m?SESSION_TEXT[m.session]+' · '+stamp(m.asOf)+' 北京时间':'A 股市场'}</small></div>
     {p&&!p.empty&&<button className="mb-account-strip" onClick={()=>document.querySelector('.mb-summary')?.scrollIntoView({block:'center',behavior:'smooth'})}><span>我的持仓 <strong>{p.summary.positionCount} 只</strong></span><span>今日估算盈亏 <b className={'mb-'+priceDirection(p.summary.todayPnl)}>{amount(p.summary.todayPnl)} 元</b></span><span>查看贡献 ↓</span></button>}
     <div className="mb-grid">
     <Panel title={content.market.market} cls="mb-major" ask={ask('大盘走势',!!i,fillAskPrompt(askAiPrompts['行情看板']['大盘走势'], {指数名: i?.name ?? '当前指数'}),()=>[

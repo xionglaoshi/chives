@@ -10,9 +10,8 @@ import './Sidebar.css';
 
 type QuickTool = Exclude<WorkbenchTool, 'portrait' | 'strategies'>;
 
-const initialTools = ['holdings', 'watchlist', 'market', 'trends'];
+const toolIds: QuickTool[] = ['market', 'trends', 'holdings', 'watchlist'];
 const initialBots = ['chives', 'expert', 'equity-analyst', 'research', 'zhushenglang', 'report-builder'];
-const toolIds: QuickTool[] = ['trends', ...(Object.keys(workbenchTools) as WorkbenchTool[]).filter((id): id is Exclude<QuickTool, 'trends'> => id !== 'trends' && id !== 'portrait' && id !== 'strategies')];
 
 const toolOrderKey = 'chives.sidebar.toolOrder';
 function readToolOrder(): QuickTool[] {
@@ -21,7 +20,7 @@ function readToolOrder(): QuickTool[] {
     if (Array.isArray(saved)) {
       const known = saved.filter((id): id is QuickTool => toolIds.includes(id));
       if (!known.includes('watchlist') && known.includes('holdings')) known.splice(known.indexOf('holdings')+1,0,'watchlist');
-      return [...new Set<QuickTool>(['trends', ...known, ...toolIds])];
+      return [...new Set<QuickTool>(['market', ...known, ...toolIds])];
     }
   } catch { /* Use the default order when storage is unavailable. */ }
   return toolIds;
@@ -85,13 +84,13 @@ export function Sidebar({
     setCollapsed(!collapsed);
     try { localStorage.setItem('chives.sidebar.collapsed', String(!collapsed)); } catch { /* Session state remains usable. */ }
   }
-  const tools = useSidebarPins('tools', initialTools);
+  const tools = useSidebarPins('tools', toolIds);
   const [order, setOrder] = useState(readToolOrder);
-  const visibleTools = order.filter(id => tools.pins.includes(id));
-  const hiddenTools = order.filter(id => !tools.pins.includes(id)).map(id => ({id, name: workbenchTools[id]}));
+  const visibleTools = order.filter(id => id === 'market' || tools.pins.includes(id));
+  const hiddenTools = order.filter(id => id !== 'market' && !tools.pins.includes(id)).map(id => ({id, name: workbenchTools[id]}));
   function moveTool(source: string, target: QuickTool) {
     const from = order.findIndex(id => id === source);
-    if (source === 'trends' || target === 'trends' || from < 0 || source === target || !tools.pins.includes(source)) return;
+    if (source === 'market' || target === 'market' || from < 0 || source === target || !tools.pins.includes(source)) return;
     const next = [...order];
     next.splice(from, 1);
     next.splice(order.indexOf(target), 0, order[from]!);
@@ -110,7 +109,7 @@ export function Sidebar({
   return (
     <nav className={`sidebar${compact ? ' sidebar--compact' : ''}`} aria-label="Bot 列表">
       <div className="sidebar__brand">
-        <a className="sidebar__home" onClick={onHome} href="#/workspace/trends" aria-label="老韭菜 · Chives，打开热门榜单" title="热门榜单">
+        <a className="sidebar__home" onClick={onHome} href="#/workspace/market" aria-label={`老韭菜 · Chives，打开${workbenchTools.market}`} title={workbenchTools.market}>
           <Logo size={40} title="Chives" />
           <span className="sidebar__wordmark">老韭菜 · Chives</span>
         </a>
@@ -125,26 +124,26 @@ export function Sidebar({
       <section className="desk-shortcuts" aria-label="快速工具">
         <h2 className="bot-list__heading">快速工具</h2>
         {visibleTools.map((key,index)=><div className="sidebar-pin-row" key={key}
-          onDragOver={event => { if (key !== 'trends' && event.dataTransfer.types.includes('text/chives-tool')) event.preventDefault(); }}
+          onDragOver={event => { if (key !== 'market' && event.dataTransfer.types.includes('text/chives-tool')) event.preventDefault(); }}
           onDrop={event => {
             const source = event.dataTransfer.getData('text/chives-tool');
             if (source) { event.preventDefault(); moveTool(source,key); }
           }}>
-          <button type="button" draggable={key !== 'trends'} onDragStart={event => {
+          <button type="button" draggable={key !== 'market'} onDragStart={event => {
             event.dataTransfer.setData('text/chives-tool',key);
             event.dataTransfer.effectAllowed = 'move';
           }} onKeyDown={event => {
-            if (!event.altKey || !['ArrowUp','ArrowDown'].includes(event.key)) return;
+            if (key === 'market' || !event.altKey || !['ArrowUp','ArrowDown'].includes(event.key)) return;
             event.preventDefault();
             const target = visibleTools[index + (event.key === 'ArrowUp' ? -1 : 1)];
             if (target) moveTool(key,target);
           }}
-          title={workbenchTools[key] + (key === 'trends' ? ' · 展示时置顶' : ' · 拖动排序，或按 Alt 加上下方向键')} aria-label={workbenchTools[key]} aria-current={activeTool===key?'page':undefined}
+          title={workbenchTools[key] + (key === 'market' ? '' : ' · 拖动排序，或按 Alt 加上下方向键')} aria-label={workbenchTools[key]} aria-current={activeTool===key?'page':undefined}
           onClick={()=>onTool(key)}>
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
             <path d={{watchlist:'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z',holdings:'M3 7h18v13H3z M8 7V4h8v3 M3 12c5 3 13 3 18 0 M11 13h2',market:'M3 4v16h18 M6 15l4-5 4 3 6-8',trends:'M13 3c1 5 6 6 6 12a7 7 0 0 1-14 0c0-3 2-6 4-8 0 4 1 5 2 5 2-2 3-5 2-9z'}[key]}/>
           </svg><span>{workbenchTools[key]}</span>
-        </button><Pin name={workbenchTools[key]} pinned onClick={() => tools.toggle(key)}/></div>)}
+        </button>{key !== 'market' && <Pin name={workbenchTools[key]} pinned onClick={() => tools.toggle(key)}/>}</div>)}
         {hiddenTools.length > 0 && <HiddenMenu label="更多工具" items={hiddenTools}
           open={id => onTool(id as WorkbenchTool)} pin={tools.toggle}/>}
       </section>
