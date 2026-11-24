@@ -42,6 +42,7 @@ import { DashboardService } from './dashboard/index.js';
 import {hotspotService} from './dashboard/hotspots.js';
 import {Watchlist, screeningPrompt, valuationDay, valuationInstructions} from './dashboard/watchlist.js';
 import {holdings} from './dashboard/holdings.js';
+import {latestHoldingValuation,measureHoldingValuation,type HoldingValuation} from './dashboard/holding-valuations.js';
 import { createSnapshotRunner } from './dashboard/portfolio.js';
 import {
   toAlertEventDto,
@@ -522,6 +523,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
   const driver =
     options.driver ?? (config.harness === 'fake' ? new FakeDriver() : undefined);
   const watchlist = new Watchlist(config.repoRoot,config.dataDir);
+  const holdingValuations = new Map<string, Promise<HoldingValuation>>();
   const orchestrator = new Orchestrator({
     executionFor: effectiveModel,
     styleReportTurn: (botId, text, attachment, messageId, sink) => {
@@ -1534,6 +1536,28 @@ export function createApp(options: CreateAppOptions): ChivesApp {
                   `请测算用户关注中的 ${entry.name}（${entry.code}）。核对每股人民币估值区间及未来20个交易日的方向。${valuationInstructions} 以 ${day} 作为 as_of 调用测算器。把 valuation_id 交给 save_watchlist_estimate，附依据和失效条件。完成后简洁回复。`,[],id);
               }catch(error){watchlist.pending(code,null);throw error;}
             }else throw new AppError(400,'watchlist_action','未知用户关注操作。');
+          }
+        }else if(section==='holdings-valuations' && (method==='GET'||method==='POST')){
+          const book=await holdings(config.repoRoot,config.dshHome,{action:'get'}) as {positions:{code:string}[]};
+          const day=valuationDay(now());
+          if(method==='GET'){
+            const saved=new Map(watchlist.read().map(entry=>[entry.code,entry.estimates.at(-1)]));
+            result=Object.fromEntries(book.positions.map(({code})=>{
+              const estimate=latestHoldingValuation(config.dataDir,code,day)??saved.get(code);
+              return [code,estimate ? {low:estimate.low,high:estimate.high,valuationKind:estimate.valuationKind} : null];
+            }));
+          }else{
+            const body=await readJsonObject(request);
+            const code=String(body.code??'');
+            if(!/^\d{6}\.(SH|SZ|BJ)$/.test(code) || !book.positions.some(position=>position.code===code))
+              throw new AppError(400,'security','请选择账本中的沪深北证券。');
+            const key=day+'/'+code;
+            const existing=holdingValuations.get(key);
+            if(!existing && holdingValuations.size>0)throw new AppError(409,'valuation_busy','另有持仓估值正在测算，请稍后再试。');
+            const pending=existing??measureHoldingValuation(joinPath(userHome(),'.agents/venvs/chives/bin/python'),config.repoRoot,config.dataDir,code,day);
+            holdingValuations.set(key,pending);
+            try{result=await pending;}catch{throw new AppError(503,'valuation_unavailable','持仓估值暂不可用，请稍后重试。');}
+            finally{if(holdingValuations.get(key)===pending)holdingValuations.delete(key);}
           }
         }else if(section==='holdings' && (method==='GET'||method==='POST')){
           const body=method==='GET'?{action:'get'}:await readJsonObject(request);

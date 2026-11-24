@@ -49,7 +49,7 @@ export function HoldingSecurityFields({current,hidden}:{current:Position|null;hi
  {failed&&<small role="alert">本地名录加载失败，请刷新。</small>}
  {touched&&term&&!selected&&!failed&&<small role="alert">{matches.length?'请选择与代码对应的证券。':'未找到该证券，请核对代码或简称。'}</small>}</label>
  <div><span>当前价格（元）</span><output>{quote?quote.price:code?(result?.code===code?'暂无行情':'读取中…'):'—'}</output>{quote&&<small>{quote.basis} · {quote.as_of}</small>}</div></div>
- <div className="holding-form-row"><label>平均持股成本价（元）<input name="cost" type="number" required min="0.000001" step="any" value={cost} onChange={e=>setCost(e.target.value)}/></label>
+ <div className="holding-form-row"><label>成本价（元）<input name="cost" type="number" required min="0.000001" step="any" value={cost} onChange={e=>setCost(e.target.value)}/></label>
  <label>{/^(11|12|81)/.test(code)&&!code.endsWith('.OF')?'持有数量（张）':code.endsWith('.OF')||/^(5|15|16|18)/.test(code)?'持有份数（份）':'持股数（股）'}<input name="qty" type="number" required min="1" step="1" value={qty} onChange={e=>setQty(e.target.value)}/></label></div>
  <div className="holding-valuation" aria-live="polite">{[['持股市值',value],['持股总成本',basis],['账面盈亏',profit]].map(([label,n])=><div key={label}><span>{label}</span><output className={label==='账面盈亏'&&!hidden&&profit?(profit>0?'holding-gain':'holding-loss'):''}>{hidden?'••••':amount(n as number|null)}</output></div>)}</div>
  </>;

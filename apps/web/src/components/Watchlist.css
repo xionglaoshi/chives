@@ -12,8 +12,6 @@
 .watchlist small { display: block; color: var(--color-text-secondary); }
 .watchlist-row > * { min-width: 0; overflow-wrap: anywhere; }
 .watchlist .watchlist-mobile-label { display: none; }
-.watchlist-range--inside { color: var(--color-value-in-range); }
-.watchlist-range--unpriced { color: var(--color-text-secondary); }
 .watchlist-up { color: var(--color-up); }
 .watchlist-down { color: var(--color-down); }
 @media (max-width: 760px) {

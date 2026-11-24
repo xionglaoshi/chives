@@ -1,9 +1,10 @@
 import {useEffect,useState} from 'react';
 import {appPath} from '../appPath';
+import {ValuationRange,valuationComparison,type EstimateRange} from './ValuationRange';
 import {desk} from './deskApi';
 import './Watchlist.css';
 
-type Estimate={valuationKind?:string;version:number;low:number|null;high:number|null;score:number|null;asOf:string;basis:string;invalidation:string;measuredAt:string;horizon:number};
+type Estimate=EstimateRange&{version:number;score:number|null;asOf:string;basis:string;invalidation:string;measuredAt:string;horizon:number};
 type Entry={code:string;name:string;pending?:boolean;estimates:Estimate[]};
 type Quote={price:number;changePct?:number;basis:string;as_of:string};
 const fmt=new Intl.NumberFormat('zh-CN',{maximumFractionDigits:2});
@@ -38,14 +39,9 @@ function WatchPrices({code,latest}:{code:string;latest:Estimate|undefined}) {
   },[code]);
   const price=quote?.price;
   const hasPrice=typeof price==='number' && Number.isFinite(price) && price>0;
-  const low=latest?.low, high=latest?.high;
-  const hasRange=typeof low==='number' && typeof high==='number' &&
-    Number.isFinite(low) && Number.isFinite(high) && low>0 && low<=high;
-  const below=hasPrice && hasRange && price<low;
-  const above=hasPrice && hasRange && price>high;
-  const boundary=below?low:above?high:null;
-  const rangeClass=below?'watchlist-up':above?'watchlist-down':
-    hasPrice?'watchlist-range--inside':'watchlist-range--unpriced';
+  const range=valuationComparison(latest,price);
+  const below=range?.below;
+  const boundary=range?.below?range.low:range?.above?range.high:null;
   const change=quote?.changePct;
   return <>
     <div>{quote && hasPrice ? <>
@@ -55,10 +51,8 @@ function WatchPrices({code,latest}:{code:string;latest:Estimate|undefined}) {
       {boundary!==null && <small>现价{below?'低于估值下限':'高于估值上限'} {fmt.format(Math.abs(price/boundary-1)*100)}%</small>}
     </> : '暂无行情'}</div>
     <div><small className="watchlist-mobile-label">合理估值</small>
-      {hasRange ? <>
-        <span className={rangeClass}>¥{fmt.format(low)}–{fmt.format(high)}</span>
-        <small>{latest?.valuationKind??'历史测算'}</small>
-      </> : latest?'依据不足':'待测算'}
+      <ValuationRange estimate={latest} price={price}/>
+      {range && <small>{latest?.valuationKind??'历史测算'}</small>}
     </div>
   </>;
 }

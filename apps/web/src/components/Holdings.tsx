@@ -5,18 +5,21 @@ import {askAiPrompts} from '../utils/askAiPrompts';
 import type {AskExpert} from './askExpert';
 import {desk} from './deskApi';
 import './holdings.css';
+import {ValuationRange,type EstimateRange} from './ValuationRange';
 import {HoldingSecurityFields} from './HoldingSecurityFields';
 
 type Position={note?:string|null;code:string;name:string;qty:number;cost_price:number;available_qty?:number|null};
 type Ledger={positions:Position[];cash:number|null};
 const money=new Intl.NumberFormat('zh-CN',{style:'currency',currency:'CNY'});
-const quantityLabel = '持仓数量';
-const priceLabel = '平均持股成本价（元）';
-const costLabel = '持仓成本';
+const quantityLabel = '持股数';
+const priceLabel = '成本价';
 const privacyKey='chives.expertSidebar.hideAmounts';
 
 export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
  const [book,setBook]=useState<Ledger|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
+ const [valuations,setValuations]=useState<Record<string,EstimateRange|null>>({});
+ const [valuating,setValuating]=useState<string|null>(null);
+ const [valuationError,setValuationError]=useState('');
  const [quoteRevision,setQuoteRevision]=useState(0);
  const {portfolio}=useExpertSidebarData('portfolio',quoteRevision);
  const summary=portfolio.data?.summary;
@@ -32,6 +35,22 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
   setBusy(true);setError('');
   try{setBook(await desk<Ledger>('holdings','POST',body));setEditor(null);setQuoteRevision(value=>value+1);}
   catch(e){setError((e as Error).message);}finally{setBusy(false);}
+ }
+ useEffect(()=>{
+  if (!book?.positions.length) return;
+  let active=true;
+  void desk<Record<string,EstimateRange|null>>('holdings-valuations')
+   .then(result=>{if(active){setValuations(result);setValuationError('');}})
+   .catch(()=>{if(active)setValuationError('暂时无法读取合理估值。');});
+  return ()=>{active=false;};
+ },[book]);
+ async function measure(code:string){
+  setValuating(code);setValuationError('');
+  try{
+   const result=await desk<EstimateRange>('holdings-valuations','POST',{code});
+   setValuations(current=>({...current,[code]:result}));
+  }catch(error){setValuationError((error as Error).message);}
+  finally{setValuating(null);}
  }
  function save(event:FormEvent<HTMLFormElement>){
   event.preventDefault();
@@ -62,9 +81,10 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
    new File([lines.join('\n\n')],'用户持仓.md',{type:'text/markdown'}));
  }
  return <section className="holdings"><header><h1>用户持仓</h1><div>
- <button disabled={busy||!!editor} onClick={()=>{void refresh();setQuoteRevision(value=>value+1);}}>刷新</button>
+ <button disabled={busy||!!editor||!!valuating} onClick={()=>{void refresh();setQuoteRevision(value=>value+1);}}>刷新</button>
  <button disabled={!book||busy||!!editor} className="holdings-primary" onClick={()=>{setError('');setEditor('new');}}>添加持仓</button></div></header>
  {error&&<p role="alert">{error}</p>}
+ {valuationError&&<p role="status">{valuationError}</p>}
  {book&&<><div className="holdings-totals">
  <div><span>今日估算盈亏</span><strong className={'holding-'+priceDirection(summary?.todayPnl??null)}>{amount(summary?.todayPnl)}</strong></div>
  <div><span>持仓市值</span><strong>{amount(summary?.totalMarketValue)}</strong></div>
@@ -83,17 +103,23 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
    <div className="holdings-table">
      <table role="table">
        <thead role="rowgroup">
-         <tr role="row">{['证券', quantityLabel, priceLabel, costLabel, '现价', '今日涨跌', '今日贡献', '操作'].map(label =>
+         <tr role="row">{['证券', quantityLabel, priceLabel, '现价', '合理估值', '今日涨跌', '今日贡献', '操作'].map(label =>
            <th key={label} role="columnheader" scope="col">{label}</th>
          )}</tr>
        </thead>
        <tbody role="rowgroup">{book.positions.map(position => {
          const quote=quotes.get(position.code);
+         const estimate=valuations[position.code];
          const metrics = [
            [quantityLabel, hidden ? '••••' : position.qty.toLocaleString('zh-CN')],
            [priceLabel, hidden ? '••••' : position.cost_price],
-           [costLabel, amount(position.qty * position.cost_price)],
            ['现价', formatPrice(quote?.price??null)],
+           ['合理估值', <div className="holding-estimate">
+             {valuating===position.code?'测算中…':<ValuationRange estimate={estimate} price={quote?.price}/>}
+             {estimate?.low!=null && estimate.valuationKind && <small>{estimate.valuationKind}</small>}
+             {!estimate?.low && valuating!==position.code && /^\d{6}\.(SH|SZ|BJ)$/.test(position.code) &&
+               <button type="button" disabled={!!valuating||busy||!!editor} onClick={()=>void measure(position.code)}>测算</button>}
+           </div>],
            ['今日涨跌', formatPercent(quote?.changePct??null), priceDirection(quote?.changePct??null)],
            ['今日贡献', amount(quote?.todayPnl), priceDirection(quote?.todayPnl??null)]
          ] as const;
@@ -107,14 +133,19 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
                <span className="holding-mobile-label" aria-hidden="true">{label}</span>{value}
              </td>
            )}
-           <td role="cell">
-             <button disabled={busy || !!editor} onClick={() => { setError(''); setEditor(position); }}>编辑</button>{' '}
-             <button disabled={busy || !!editor} onClick={() => {
+           <td role="cell"><div className="holding-row-actions">
+             <button type="button" aria-label={'编辑 '+position.name} disabled={busy || !!editor || !!valuating}
+               onClick={() => { setError(''); setEditor(position); }}>
+               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m14 6 4 4M4 20l4.5-1 11-11a2.8 2.8 0 0 0-4-4l-11 11L4 20Z"/></svg>
+             </button>
+             <button type="button" aria-label={'移除 '+position.name} disabled={busy || !!editor || !!valuating} onClick={() => {
                if (window.confirm('从个人持仓账本移除 '+position.name+'（'+position.code+'）？')) {
                  void change({action:'remove', original:position});
                }
-             }}>移除</button>
-           </td>
+             }}>
+               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 10v6m4-6v6"/></svg>
+             </button>
+           </div></td>
          </tr>;
        })}</tbody>
      </table>

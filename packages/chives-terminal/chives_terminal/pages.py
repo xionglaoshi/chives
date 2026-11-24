@@ -146,7 +146,7 @@ def portfolio(paper, quotes):
          delta(r.get("changePct")), delta(r.get("todayPnl"), " 元"), delta(r.get("pnl"), " 元")] for r in rows])
 
 
-def holdings(book, quotes=None):
+def holdings(book, quotes=None, valuations=None):
     paper = Paper()
     rows = book.get("positions") or []
     paper.text(f"证券数量  {len(rows)} 只", "accent")
@@ -156,10 +156,21 @@ def holdings(book, quotes=None):
         paper.text("账本暂无持仓。")
         return paper
     paper.heading("持仓明细")
-    paper.table(["证券", "代码", "数量", "可用", "平均成本价", "持仓成本"], [
-        [cell(one(r["name"]), "strong"), cell(one(r["code"]), "dim"), cell(number(r["qty"])),
-         cell(number(r.get("available_qty"))), cell(number(r["cost_price"], digits=4)),
-         cell(number(r["qty"]*r["cost_price"], " 元"))] for r in rows])
+    prices = {row["code"]: row.get("price") for row in quotes.get("positions", [])} if isinstance(quotes, dict) else {}
+    detail = []
+    for row in rows:
+        code = row["code"]
+        estimate = (valuations or {}).get(code)
+        price = prices.get(code)
+        low, high = (estimate.get("low"), estimate.get("high")) if estimate else (None, None)
+        value, tone = ("依据不足" if estimate else "待测算"), "ink"
+        if isinstance(low, (int, float)) and isinstance(high, (int, float)) and 0 < low <= high:
+            value = f"¥{number(low)}–{number(high)}"
+            if isinstance(price, (int, float)) and price > 0:
+                tone = "up" if price < low else "down" if price > high else "ink"
+        detail.append([cell(one(row["name"]), "strong"), cell(one(code), "dim"), cell(number(row["qty"])),
+                       cell(number(row["cost_price"], digits=4)), cell(number(price)), cell(value, tone)])
+    paper.table(["证券", "代码", "持股数", "成本价", "现价", "合理估值"], detail)
     for r in rows:
         if r.get("note"):
             paper.text(one(r["name"]) + " · " + one(r["note"]), "dim")
@@ -377,7 +388,11 @@ async def browse(api, view, page, *, replace_page):
                 quotes = await api(MARKET+"portfolio")
             except (OSError, RuntimeError, ValueError) as err:
                 quotes = err
-            replace_page(first, holdings(book, quotes))
+            try:
+                valuations = await api(DESK+"holdings-valuations")
+            except (OSError, RuntimeError, ValueError):
+                valuations = None
+            replace_page(first, holdings(book, quotes, valuations))
 
         pending = asyncio.create_task(enrich())
         try:

@@ -1,0 +1,4 @@
+.valuation-range--inside { color: var(--color-value-in-range); }
+.valuation-range--unpriced { color: var(--color-text-secondary); }
+.valuation-range--below { color: var(--color-up); }
+.valuation-range--above { color: var(--color-down); }

@@ -69,3 +69,14 @@
 
 .holding-up { color: var(--color-price-up); }
 .holding-down { color: var(--color-price-down); }
+
+.holding-row-actions { display: inline-flex; flex-direction: column; gap: 2px; }
+.holdings .holding-row-actions button {
+  display: grid; place-items: center; padding: 0; width: 28px; height: 28px;
+  background: transparent; border-color: transparent; color: var(--color-text-secondary);
+}
+.holdings .holding-row-actions button:hover:enabled { background: var(--color-raised); }
+.holdings .holding-estimate button { padding: 2px 5px; margin-inline-start: 5px; font-size: .76rem; }
+@media (max-width: 720px) {
+  .holdings .holding-row-actions button { width: 34px; height: 34px; }
+}

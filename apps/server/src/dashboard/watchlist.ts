@@ -1,6 +1,7 @@
-import {createHash, randomUUID} from 'node:crypto';
+import {randomUUID} from 'node:crypto';
 import {mkdirSync, readFileSync, renameSync, writeFileSync} from 'node:fs';
 import {dirname, join} from 'node:path';
+import {readValuationReceipt} from './holding-valuations.js';
 import {AppError} from '../errors.js';
 
 export type Estimate = {version: number; low: number|null; high: number|null; score: number|null;
@@ -89,23 +90,14 @@ export class Watchlist {
       throw new AppError(400,'watchlist_estimate','请提供工具的测算编号、依据和失效条件。');
     }
     const day=entry.pendingDate??valuationDay(now);
-    const file=join(this.data,'equity-research','valuations',entry.code,day,valuationId+'.json');
     const invalid=()=>new AppError(409,'valuation_receipt','测算编号与本次证券或日期不匹配，请重新调用估值工具。');
-    let record;
-    try {
-      const bytes=readFileSync(file);
-      if(createHash('sha256').update(bytes).digest('hex')!==valuationId) throw invalid();
-      record=JSON.parse(bytes.toString('utf8'));
-    } catch {throw invalid();}
-    if (record.code!==entry.code || record.requested_as_of!==day || record.currency!=='CNY' ||
-        !/^\d{4}-\d{2}-\d{2}$/.test(record.as_of) || typeof record.model_version!=='string') throw invalid();
-    const band=record.dynamic??record.static;
-    if(band!=null && !(Number.isFinite(band.low)&&Number.isFinite(band.high)&&band.low>0&&band.high>=band.low)) throw invalid();
+    let receipt;
+    try { receipt=readValuationReceipt(this.data,entry.code,day,valuationId); }
+    catch {throw invalid();}
+    const {record, estimate:priced}=receipt;
     const score=Object.hasOwn(record,'outlook') ? record.outlook?.score ?? null : body.score ?? null;
     if(score!==null && !(typeof score==='number' && Number.isInteger(score) && Math.abs(score)<=5)) throw invalid();
-    const estimate:Estimate={version:(entry.estimates.at(-1)?.version??0)+1,low:band?.low??null,
-      high:band?.high??null,score,asOf:record.as_of,basis,invalidation,valuationId,modelVersion:record.model_version,
-      valuationKind:record.dynamic?'动态估值':record.static?'静态参考':'依据不足',
+    const estimate:Estimate={version:(entry.estimates.at(-1)?.version??0)+1,...priced,score,asOf:record.as_of,basis,invalidation,valuationId,modelVersion:record.model_version,
       taskId,botId,requestId:id,measuredAt:now.toISOString(),horizon:record.horizon_trading_days};
     entry.estimates.push(estimate);
     delete entry.pending;
