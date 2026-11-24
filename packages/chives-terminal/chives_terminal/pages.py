@@ -318,10 +318,10 @@ def watchlist_page(entries, prices):
         code = entry["code"]
         paper.text(f"{entry['name']}  {code}", "accent")
         history = entry.get("estimates") or []
-        if not history:
-            paper.text("测算中" if entry.get("pending") else "待测算")
+        latest = entry.get("publicEstimate") if "publicEstimate" in entry else (history[-1] if history else None)
+        if latest is None:
+            paper.text("暂无已发布估值" if "publicEstimate" in entry else "测算中" if entry.get("pending") else "待测算")
             continue
-        latest = history[-1]
         low, high = latest.get("low"), latest.get("high")
         style = "ink"
         comparison = None
@@ -339,7 +339,8 @@ def watchlist_page(entries, prices):
             paper.text(comparison, "dim")
         direction, color = valuation_outlook(latest)
         paper.text("后市AI预测  " + direction, color)
-        paper.text(f"第 {latest['version']} 版", "dim")
+        if "version" in latest:
+            paper.text(f"第 {latest['version']} 版", "dim")
     return paper
 
 

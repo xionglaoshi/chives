@@ -137,3 +137,9 @@ bash scripts/install-chives.sh
 重新打开终端，输入 `chives`。如果只需重新注册已有检出的命令，可在仓库根目录执行 `"$HOME/.agents/venvs/chives/bin/python" scripts/chives_cli.py source --register`。
 
 「问AI」的预设集中在 [config/ask-ai-prompts.json](config/ask-ai-prompts.json)。每张榜单、卡片与报告段落有自己的条目，金额显示等分支也可分别修改。保留需要的双花括号变量，例如 `{{榜单名}}`，修改后刷新本机开发网页或重建静态网页使之生效。
+
+### 特色数据发布试点
+
+开发侧可用服务端安装的 `tsx` 运行 `scripts/build-feature-publication.ts`，传入 `--source`、`--output`、`--day`，以及明确批准发布的 `--board`、`--code`（可多次指定）。例如用已有公共榜单的产出目录，先选择一张榜和一只证券演练。导出器只写内容摘要命名的快照及 `manifest.json`。将该目录单独映射到静态只读下载路径，先发布快照，再发布清单。
+
+设置 `CHIVES_FEATURE_DATA_URL` 后，机会榜单、用户关注和用户持仓从同一发布源读取，缓存位于用户数据目录的同级 `public-data/chives-cache/`。刷新失败时使用上次通过验证的版本。未配置发布源时，开发环境沿用现有本机计算入口。

@@ -42,6 +42,7 @@ import { DashboardService } from './dashboard/index.js';
 import {hotspotService} from './dashboard/hotspots.js';
 import {Watchlist, screeningPrompt, valuationDay, valuationInstructions} from './dashboard/watchlist.js';
 import {holdings} from './dashboard/holdings.js';
+import {featureDataService} from './dashboard/feature-data.js';
 import {latestHoldingValuation,measureHoldingValuation,type HoldingValuation} from './dashboard/holding-valuations.js';
 import { createSnapshotRunner } from './dashboard/portfolio.js';
 import {
@@ -94,7 +95,7 @@ import {
 import { SessionTokenRegistry } from './delegations/tokens.js';
 import { approvedOnly, describeEntry, installed, manageConnection, mountConnections, templates } from './settings/mcp-connections.js';
 import { assets, assetOptions, saveAssets, type AssetProfile } from './harness/bot-assets.js';
-import { join as joinPath } from 'node:path';
+import { dirname, join as joinPath } from 'node:path';
 import { homedir as userHome } from 'node:os';
 import { KernelManager } from './harness/kernel-manager.js';
 
@@ -423,6 +424,11 @@ export function createApp(options: CreateAppOptions): ChivesApp {
     throw new Error('检测到旧版数据库。请先停服，按 INSTALL.md「更新与备份」将旧数据迁至 data/，再启动 Chives。');
   }
   const hotspots=hotspotService(config.repoRoot,config.dataDir);
+  const featureEndpoint=process.env.CHIVES_FEATURE_DATA_URL?.trim();
+  const features=featureEndpoint
+    ? featureDataService(featureEndpoint,joinPath(dirname(config.dataDir),'public-data','chives-cache'))
+    : undefined;
+
   const store = Store.open(config.dataDir);
   const registry =
     options.registry ?? loadBots(config.botsDir, buildCatalog(config.repoRoot));
@@ -1516,17 +1522,27 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           }
           result=employment.list();
         }else if(section==='hotspots' && (method==='GET'||method==='POST')){
-          result=method==='GET'?hotspots.current():await hotspots.start();
+          if(features){
+            const publication=await features.read(method==='POST');
+            result={mode:'published',snapshot:publication?.hotspots??null,status:{state:publication?.hotspots?'ready':'idle'}};
+          }else result=method==='GET'?hotspots.current():await hotspots.start();
         }else if(section==='watchlist' && (method==='GET'||method==='POST')){
           if(method==='GET'){
-            result=watchlist.read().map(entry=>({...entry,pending:entry.pending &&
+            const publication=await features?.read();
+            result=watchlist.read().map(entry=>({...entry,
+              ...(features?{publicEstimate:publication?.valuations[entry.code]??null}:{}),
+              pending:entry.pending &&
               (()=>{const taskId=store.messages.get(entry.pending)?.taskId;return taskId && store.tasks.get(taskId)?.status==='running';})()}));
           }else{
             const body=await readJsonObject(request), code=String(body.code??'');
             if(body.action==='add')result=watchlist.add([code],'manual',now());
             else if(body.action==='remove') {watchlist.remove(code);result={ok:true};}
             else if(body.action==='screen') result=await orchestrator.submitMessage(coordinatorId,screeningPrompt);
-            else if(body.action==='estimate') {
+            else if(body.action==='estimate' && features) {
+              watchlist.get(code);
+              await features.read(true);
+              result={ok:true};
+            }else if(body.action==='estimate') {
               const entry=watchlist.get(code);
               const id=randomUUID();
               if(orchestrator.runningTaskId(coordinatorId))throw new AppError(409,'bot_busy','总调度正在处理任务，请稍后再试。');
@@ -1542,9 +1558,11 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           const book=await holdings(config.repoRoot,config.dshHome,{action:'get'}) as {positions:{code:string}[]};
           const day=valuationDay(now());
           if(method==='GET'){
+            const publication=await features?.read();
             const saved=new Map(watchlist.read().map(entry=>[entry.code,entry.estimates.at(-1)]));
             result=Object.fromEntries(book.positions.map(({code})=>{
-              const estimate=latestHoldingValuation(config.dataDir,code,day)??saved.get(code);
+              const estimate=features ? publication?.valuations[code]
+                : latestHoldingValuation(config.dataDir,code,day)??saved.get(code);
               return [code,estimate ? {low:estimate.low,high:estimate.high,valuationKind:estimate.valuationKind,score:estimate.score} : null];
             }));
           }else{
@@ -1552,6 +1570,13 @@ export function createApp(options: CreateAppOptions): ChivesApp {
             const code=String(body.code??'');
             if(!/^\d{6}\.(SH|SZ|BJ)$/.test(code) || !book.positions.some(position=>position.code===code))
               throw new AppError(400,'security','请选择账本中的沪深北证券。');
+            if(features){
+              const publication=await features.read(true);
+              const estimate=publication?.valuations[code];
+              if(!estimate)throw new AppError(404,'valuation_unavailable','暂无已发布估值。');
+              sendJson(response,200,estimate);
+              return;
+            }
             const key=day+'/'+code;
             const existing=holdingValuations.get(key);
             if(!existing && holdingValuations.size>0)throw new AppError(409,'valuation_busy','另有持仓估值正在测算，请稍后再试。');

@@ -5,11 +5,11 @@ import {desk} from './deskApi';
 import './Watchlist.css';
 
 type Estimate=EstimateRange&{version:number;score:number|null;asOf:string;basis:string;invalidation:string;measuredAt:string;horizon:number};
-type Entry={code:string;name:string;pending?:boolean;estimates:Estimate[]};
+type Entry={code:string;name:string;pending?:boolean;estimates:Estimate[];publicEstimate?:EstimateRange|null};
 type Quote={price:number;changePct?:number;basis:string};
 const fmt=new Intl.NumberFormat('zh-CN',{maximumFractionDigits:2});
 
-function WatchPrices({code,latest}:{code:string;latest:Estimate|undefined}) {
+function WatchPrices({code,latest}:{code:string;latest:EstimateRange|null|undefined}) {
   const [quote,setQuote]=useState<Quote|null>(null);
   useEffect(()=>{
     let active=true;
@@ -86,7 +86,7 @@ export function Watchlist({onConversation}:{onConversation:()=>void}) {
     <div className="watchlist-grid">
       <div className="watchlist-heading"><span>股票</span><span>行情</span><span>AI估算的合理股价</span><span>后市AI预测</span><span>测算与操作</span></div>
       {entries.map(entry=>{
-        const latest=entry.estimates.at(-1);
+        const latest=entry.publicEstimate===undefined?entry.estimates.at(-1):entry.publicEstimate;
         return <article className="watchlist-row" key={entry.code}>
           <div><strong>{entry.name}</strong><small>{entry.code}</small></div>
           <WatchPrices code={entry.code} latest={latest}/>
