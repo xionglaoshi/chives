@@ -335,6 +335,9 @@ def install(root, archive, platform):
             print("    ✓ 复用本机运行环境", flush=True)
             core.stage(5, "复用同一仓库快照的已安装依赖和工作台")
             print("    ✓ 已构建", flush=True)
+    if os.environ.get("CHIVES_INSTALL_BUILD_ONLY") == "1":
+        print("    ✓ 源码安装环境检查通过（5/6）；本次仅验收安装。")
+        return
     core.activate(root, release)
 
 
