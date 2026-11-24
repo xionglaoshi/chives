@@ -120,7 +120,12 @@ export function featureDataService(endpoint: string, cache: string) {
   }
 
   async function refresh(): Promise<Snapshot | null> {
-    const previous = await readFile(catalogPath).then(parseCatalog).catch(() => undefined);
+    const previousBytes = await readFile(catalogPath).catch(() => undefined);
+    let previous: Catalog | undefined;
+    if (previousBytes) {
+      try { previous = parseCatalog(previousBytes); }
+      catch { /* The remote catalog can replace an invalid local copy. */ }
+    }
     const sameSource = await readFile(sourcePath,'utf8').then(value=>value===sourceId,()=>false);
     if (!snapshot && !denied) denied = await readFile(denialPath,'utf8').then(value=>value===sourceId,()=>false);
     if (!snapshot && !denied && sameSource && previous) snapshot = await readRelease(previous).then(result=>result.release).catch(() => null);
@@ -132,11 +137,18 @@ export function featureDataService(endpoint: string, cache: string) {
       await mkdir(cache,{recursive:true});
       staging = await mkdtemp(join(cache,'.incoming-'));
       const {release,changed} = await readRelease(next, staging, sameSource);
-      await atomicWrite(join(staging,'catalog.json'),bytes);
-      await atomicWrite(join(staging,'.source'),Buffer.from(sourceId));
+      const replacements = [...changed];
+      if (!sameSource) {
+        await atomicWrite(join(staging,'.source'),Buffer.from(sourceId));
+        replacements.push('.source');
+      }
+      if (!previousBytes?.equals(bytes)) {
+        await atomicWrite(join(staging,'catalog.json'),bytes);
+        replacements.push('catalog.json');
+      }
       const installed: {target: string; backup: string | null}[] = [];
       try {
-        for (const path of [...changed,'.source','catalog.json']) {
+        for (const path of replacements) {
           const target=join(cache,path);
           const backup=join(staging,'.previous',path);
           await mkdir(dirname(target),{recursive:true});
