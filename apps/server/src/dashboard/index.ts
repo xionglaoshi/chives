@@ -5,7 +5,7 @@ import type {
   PortfolioDashboardDto,
 } from '../api/protocol.js';
 import { CoalescedTtlCache } from './cache.js';
-import { worldIndices } from './world.js';
+import { worldIndices, worldIndustries } from './world.js';
 import { callGateway, type GatewayOptions } from './gateway.js';
 import { loadMarket, marketCacheTtlMs, marketSession } from './market.js';
 import { parseSnapshot, PortfolioError, type SnapshotRunner } from './portfolio.js';
@@ -48,12 +48,13 @@ export class DashboardService {
 
   private readonly boardCaches = new Map<string, CoalescedTtlCache<unknown>>();
 
-  async board(part: 'gainers' | 'active' | 'sectors' | 'world' | 'limit-up' | 'limit-down'): Promise<DashboardResult> {
+  async board(part: 'gainers' | 'active' | 'sectors' | 'world' | 'limit-up' | 'limit-down' | 'sectors-hk' | 'sectors-us'): Promise<DashboardResult> {
     const cache = this.boardCaches.get(part) ?? new CoalescedTtlCache<unknown>(() => this.now().getTime());
     this.boardCaches.set(part, cache);
     try {
       const body = await cache.get(30_000, async () => {
         if (part === 'world') return worldIndices();
+        if (part === 'sectors-hk' || part === 'sectors-us') return worldIndustries(part === 'sectors-hk' ? 'hk' : 'us');
         if (part === 'limit-up') return this.limitUp();
         if (part === 'limit-down') return this.limitDown();
         const sector = part === 'sectors';

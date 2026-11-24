@@ -50,7 +50,7 @@ async function fallbackQuotes(codes: string[]) {
   return new Map(Array.from(raw.matchAll(/v_(\w+)="([^"]*)"/g), m => [m[1]!, m[2]!.split('~')]));
 }
 
-async function loadStats(scanner: string, market: string): Promise<WorldMarketStatsDto> {
+async function scanStocks(scanner: string, columns: string[]) {
   const response = await fetch('https://scanner.tradingview.com/' + scanner + '/scan', {
     method: 'POST',
     headers: {'content-type': 'application/json'},
@@ -61,7 +61,7 @@ async function loadStats(scanner: string, market: string): Promise<WorldMarketSt
         {left: 'is_primary', operation: 'equal', right: true},
         {left: 'volume', operation: 'greater', right: 0},
       ],
-      columns: ['change', 'volume'],
+      columns,
       range: [0, 10_000],
     }),
     signal: AbortSignal.timeout(7500),
@@ -70,8 +70,13 @@ async function loadStats(scanner: string, market: string): Promise<WorldMarketSt
   const result = await response.json() as {totalCount?: number; data?: Array<{d: unknown[]}>};
   if (!result.data?.length || result.data.length !== result.totalCount) throw new Error('Incomplete market breadth');
 
+  return result.data;
+}
+
+async function loadStats(scanner: string, market: string): Promise<WorldMarketStatsDto> {
+  const stocks = await scanStocks(scanner, ['change', 'volume']);
   let volumeShares = 0, volumeCount = 0, changeCount = 0, up = 0, down = 0;
-  for (const {d: [change, volume]} of result.data) {
+  for (const {d: [change, volume]} of stocks) {
     if (finite(volume) && volume > 0) { volumeShares += volume; volumeCount++; }
     if (!finite(change)) continue;
     changeCount++;
@@ -80,10 +85,56 @@ async function loadStats(scanner: string, market: string): Promise<WorldMarketSt
   }
   return {
     ...emptyStats, market,
-    volumeShares: volumeCount === result.totalCount ? volumeShares : null,
+    volumeShares: volumeCount === stocks.length ? volumeShares : null,
     up: changeCount > 0 ? up : null,
     down: changeCount > 0 ? down : null,
   };
+}
+
+const industryNames: Record<string, string> = {
+  'Airlines': '航空运输', 'Electrical Products': '电气产品', 'Computer Peripherals': '计算机外设',
+  'Medical Specialties': '医疗设备', 'Specialty Telecommunications': '专用通信服务', 'Specialty Stores': '专业零售',
+  'Semiconductors': '半导体', 'Major Banks': '大型银行', 'Regional Banks': '区域性银行',
+  'Internet Software/Services': '互联网软件与服务', 'Packaged Software': '软件',
+  'Investment Banks/Brokers': '投行与券商', 'Real Estate Development': '房地产开发',
+  'Finance/Rental/Leasing': '金融与租赁', 'Pharmaceuticals: Major': '大型制药',
+  'Pharmaceuticals: Other': '其他制药', 'Biotechnology': '生物技术',
+  'Motor Vehicles': '汽车整车', 'Telecommunications Equipment': '通信设备',
+  'Electronic Production Equipment': '电子生产设备', 'Electronic Components': '电子元件',
+  'Computer Processing Hardware': '计算机硬件', 'Internet Retail': '网络零售',
+  'Wireless Telecommunications': '无线通信', 'Multi-Line Insurance': '综合保险',
+  'Oil & Gas Production': '油气开采', 'Integrated Oil': '综合石油',
+  'Industrial Machinery': '工业机械', 'Metal Fabrication': '金属加工',
+  'Other Metals/Minerals': '其他金属与矿产', 'Precious Metals': '贵金属',
+  'Electronics Distributors': '电子产品分销', 'Movies/Entertainment': '影视娱乐',
+  'Aerospace & Defense': '航空航天与国防', 'Information Technology Services': '信息技术服务',
+};
+
+export async function worldIndustries(market: 'hk' | 'us') {
+  const currency = market === 'hk' ? 'HKD' : 'USD';
+  const stocks = await scanStocks(market === 'hk' ? 'hongkong' : 'america',
+    ['description', 'industry', 'change', 'Value.Traded', 'currency']);
+  const groups = new Map<string, { count: number; sum: number; amount: number; leader: {name: string; change_pct: number} }>();
+  for (const {d: [name, industry, change, amount, quoteCurrency]} of stocks) {
+    if (quoteCurrency !== currency || typeof name !== 'string' || typeof industry !== 'string' ||
+        !industry || !finite(change) || !finite(amount) || amount <= 0) continue;
+    const stock = {name, change_pct: change};
+    const group = groups.get(industry) ?? {count: 0, sum: 0, amount: 0, leader: stock};
+    group.count++;
+    group.sum += change;
+    group.amount += amount;
+    if (change > group.leader.change_pct) group.leader = stock;
+    groups.set(industry, group);
+  }
+  if (!groups.size) throw new Error('Industry quotes unavailable');
+  const rows = [...groups].sort((a, b) => b[1].amount - a[1].amount).slice(0, 12)
+    .map(([industry, group]) => ({
+      name: industryNames[industry] ?? industry,
+      change_pct: group.sum / group.count,
+      amount: group.amount,
+      leader: group.leader,
+    }));
+  return {rows, asOf: new Date().toISOString(), stale: false};
 }
 
 async function japanLimitCount(direction: 'up' | 'down'): Promise<number> {
