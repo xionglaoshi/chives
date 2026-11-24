@@ -142,11 +142,11 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
              </td>
            )}
            <td role="cell"><div className="holding-row-actions">
-             <button type="button" aria-label={'编辑 '+position.name} disabled={busy || !!editor || !!valuating}
+             <button type="button" title="编辑持仓" aria-label={'编辑 '+position.name} disabled={busy || !!editor || !!valuating}
                onClick={() => { setError(''); setEditor(position); }}>
                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m14 6 4 4M4 20l4.5-1 11-11a2.8 2.8 0 0 0-4-4l-11 11L4 20Z"/></svg>
              </button>
-             <button type="button" aria-label={'移除 '+position.name} disabled={busy || !!editor || !!valuating} onClick={() => {
+             <button type="button" title="从持仓账本移除" aria-label={'移除 '+position.name} disabled={busy || !!editor || !!valuating} onClick={() => {
                if (window.confirm('从个人持仓账本移除 '+position.name+'（'+position.code+'）？')) {
                  void change({action:'remove', original:position});
                }
