@@ -5,7 +5,7 @@ import {askAiPrompts} from '../utils/askAiPrompts';
 import type {AskExpert} from './askExpert';
 import {desk} from './deskApi';
 import './holdings.css';
-import {ValuationRange,type EstimateRange} from './ValuationRange';
+import {ValuationNotice,ValuationRange,type EstimateRange} from './ValuationRange';
 import {HoldingSecurityFields} from './HoldingSecurityFields';
 
 type Position={code:string;name:string;qty:number;cost_price:number;available_qty?:number|null};
@@ -96,7 +96,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
  {portfolio.status==='loading'?'正在读取持仓行情…':!portfolio.data?'持仓行情暂不可用':
   [summary?.unpricedCount?'部分持仓缺少报价':null,portfolio.status==='error'?'最近缓存':null].filter(Boolean).join(' · ')}
  </small>
- <small>合理股价由Chives基于该股基本面、近一年交易数据及所处行业动态等复合估算而出。AI会犯错，数据仅供投研参考，请勿作为投资依据。</small>
+ <ValuationNotice/>
  </>}
  {editor&&<form key={current?.code??'new'} onSubmit={save}><h2>{current?'编辑持仓':'添加持仓'}</h2><fieldset disabled={busy}>
  <HoldingSecurityFields current={current} hidden={hidden}/>

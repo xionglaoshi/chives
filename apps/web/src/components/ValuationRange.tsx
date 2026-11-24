@@ -22,3 +22,7 @@ export function ValuationRange({estimate,price,showCurrency=true,showComparison=
       <small className="valuation-range__comparison">现价{range.below?'低于估值下限':'高于估值上限'} {format.format(Math.abs(price/boundary-1)*100)}%</small>}
   </>;
 }
+
+export function ValuationNotice() {
+  return <small className="valuation-notice">合理股价由Chives基于该股基本面、近一年交易数据及所处行业动态等复合估算而出。AI会犯错，数据仅供投研参考，请勿作为投资依据。</small>;
+}

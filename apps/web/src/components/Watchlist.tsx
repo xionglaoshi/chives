@@ -1,6 +1,6 @@
 import {useEffect,useState} from 'react';
 import {appPath} from '../appPath';
-import {ValuationRange,type EstimateRange} from './ValuationRange';
+import {ValuationNotice,ValuationRange,type EstimateRange} from './ValuationRange';
 import {desk} from './deskApi';
 import './Watchlist.css';
 
@@ -94,6 +94,7 @@ export function Watchlist({onConversation}:{onConversation:()=>void}) {
       <button disabled={busy} onClick={()=>void act('screen')}>股票筛选器</button>
       <button disabled={busy} onClick={()=>setAdding(!adding)}>{adding?'收起添加':'添加关注'}</button>
     </div></header>
+    <ValuationNotice/>
     {adding&&<div className="watchlist-search"><label>股票代码或名称
       <input autoFocus value={search} onChange={event=>setSearch(event.target.value)} placeholder="例如 600519 或 贵州茅台"/>
     </label>{matches.map(([code,name])=><button key={code} disabled={busy} onClick={()=>void act('add',code)}>{name} · {code}</button>)}

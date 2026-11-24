@@ -3,3 +3,5 @@
 .valuation-range--below { color: var(--color-up); }
 .valuation-range--above { color: var(--color-down); }
 .valuation-range__comparison { display: block; margin-top: 3px; color: var(--color-text-secondary); }
+.valuation-notice { display: block; color: var(--color-text-secondary); }
+.watchlist > .valuation-notice { margin-bottom: 16px; }
