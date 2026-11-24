@@ -4,7 +4,7 @@ export const workbenchTools = {
   watchlist: '用户关注',
   trends: '热门榜单',
   strategies: '策略市场',
-  portrait: '风格评估',
+  portrait: '用户画像',
  } as const;
 export type WorkbenchTool = keyof typeof workbenchTools;
 export type AppRoute =

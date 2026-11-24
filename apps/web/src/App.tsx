@@ -887,7 +887,7 @@ export function App(): ReactElement {
           {route.name==='workspace' && route.tool==='holdings' && <Holdings/>}
           {route.name==='workspace' && route.tool==='watchlist' && <Watchlist onConversation={()=>openConversationTarget({botId:'operator'})}/> }
           {route.name==='workspace' && route.tool==='portrait' && <section className="desk-settings desk-workspace-portrait"><div className="desk-content"><div className="desk-page">
-            <header className="desk-header"><p>工作台</p><h2>用户画像</h2><p>{portraitDescription}</p></header>
+            <header className="desk-header"><p>工作台</p><h2>{workbenchTools.portrait}</h2><p>{portraitDescription}</p></header>
             <StyleAssessment onAskExpert={askOperator} interviewReturn="workspace"/>
           </div></div></section>}
           {route.name==='workspace' && route.tool==='trends' && <Hotspots onAskExpert={askOperator} />}

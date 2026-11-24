@@ -8,18 +8,20 @@ import { BotList, BotRail } from './BotList';
 import { HiddenMenu, Pin, useSidebarPins } from './SidebarPins';
 import './Sidebar.css';
 
-const initialTools = ['holdings', 'watchlist', 'market', 'trends', 'strategies', 'portrait'];
+type QuickTool = Exclude<WorkbenchTool, 'portrait'>;
+
+const initialTools = ['holdings', 'watchlist', 'market', 'trends', 'strategies'];
 const initialBots = ['chives', 'expert', 'equity-analyst', 'research', 'zhushenglang', 'report-builder'];
-const toolIds: WorkbenchTool[] = ['trends', ...(Object.keys(workbenchTools) as WorkbenchTool[]).filter(id => id !== 'trends')];
+const toolIds: QuickTool[] = ['trends', ...(Object.keys(workbenchTools) as WorkbenchTool[]).filter((id): id is Exclude<QuickTool, 'trends'> => id !== 'trends' && id !== 'portrait')];
 
 const toolOrderKey = 'chives.sidebar.toolOrder';
-function readToolOrder(): WorkbenchTool[] {
+function readToolOrder(): QuickTool[] {
   try {
     const saved: unknown = JSON.parse(localStorage.getItem(toolOrderKey) ?? 'null');
     if (Array.isArray(saved)) {
-      const known = saved.filter((id): id is WorkbenchTool => toolIds.includes(id));
+      const known = saved.filter((id): id is QuickTool => toolIds.includes(id));
       if (!known.includes('watchlist') && known.includes('holdings')) known.splice(known.indexOf('holdings')+1,0,'watchlist');
-      return [...new Set<WorkbenchTool>(['trends', ...known, ...toolIds])];
+      return [...new Set<QuickTool>(['trends', ...known, ...toolIds])];
     }
   } catch { /* Use the default order when storage is unavailable. */ }
   return toolIds;
@@ -86,7 +88,7 @@ export function Sidebar({
   const tools = useSidebarPins('tools', initialTools);
   const [order, setOrder] = useState(readToolOrder);
   const visibleTools = order.filter(id => tools.pins.includes(id));
-  function moveTool(source: string, target: WorkbenchTool) {
+  function moveTool(source: string, target: QuickTool) {
     const from = order.findIndex(id => id === source);
     if (source === 'trends' || target === 'trends' || from < 0 || source === target || !tools.pins.includes(source)) return;
     const next = [...order];
@@ -138,7 +140,7 @@ export function Sidebar({
           title={workbenchTools[key] + (key === 'trends' ? ' · 展示时置顶' : ' · 拖动排序，或按 Alt 加上下方向键')} aria-label={workbenchTools[key]} aria-current={activeTool===key?'page':undefined}
           onClick={()=>onTool(key)}>
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d={{watchlist:'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z',holdings:'M3 7h18v13H3z M8 7V4h8v3 M3 12c5 3 13 3 18 0 M11 13h2',market:'M3 4v16h18 M6 15l4-5 4 3 6-8',trends:'M13 3c1 5 6 6 6 12a7 7 0 0 1-14 0c0-3 2-6 4-8 0 4 1 5 2 5 2-2 3-5 2-9z',portrait:'M3 4h18v16H3z M10 10a2 2 0 1 0-4 0 2 2 0 0 0 4 0 M5 16c0-4 6-4 6 0 M14 9h4 M14 13h4',strategies:'M3 9l2-5h14l2 5 M3 9h18 M5 9v11h14V9 M9 20v-6h6v6'}[key]}/>
+            <path d={{watchlist:'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z',holdings:'M3 7h18v13H3z M8 7V4h8v3 M3 12c5 3 13 3 18 0 M11 13h2',market:'M3 4v16h18 M6 15l4-5 4 3 6-8',trends:'M13 3c1 5 6 6 6 12a7 7 0 0 1-14 0c0-3 2-6 4-8 0 4 1 5 2 5 2-2 3-5 2-9z',strategies:'M3 9l2-5h14l2 5 M3 9h18 M5 9v11h14V9 M9 20v-6h6v6'}[key]}/>
           </svg><span>{workbenchTools[key]}</span>
         </button><Pin name={workbenchTools[key]} pinned onClick={() => tools.toggle(key)}/></div>)}
         <HiddenMenu label="更多工具" items={order.filter(key => !tools.pins.includes(key)).map(id => ({id,name:workbenchTools[id]}))}
@@ -165,6 +167,19 @@ export function Sidebar({
             <path d="M4 6h7v7H4zM13 6h7v7h-7zM4 15h7v5H4zM13 15h7v5h-7z" />
           </svg>
           <span className="sidebar__all-label">Bot市场</span>
+        </button>
+        <button
+          type="button"
+          className={`sidebar__all${activeTool === 'portrait' ? ' sidebar__all--active' : ''}`}
+          onClick={() => onTool('portrait')}
+          aria-current={activeTool === 'portrait' ? 'page' : undefined}
+          title={workbenchTools.portrait}
+          aria-label={workbenchTools.portrait}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 4h18v16H3z M10 10a2 2 0 1 0-4 0 2 2 0 0 0 4 0 M5 16c0-4 6-4 6 0 M14 9h4 M14 13h4" />
+          </svg>
+          <span className="sidebar__all-label">{workbenchTools.portrait}</span>
         </button>
         <button
           type="button"
