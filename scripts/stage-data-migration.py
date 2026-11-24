@@ -80,9 +80,14 @@ def stage_entry(root, stage, source, relative, method):
         target.symlink_to(source.resolve(strict=True), target_is_directory=source.is_dir())
         return None
     if method == "sqlite-backup":
-        with closing(sqlite3.connect(source.as_uri() + "?mode=ro", uri=True)) as original:
+        wal = source.with_name(source.name + "-wal")
+        # Staging is offline. A checkpointed WAL-mode database can be read without
+        # creating sidecars if the writer already removed its WAL.
+        query = "?mode=ro" if wal.exists() else "?mode=ro&immutable=1"
+        with closing(sqlite3.connect(source.as_uri() + query, uri=True)) as original:
             with closing(sqlite3.connect(target)) as copy:
                 original.backup(copy)
+                copy.execute("PRAGMA journal_mode=DELETE")
                 if copy.execute("PRAGMA quick_check").fetchall() != [("ok",)]:
                     raise ValueError(f"SQLite validation failed: {source.relative_to(root)}")
         shutil.copymode(source, target)
@@ -128,11 +133,11 @@ def relocate_session_workspaces(root, staged, manifest):
     return changed
 
 
-def verify_deliverables(root, staged):
+def verify_deliverables(root, staged, backups, manifest):
     database = staged / "user-data/chives.sqlite"
+    counts = {"readable": 0, "missing_at_source": 0, "recovered": 0, "unresolved": 0}
     if not database.is_file():
-        return {"readable": 0, "missing_at_source": 0}
-    counts = {"readable": 0, "missing_at_source": 0}
+        return counts
     with closing(sqlite3.connect(database.as_uri() + "?mode=ro", uri=True)) as db:
         if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='deliverables'").fetchone():
             return counts
@@ -148,6 +153,27 @@ def verify_deliverables(root, staged):
                 counts["readable"] += 1
             else:
                 counts["missing_at_source"] += 1
+                candidates = []
+                for backup in backups:
+                    candidate = backup / bot / "workspace" / relative
+                    if candidate.is_file() and not candidate.is_symlink() and candidate.resolve().is_relative_to(backup):
+                        candidates.append(candidate)
+                # Match the original bot and full relative path in an explicitly supplied backup.
+                # Where several trusted backups contain it, their bytes must agree.
+                if not candidates or len({digest(candidate) for candidate in candidates}) != 1:
+                    counts["unresolved"] += 1
+                    continue
+                if not target.exists():
+                    target.parent.mkdir(parents=True, exist_ok=True)
+                    shutil.copy2(candidates[0], target)
+                    checksum = digest(target)
+                    if checksum != digest(candidates[0]):
+                        raise ValueError("Historical backup changed during staging")
+                    manifest.append({"source": str(candidates[0]), "target": str(target.relative_to(staged)),
+                                     "method": "historical-backup", "sha256": checksum})
+                elif digest(target) != digest(candidates[0]):
+                    raise ValueError("Duplicate historical delivery has conflicting content")
+                counts["recovered"] += 1
     return counts
 
 
@@ -212,13 +238,20 @@ def main():
     action.add_argument("--stage", action="store_true", help="stage validated copies after stopping writers")
     action.add_argument("--activate", type=Path, metavar="BATCH", help="activate staged directories while stopped")
     action.add_argument("--rollback", type=Path, metavar="BATCH", help="move activated directories back while stopped")
+    parser.add_argument("--workspace-backup", type=Path, action="append", default=[],
+                        help="verified backup's bots/ directory; may be repeated during staging")
     args = parser.parse_args()
+    if args.workspace_backup and not args.stage:
+        parser.error("--workspace-backup requires --stage")
     root = args.root.resolve(strict=True)
     if args.activate or args.rollback:
         batch = verified_batch(root, args.activate or args.rollback)
         move_batch(root, batch, activate=args.activate is not None)
         print("activated" if args.activate else "rolled back")
         return
+    backups = [path.resolve(strict=True) for path in args.workspace_backup]
+    if any(not path.is_dir() for path in backups):
+        parser.error("Workspace backup must be a bots directory")
     entries = list(plan(root))
     counts = {}
     for _, target, _ in entries:
@@ -240,7 +273,7 @@ def main():
             manifest.append({"source": str(source.relative_to(root)), "target": str(target),
                              "method": method, "sha256": checksum})
         relocated = relocate_session_workspaces(root, staged, manifest)
-        report = {"relocated_workspace_records": relocated, "deliverables": verify_deliverables(root, staged)}
+        report = {"relocated_workspace_records": relocated, "deliverables": verify_deliverables(root, staged, backups, manifest)}
         (staged / "verification.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
         (staged / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     except BaseException:
