@@ -12,6 +12,9 @@ on:
       - 'scripts/install-chives.sh'
       - 'scripts/install-browser.sh'
       - 'apps/server/src/settings/channels.ts'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 permissions:
   contents: read
 jobs:

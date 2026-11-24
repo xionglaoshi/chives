@@ -167,7 +167,7 @@ def check(work, target):
 
 
 if __name__ == "__main__":
-    runtime = REPO / "runtime"
-    runtime.mkdir(exist_ok=True)
-    with tempfile.TemporaryDirectory(dir=runtime, prefix="check-source-") as temporary:
+    # Vite denies paths under directories named runtime. Use the runner's own
+    # temporary directory for the isolated installation; its state remains in .chives.
+    with tempfile.TemporaryDirectory(dir=os.environ.get("RUNNER_TEMP"), prefix="chives-check-") as temporary:
         check(Path(temporary), sys.argv[1])
