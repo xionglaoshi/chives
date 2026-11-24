@@ -1336,7 +1336,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
       }
 
       const boardPart = path.slice('/api/dashboard/'.length);
-      if (path.startsWith('/api/dashboard/') && (boardPart === 'gainers' || boardPart === 'active' || boardPart === 'sectors' || boardPart === 'world')) {
+      if (path.startsWith('/api/dashboard/') && (boardPart === 'gainers' || boardPart === 'active' || boardPart === 'sectors' || boardPart === 'world' || boardPart === 'limit-up')) {
         if (method !== 'GET') { methodNotAllowed(response,'GET'); return; }
         const result = await dashboard.board(boardPart);
         response.setHeader('cache-control','no-store');
@@ -1530,6 +1530,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
         }else if(section==='holdings' && (method==='GET'||method==='POST')){
           const body=method==='GET'?{action:'get'}:await readJsonObject(request);
           result=await holdings(config.repoRoot,config.dshHome,body);
+          if (method === 'POST') dashboard.invalidatePortfolio();
         }else if(section==='capabilities' && method==='GET'){
           const bots=registry.list().map(bot=>({id:bot.id,name:bot.name,mcp:assets(config.dataDir,bot).mcp}));
           result={approvedOnly:approvedOnly(),official:buildCatalog(config.repoRoot).mcp,templates,
@@ -1993,10 +1994,11 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           max: MAX_PAGE_LIMIT,
         });
         const botId = url.searchParams.get('botId');
+        const unread = url.searchParams.get('unread');
         const list = notifications.list({
           ...(botId === null ? {} : {botId}),
-          unreadOnly: url.searchParams.get('unread') === '1',
-          limit,
+          unreadOnly: unread === '1' || unread === 'all',
+          limit: unread === 'all' ? -1 : limit,
         });
         sendJson(response, 200, list.map(toNotificationDto));
         return;

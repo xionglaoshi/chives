@@ -32,7 +32,7 @@ export class DashboardService {
   private readonly snapshot: SnapshotRunner;
   private readonly now: () => Date;
   private readonly marketCache: CoalescedTtlCache<MarketDashboardDto>;
-  private readonly portfolioCache: CoalescedTtlCache<PortfolioDashboardDto>;
+  private portfolioCache: CoalescedTtlCache<PortfolioDashboardDto>;
 
   constructor(options: DashboardOptions) {
     this.gateway = options.gateway;
@@ -44,12 +44,13 @@ export class DashboardService {
 
   private readonly boardCaches = new Map<string, CoalescedTtlCache<unknown>>();
 
-  async board(part: 'gainers' | 'active' | 'sectors' | 'world'): Promise<DashboardResult> {
+  async board(part: 'gainers' | 'active' | 'sectors' | 'world' | 'limit-up'): Promise<DashboardResult> {
     const cache = this.boardCaches.get(part) ?? new CoalescedTtlCache<unknown>(() => this.now().getTime());
     this.boardCaches.set(part, cache);
     try {
       const body = await cache.get(30_000, async () => {
         if (part === 'world') return worldIndices();
+        if (part === 'limit-up') return this.limitUp();
         const sector = part === 'sectors';
         const result = await callGateway<{rows: unknown[]}>(this.gateway,
           sector ? 'market_sectors' : 'market_movers',
@@ -60,6 +61,40 @@ export class DashboardService {
     } catch {
       return failure('market_unavailable','暂时取不到行情，稍后自动重试');
     }
+  }
+
+  private async limitUp() {
+    type PoolRow = { code: string; name: string; change_pct: number | null };
+    type Quote = { code: string; volume_shares: number | null };
+    const pool = await callGateway<{ rows: PoolRow[]; count: number; date: string }>(
+      this.gateway, 'market_limit_pool', { kind: 'zt', limit: 500 }
+    );
+    const byCode = new Map(pool.data.rows.map(row => [row.code, row]));
+    if (byCode.size < pool.data.count) throw new Error('Incomplete limit-up pool');
+
+    const codes = [...byCode.keys()];
+    const volumes = new Map<string, number>();
+    let stale = pool.stale === true;
+    for (let start = 0; start < codes.length; start += 20) {
+      const quotes = await callGateway<{ quotes: Quote[] }>(
+        this.gateway, 'market_quote', { codes: codes.slice(start, start + 20) }
+      );
+      stale ||= quotes.stale === true;
+      for (const quote of quotes.data.quotes) {
+        if (quote.volume_shares != null) volumes.set(quote.code, quote.volume_shares);
+      }
+    }
+    if (codes.length > 20 && volumes.size !== codes.length) throw new Error('Incomplete trading volumes');
+
+    const rows = [...byCode.values()]
+      .map(row => ({...row, volume_shares: volumes.get(row.code) ?? null}))
+      .sort((a, b) => (b.volume_shares ?? -1) - (a.volume_shares ?? -1) || a.code.localeCompare(b.code))
+      .slice(0, 20);
+    return { rows, asOf: pool.as_of, stale, tradingDate: pool.data.date };
+  }
+
+  invalidatePortfolio(): void {
+    this.portfolioCache = new CoalescedTtlCache<PortfolioDashboardDto>(() => this.now().getTime());
   }
 
   async market(): Promise<DashboardResult> {

@@ -519,10 +519,11 @@ export function cancelWatch(id: string): Promise<{ ok: boolean; watch: WatchDto 
 }
 
 export function fetchNotifications(
-  options: { botId?: string; unreadOnly?: boolean; limit?: number; signal?: AbortSignal } = {}
+  options: { botId?: string; unreadOnly?: boolean; allUnread?: boolean; limit?: number; signal?: AbortSignal } = {}
 ): Promise<NotificationDto[]> {
   const params = new URLSearchParams({ limit: String(options.limit ?? 50) });
-  if (options.unreadOnly === true) params.set('unread', '1');
+  if (options.allUnread) params.set('unread', 'all');
+  else if (options.unreadOnly === true) params.set('unread', '1');
   if (options.botId !== undefined) params.set('botId', options.botId);
   return request<NotificationDto[]>(`/api/notifications?${params.toString()}`, {
     ...(options.signal === undefined ? {} : { signal: options.signal })

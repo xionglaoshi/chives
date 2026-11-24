@@ -282,7 +282,7 @@ class MarketTools:
             if any(row.get("amount_yuan") is None for row in rows):
                 missing_items.append(missing("amount_yuan", "该来源不提供成交额"))
             if total > len(rows):
-                missing_items.append(missing("rows", "单次最多返回 200 行，其余未取"))
+                missing_items.append(missing("rows", "超过本次查询范围，或来源只返回了部分股票"))
             return envelope(
                 "partial" if missing_items else "ok",
                 data={"date": target.isoformat(), "kind": kind, "count": total, "rows": rows},

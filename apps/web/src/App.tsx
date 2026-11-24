@@ -1,5 +1,6 @@
 import { useFollowupSuggestion } from './hooks/useFollowupSuggestion';
 import { Hotspots } from './components/Hotspots';
+import { DashboardBotMessages } from './components/DashboardBotMessages';
 import { MarketBoard } from './components/MarketBoard';
 import {StyleAssessment} from './components/StyleAssessment';
 import {portraitDescription} from './components/SettingsNav';
@@ -177,6 +178,27 @@ export function App(): ReactElement {
   const [highlightMessageId, setHighlightMessageId] = useState<string | null>(null);
   const [composerFocusToken, setComposerFocusToken] = useState(0);
   const [notifications, setNotifications] = useState<NotificationDto[]>([]);
+  const [expandedNotifications, setExpandedNotifications] = useState(false);
+  const [loadingUnread, setLoadingUnread] = useState(false);
+  const [unreadLoadError, setUnreadLoadError] = useState(false);
+
+  async function loadUnreadNotifications() {
+    setLoadingUnread(true);
+    setUnreadLoadError(false);
+    try {
+      const unread = await fetchNotifications({ allUnread: true });
+      setNotifications(current => {
+        const seen = new Set(current.map(entry => entry.id));
+        return [...current, ...unread.filter(entry => !seen.has(entry.id))]
+          .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+      });
+      setExpandedNotifications(true);
+    } catch {
+      setUnreadLoadError(true);
+    } finally {
+      setLoadingUnread(false);
+    }
+  }
   const [proactiveSettings, setProactiveSettings] = useState<ProactiveSettingsDto | null>(null);
   const [locateTaskId, setLocateTaskId] = useState<string | null>(null);
   const [taskClosedToken, setTaskClosedToken] = useState(0);
@@ -236,7 +258,11 @@ export function App(): ReactElement {
     const controller = new AbortController();
     void fetchNotifications({ limit: 50, signal: controller.signal })
       .then((list) => {
-        if (!controller.signal.aborted) setNotifications(list);
+        if (!controller.signal.aborted) setNotifications(current => {
+          const seen = new Set(current.map(entry => entry.id));
+          return [...current, ...list.filter(entry => !seen.has(entry.id))]
+            .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+        });
       })
       .catch(() => undefined);
     void fetchProactiveSettings(controller.signal)
@@ -491,7 +517,7 @@ export function App(): ReactElement {
         setNotifications((current) =>
           current.some((entry) => entry.id === event.notification.id)
             ? current
-            : [event.notification, ...current].slice(0, 50)
+            : [event.notification, ...current].filter((entry, index) => index < 50 || entry.readAt === null)
         );
         setBots((current) =>
           current.map((bot) =>
@@ -859,7 +885,7 @@ export function App(): ReactElement {
         onSearch={() => setSearch('global')}
         onOpenInbox={openInbox}
         inboxCount={bots.reduce((total, bot) => total + (bot.unreadNotifications ?? 0), 0)}
-        bots={bots} notifications={notifications} unreadCount={unreadTotal}
+        bots={bots} notifications={notifications.slice(0, 50)} unreadCount={unreadTotal}
         onMarkAllRead={markAllRead} onOpenNotification={notification => void openNotification(notification)}
         openPanels={sidePanel.open} onTogglePanel={sidePanel.toggle}
       />
@@ -884,14 +910,18 @@ export function App(): ReactElement {
 
         <main className="main">
           {orderError && <p role="alert">{orderError}</p>}
-          {route.name==='workspace' && route.tool==='holdings' && <Holdings/>}
+          {route.name==='workspace' && route.tool==='holdings' && <Holdings onAskExpert={askOperator}/>}
           {route.name==='workspace' && route.tool==='watchlist' && <Watchlist onConversation={()=>openConversationTarget({botId:'operator'})}/> }
           {route.name==='workspace' && route.tool==='portrait' && <section className="desk-settings desk-workspace-portrait"><div className="desk-content"><div className="desk-page">
             <header className="desk-header"><p>工作台</p><h2>{workbenchTools.portrait}</h2><p>{portraitDescription}</p></header>
             <StyleAssessment onAskExpert={askOperator} interviewReturn="workspace"/>
           </div></div></section>}
           {route.name==='workspace' && route.tool==='trends' && <Hotspots onAskExpert={askOperator} />}
-          {route.name==='workspace' && route.tool==='market' && <MarketBoard onAskExpert={askOperator} />}
+          {route.name==='workspace' && route.tool==='market' && <MarketBoard onAskExpert={askOperator} messages={<DashboardBotMessages
+            notifications={notifications} bots={bots} expanded={expandedNotifications} loading={loadingUnread}
+            error={unreadLoadError} onLoadMore={() => void loadUnreadNotifications()}
+            onOpen={notification => void openNotification(notification)}
+          />} />}
           {route.name==='workspace' && route.tool!=='market' && route.tool!=='holdings' && route.tool!=='watchlist' && route.tool!=='portrait' && route.tool!=='trends' && <section className="workbench-placeholder"><h1>{workbenchTools[route.tool]}</h1><p>功能开发中</p></section>}
           {route.name === 'settings' ? (
             <Settings onAskExpert={askOperator}

@@ -797,19 +797,26 @@ class MarketSources:
 
     # -- limit pool -----------------------------------------------------
     def ths_pool(self, kind: str, *, day: date, limit: int) -> tuple[int, list[dict[str, Any]]]:
-        payload = self._sina_json_ths(
-            THS_PATHS[kind],
-            {
-                "page": 1,
-                "limit": max(1, min(200, limit)),
-                "field": THS_FIELDS,
-                "filter": "HS,GEM2STAR",
-                "order_field": 330324,
-                "order_type": 0,
-                "date": day.strftime("%Y%m%d"),
-            },
-        )
-        return parse_ths_pool(payload, kind=kind)
+        page_size = min(200, limit)
+        rows: list[dict[str, Any]] = []
+        for page in range(1, (limit + page_size - 1) // page_size + 1):
+            payload = self._sina_json_ths(
+                THS_PATHS[kind],
+                {
+                    "page": page,
+                    "limit": page_size,
+                    "field": THS_FIELDS,
+                    "filter": "HS,GEM2STAR",
+                    "order_field": 330324,
+                    "order_type": 0,
+                    "date": day.strftime("%Y%m%d"),
+                },
+            )
+            total, batch = parse_ths_pool(payload, kind=kind)
+            rows.extend(batch)
+            if len(rows) >= total or not batch:
+                break
+        return total, rows[:limit]
 
     def ths_ladder(self, *, day: date) -> dict[str, Any]:
         payload = self._sina_json_ths(
