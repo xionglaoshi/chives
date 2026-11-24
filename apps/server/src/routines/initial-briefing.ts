@@ -39,8 +39,9 @@ export function subscribeInitialBriefingDelivery(bus: EventBus, store: Store, no
     const content = messages.findLast(message => message.role === 'bot' && message.kind === 'text')?.content.trim();
     if (!content) return;
     const characters = Array.from(content);
+    const continuation = '…\n完整简报及新闻链接见总调度会话。';
     const body = characters.length > MAX_NOTIFICATION_BODY
-      ? characters.slice(0, MAX_NOTIFICATION_BODY - 1).join('') + '…'
+      ? characters.slice(0, MAX_NOTIFICATION_BODY - Array.from(continuation).length).join('') + continuation
       : content;
     notifications.notify({botId:task.botId,taskId:task.id,title:initialBriefingTitle,body,level:'info',localOnly:true});
   });
