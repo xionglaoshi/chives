@@ -78,7 +78,7 @@
 .mb-sector-leaders ul { list-style: none; margin: 0; padding: 0; }
 .mb-sector-leaders li {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) max-content max-content max-content;
+  grid-template-columns: minmax(0, 1fr) max-content max-content;
   align-items: baseline;
   gap: 8px;
   padding: 6px 0;
@@ -89,5 +89,4 @@
 .mb-sector-leaders li > span:last-child { text-align: right; min-width: 3.3em; }
 @container (max-width: 270px) {
   .mb-sector-leaders li { gap: 5px; font-size: .74rem; }
-  .mb-sector-leaders li > small { font-size: .67rem; }
 }

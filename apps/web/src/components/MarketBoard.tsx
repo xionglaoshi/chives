@@ -88,7 +88,7 @@ function IndustryHeatmap({market, endpoint, currency, ask}: {
         <div className="mb-sector-leaders">
           <h3>{tile.name}领涨股（{currency}）</h3>
           {leaders.length ? <ul>{leaders.map(stock => <li key={stock.code}>
-            <strong>{stock.name}</strong><small>{stock.code}</small><Change n={stock.change_pct}/>
+            <strong>{stock.name}</strong><Change n={stock.change_pct}/>
             <span aria-label={'成交额 '+(stock.amount == null ? '暂无' : stock.amount.toLocaleString('zh-CN'))}>
               {stock.amount == null ? '—' : turnover.format(stock.amount)}
             </span>
