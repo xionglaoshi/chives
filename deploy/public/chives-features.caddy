@@ -1,0 +1,12 @@
+handle_path /chives-features/* {
+	@public_snapshot {
+		method GET HEAD
+		path_regexp ^/(catalog\.json|[a-z][a-z0-9-]*/[A-Za-z0-9][A-Za-z0-9._-]*\.json|manifest\.json|[0-9a-f]{64}\.json)$
+	}
+	handle @public_snapshot {
+		root * /srv/chives-features
+		header Cache-Control "no-cache"
+		file_server
+	}
+	respond 404
+}
