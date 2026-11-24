@@ -1,4 +1,4 @@
-"""Plan or stage a legacy Chives data migration. Staging never activates the result."""
+"""Plan, stage, activate or roll back an offline Chives data migration."""
 
 import argparse
 import hashlib
@@ -93,12 +93,74 @@ def stage_entry(root, stage, source, relative, method):
     return digest(target)
 
 
+LIVE_DIRECTORIES = ("public-data", "workspace", "user-data")
+
+
+def verified_batch(root, argument):
+    batch = (root / argument).resolve(strict=True)
+    if batch.parent != root / "runtime" or not batch.name.startswith("data-migration-"):
+        raise ValueError("Expected a migration batch directly under runtime/")
+    return batch
+
+
+def move_batch(root, batch, activate):
+    receipt = batch / "active"
+    directories = LIVE_DIRECTORIES
+    if activate:
+        if receipt.exists():
+            raise ValueError("Batch is already active")
+        manifest = json.loads((batch / "manifest.json").read_text(encoding="utf-8"))
+        for entry in manifest:
+            relative = Path(entry["target"])
+            if relative.is_absolute() or ".." in relative.parts:
+                raise ValueError("Invalid migration manifest path")
+            target = batch / relative
+            if entry["sha256"] and digest(target) != entry["sha256"]:
+                raise ValueError(f"Staged file no longer matches: {relative}")
+        if not (batch / "user-data/chives.sqlite").is_file():
+            raise ValueError("Missing staged user database")
+        source_root, target_root = batch, root
+    else:
+        if not receipt.is_file():
+            raise ValueError("Batch is not active")
+        directories = tuple(json.loads(receipt.read_text(encoding="utf-8")))
+        if any(name not in LIVE_DIRECTORIES for name in directories):
+            raise ValueError("Invalid active migration receipt")
+        directories = tuple(reversed(directories))
+        source_root, target_root = root, batch
+    for name in directories:
+        source, target = source_root / name, target_root / name
+        if not source.is_dir() or source.is_symlink() or target.exists() or target.is_symlink():
+            raise ValueError(f"Cannot move {name}: missing source or destination already exists")
+    moved = []
+    try:
+        for name in directories:
+            (source_root / name).rename(target_root / name)
+            moved.append(name)
+        if activate:
+            receipt.write_text(json.dumps(directories) + "\n", encoding="utf-8")
+        else:
+            receipt.unlink()
+    except BaseException:
+        for name in reversed(moved):
+            (target_root / name).rename(source_root / name)
+        raise
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--root", type=Path, default=Path(__file__).resolve().parent.parent)
-    parser.add_argument("--stage", action="store_true", help="stage validated copies after stopping writers")
+    action = parser.add_mutually_exclusive_group()
+    action.add_argument("--stage", action="store_true", help="stage validated copies after stopping writers")
+    action.add_argument("--activate", type=Path, metavar="BATCH", help="activate staged directories while stopped")
+    action.add_argument("--rollback", type=Path, metavar="BATCH", help="move activated directories back while stopped")
     args = parser.parse_args()
     root = args.root.resolve(strict=True)
+    if args.activate or args.rollback:
+        batch = verified_batch(root, args.activate or args.rollback)
+        move_batch(root, batch, activate=args.activate is not None)
+        print("activated" if args.activate else "rolled back")
+        return
     entries = list(plan(root))
     counts = {}
     for _, target, _ in entries:
@@ -112,7 +174,7 @@ def main():
     runtime.mkdir(exist_ok=True)
     staged = Path(tempfile.mkdtemp(prefix="data-migration-", dir=runtime))
     try:
-        for category in ("user-data", "workspace", "review"):
+        for category in ("user-data", "workspace", "public-data", "review"):
             (staged / category).mkdir(mode=0o700)
         manifest = []
         for source, target, method in entries:
