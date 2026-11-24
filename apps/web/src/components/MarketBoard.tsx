@@ -127,10 +127,10 @@ export function MarketBoard({onAskExpert, messages}:{onAskExpert:AskExpert; mess
         {(sectors.error||sectors.data?.stale) && <small>显示最近缓存</small>}
       </> : <div className="mb-sector-empty" role="status">{sectors.error?'行业行情暂不可用，将自动重试':sectors.data?'暂无行业数据':'正在读取行业行情…'}</div>}
     </Panel>
-    {[{title:'个股涨停榜', feed:movers, order:'成交量', empty:'暂无涨停股票'},
+    {([{title:'个股涨停榜', feed:movers, order:'成交量', empty:'暂无涨停股票'},
       {title:'个股跌停榜', feed:losers, order:losers.data?.order === 'volume' ? '成交量' : '跌幅', empty:'暂无下跌股票'}
-    ].map(({title, feed, order, empty}) => <Panel key={title} title={title} ask={ask(title,!!feed.data?.rows.length,
-      '请分析附件中的沪深 A 股'+title+'，说明可能的共同驱动因素，并区分事实与推测。',()=>[
+    ] as const).map(({title, feed, order, empty}) => <Panel key={title} title={title} ask={ask(title,!!feed.data?.rows.length,
+      fillAskPrompt(askAiPrompts['行情看板'][title], {股票数:feed.data?.rows.length??0, 排序:order}),()=>[
       '按'+order+'排序 · '+feed.data!.asOf+(feed.error||feed.data!.stale?' · 缓存快照':''),
       table(['排名','股票','代码','涨跌幅','成交量（股）'],feed.data!.rows.map((x,n)=>[n+1,x.name,x.code,formatPercent(x.change_pct),x.volume_shares]))
     ].join('\n\n'))}>
