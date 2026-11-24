@@ -18,7 +18,7 @@ const privacyKey='chives.expertSidebar.hideAmounts';
 
 export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
  const [book,setBook]=useState<Ledger|null>(null),[error,setError]=useState(''),[busy,setBusy]=useState(false);
-  const denied=useValuationAccessDenied();
+ const denied=useValuationAccessDenied();
  const [valuations,setValuations]=useState<Record<string,EstimateRange|null>>({});
  const [valuating,setValuating]=useState<string|null>(null);
  const [valuationError,setValuationError]=useState('');
@@ -39,13 +39,16 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
   catch(e){setError((e as Error).message);}finally{setBusy(false);}
  }
  useEffect(()=>{
-  if (!book?.positions.length) return;
+  if (denied || !book?.positions.length) {
+   setValuations({});
+   return;
+  }
   let active=true;
   void desk<Record<string,EstimateRange|null>>('holdings-valuations')
    .then(result=>{if(active){setValuations(result);setValuationError('');}})
    .catch(()=>{if(active)setValuationError('暂时无法读取AI估算的合理股价。');});
   return ()=>{active=false;};
- },[book]);
+ },[book,denied]);
  async function refreshPublishedValuation(code:string){
   setValuating(code);setValuationError('');
   try{
