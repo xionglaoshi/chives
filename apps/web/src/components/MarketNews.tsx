@@ -24,7 +24,7 @@ function NewsCard({title,promptKey,edition,failed,ask}:{title:string;promptKey:'
   ].join('\n\n');
 
   return <section className="mb-panel market-news-card">
-    <header><h2>{title}</h2><div className="mb-panel-actions">{edition&&<small>更新于 {clock.format(new Date(edition.updatedAt))}</small>}{ask(title,entries.length>0,prompt,markdown)}</div></header>
+    <header><h2>{title}</h2><div className="mb-panel-actions">{ask(title,entries.length>0,prompt,markdown)}</div></header>
     {edition ? <>
       <ul>{entries.map((entry)=><li key={entry.url}>
         <a href={entry.url} target="_blank" rel="noopener noreferrer">{entry.title}</a>

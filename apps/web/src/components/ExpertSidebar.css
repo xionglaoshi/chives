@@ -283,7 +283,6 @@
   font-family: var(--font-figures);
 }
 
-.expert-sidebar__asof,
 .expert-sidebar__note {
   margin: 0;
   color: var(--color-text-muted);

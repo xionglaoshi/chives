@@ -52,9 +52,8 @@ def board_page(snapshot, key):
         paper.text("当前发布版本里没有这个榜单。返回后可重新选择。")
         return "热门榜单", paper
     title = one(board["title"])
-    paper.text("数据日期  " + stamp(board.get("asOf")), "accent")
-    paper.text("发布于  " + stamp(snapshot.get("publishedAt")) +
-               ("  ·  沿用上期" if key in (snapshot.get("retained") or []) else ""), "dim")
+    if key in (snapshot.get("retained") or []):
+        paper.text("沿用上期", "dim")
     paper.text(board.get("note"))
     paper.heading("榜单明细")
     config = CONTENT["hotspots"]
@@ -78,7 +77,6 @@ def market_page(key, data):
     paper = Paper()
     if key in ("domestic", "global"):
         edition = data.get(key) or {}
-        paper.text("更新于  " + stamp(edition.get("updatedAt")), "dim")
         entries = (edition.get("entries") or [])[:20]
         for n, item in enumerate(entries, 1):
             paper.heading(f"{n:02}  {one(item['title'])}")
@@ -90,8 +88,8 @@ def market_page(key, data):
     if key == "portfolio":
         portfolio(paper, data)
         return paper
-    if data.get("asOf"):
-        paper.text(stamp(data["asOf"]) + ("  ·  缓存快照" if data.get("stale") else ""), "dim")
+    if data.get("stale"):
+        paper.text("缓存快照", "dim")
     if key in ("market", "breadth"):
         paper.text(SESSIONS.get(data.get("session"), "交易状态待更新"), "accent")
         if key == "breadth":
@@ -112,7 +110,7 @@ def market_page(key, data):
         row = [cell(one(r["name"]), "strong")]
         if key == "world":
             row += [cell(one(r.get("market") or "—")), cell(number(r.get("price"))),
-                    delta(r.get("changePct")), cell(one(r.get("time") or "待更新").replace("T", " "))]
+                    delta(r.get("changePct"))]
         else:
             row += [delta(r.get("change_pct")), cell(number(r.get("amount_yuan"), " 元"))]
             if key == "sectors":
@@ -121,7 +119,7 @@ def market_page(key, data):
             else:
                 row.insert(1, cell(one(r.get("code") or "—"), "dim"))
         rows.append(row)
-    cols = {"world":["指数", "市场", "点位", "涨跌幅", "当地报价时间"],
+    cols = {"world":["指数", "市场", "点位", "涨跌幅"],
             "sectors":["行业", "涨跌幅", "成交额", "领涨股", "领涨股涨幅"]}
     paper.table(cols.get(key, ["股票", "代码", "涨跌幅", "成交额"]), rows)
     if not rows:
@@ -131,7 +129,6 @@ def market_page(key, data):
 
 def portfolio(paper, quotes):
     summary = quotes.get("summary") or {}
-    paper.text("估值时间  " + stamp(quotes.get("asOf")), "dim")
     if quotes.get("empty"):
         paper.text("账本暂无持仓。")
         return
@@ -197,7 +194,6 @@ def portrait(data):
     report = result.get("report") or {}
     risk = report.get("risk") or {}
     grade = risk.get("grade") or result.get("grade")
-    paper.text("评估时间  " + stamp(result.get("updated")), "dim")
     if report.get("answered") is not None:
         paper.text(f"已作答 {report['answered']} 题", "dim")
     paper.heading("综合解读")
@@ -306,7 +302,7 @@ def watchlist_page(entries, prices):
         else:
             direction, color = "看跌 " + "☹" * -score, "down"
         paper.text("后市涨跌预测  " + direction, color)
-        paper.text(f"第 {latest['version']} 版 · 数据截至 {latest['asOf']}", "dim")
+        paper.text(f"第 {latest['version']} 版", "dim")
     return paper
 
 

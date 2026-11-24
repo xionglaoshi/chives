@@ -7,7 +7,6 @@ type Estimate={valuationKind?:string;version:number;low:number|null;high:number|
 type Entry={code:string;name:string;pending?:boolean;estimates:Estimate[]};
 type Quote={price:number;changePct?:number;basis:string;as_of:string};
 const fmt=new Intl.NumberFormat('zh-CN',{maximumFractionDigits:2});
-const stamp=(time:string)=>new Date(time).toLocaleString('zh-CN',{hour12:false});
 
 function OutlookFaces({score}:{score:number}) {
   const direction=score>0?'up':score<0?'down':'neutral';
@@ -123,7 +122,7 @@ export function Watchlist({onConversation}:{onConversation:()=>void}) {
             {score==null?(latest?'依据不足':'待测算'):<OutlookFaces score={score}/>}</div>
           <div className="watchlist-actions"><button disabled={busy||entry.pending} onClick={()=>void act('estimate',entry.code)}>{entry.pending?'测算中':'重新评估'}</button>
             <button disabled={busy} onClick={()=>void act('remove',entry.code)}>移除</button>
-            {latest&&<small>{stamp(latest.measuredAt)}</small>}</div>
+            </div>
         </article>;
       })}
     </div>}

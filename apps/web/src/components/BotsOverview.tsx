@@ -11,10 +11,7 @@ import './BotsOverview.css';
 function memorySummary(bot: BotSummary): string {
   const count = bot.memoryCount ?? 0;
   if (count === 0) return '还没有记忆';
-  const updatedAt = bot.memoryUpdatedAt;
-  return updatedAt === undefined || updatedAt === null || updatedAt === ''
-    ? `${count} 条`
-    : `${count} 条 · 最近更新 ${updatedAt.slice(0, 10)}`;
+  return `${count} 条`;
 }
 
 export interface BotsOverviewProps {

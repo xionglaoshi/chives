@@ -37,10 +37,6 @@ function useFeed<T>(part:string) {
   },[part]);
   return state.part===part?state:{part};
 }
-function stamp(s?:string|null){
-  if(!s || !Number.isFinite(Date.parse(s)))return '时间待更新';
-  return new Date(s).toLocaleString('zh-CN',{month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',timeZone:'Asia/Shanghai',hour12:false});
-}
 function Change({n}:{n:number|null}){return <b className={'mb-'+priceDirection(n)}>{formatPercent(n)}</b>}
 function Panel({title,ask,action,children,cls=''}:{title:string;ask:ReactNode;action?:ReactNode;children:ReactNode;cls?:string}){
   return <section className={'mb-panel '+cls}><header><h2>{title}</h2><div className="mb-panel-actions">{action}{ask}</div></header>{children}</section>;
@@ -86,11 +82,10 @@ export function MarketBoard({onAskExpert, messages}:{onAskExpert:AskExpert; mess
     ].join('\n\n'))}>
       {!world.data ? <small>{status(world.error)}</small> : <div className="mb-world">
         {['港股','美股'].map(region => <div key={region}>
-          <h3>{region} <small>{region==='港股'?'香港时间':'纽约时间'}</small></h3>
+          <h3>{region}</h3>
           <ul className="mb-world-quotes">{world.data!.rows.filter(row => row.market === region).map(row =>
             <li key={row.name}>
               <span>{row.name}</span><strong>{formatPrice(row.price)}</strong><Change n={row.changePct}/>
-              <small>{row.time?.slice(5,16) ?? '时间待更新'}</small>
             </li>
           )}</ul>
         </div>)}
@@ -116,7 +111,7 @@ export function MarketBoard({onAskExpert, messages}:{onAskExpert:AskExpert; mess
         <div className="mb-sector-detail"><small>{tile.name} · 领涨股</small>
           <div><strong>{tile.leader?.name??'—'}</strong><Change n={tile.leader?.change_pct??null}/></div>
         </div>
-        <small>快照 {stamp(sectors.data?.asOf)}{(sectors.error||sectors.data?.stale)&&' · 最近缓存'}</small>
+        {(sectors.error||sectors.data?.stale) && <small>显示最近缓存</small>}
       </> : <div className="mb-sector-empty" role="status">{sectors.error?'行业行情暂不可用，将自动重试':sectors.data?'暂无行业数据':'正在读取行业行情…'}</div>}
     </Panel>
     {[{title:'个股涨停榜', feed:movers, order:'成交量', empty:'暂无涨停股票'},
@@ -130,7 +125,7 @@ export function MarketBoard({onAskExpert, messages}:{onAskExpert:AskExpert; mess
         {feed.data.rows.length ? <table><thead><tr><th>沪深 A 股</th><th>涨跌幅</th><th>成交量（股）</th></tr></thead>
           <tbody>{feed.data.rows.map(r=><tr key={r.code}><td>{r.name}</td><td><Change n={r.change_pct}/></td><td>{r.volume_shares?.toLocaleString('zh-CN')??'—'}</td></tr>)}</tbody>
         </table> : <p>{empty}</p>}
-        <small>按{order}排序 · 快照 {stamp(feed.data.asOf)}{(feed.error||feed.data.stale)&&' · 最近缓存'}</small>
+        <small>按{order}排序{(feed.error||feed.data.stale)&&' · 最近缓存'}</small>
       </> : <small>{status(feed.error)}</small>}
     </Panel>)}
     </div>

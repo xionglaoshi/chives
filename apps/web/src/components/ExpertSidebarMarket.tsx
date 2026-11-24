@@ -5,11 +5,9 @@ import type { MarketDashboardDto, MarketIndexDto } from '@chives/server/protocol
 import type { SectionState } from './ExpertSidebarData';
 import {
   formatAmount,
-  formatAsOf,
   formatPercent,
   formatPrice,
-  priceDirection,
-  SESSION_TEXT
+  priceDirection
 } from './ExpertSidebarFormat';
 import { ExpertSidebarSparkline } from './ExpertSidebarSparkline';
 
@@ -96,10 +94,7 @@ export function ExpertSidebarMarket({ state, embedded = false }: ExpertSidebarMa
           </dd>
         </div>
       </dl>
-      <p className="expert-sidebar__asof">
-        数据时间 {formatAsOf(market.asOf)} · {SESSION_TEXT[market.session]}
-        {market.stale ? ' · 数据可能滞后' : ''}
-      </p>
+      {market.stale && <p className="expert-sidebar__note">数据可能滞后</p>}
     </section>
   );
 }

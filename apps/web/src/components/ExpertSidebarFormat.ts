@@ -38,17 +38,4 @@ export function formatAmount(value: number | null): string {
   return value.toFixed(0);
 }
 
-/** `HH:MM` of an ISO instant in Beijing time; `—` when unparseable. */
-export function formatAsOf(iso: string | null): string {
-  if (iso === null || iso === '') return '—';
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return '—';
-  return new Intl.DateTimeFormat('zh-CN', {
-    timeZone: 'Asia/Shanghai',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false
-  }).format(date);
-}
-
 export const HIDDEN = '****';

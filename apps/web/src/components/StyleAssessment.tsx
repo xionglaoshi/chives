@@ -46,7 +46,7 @@ export function StyleAssessment({interviewReturn='settings',onAskExpert}:{interv
     }catch(e){err(e instanceof Error?e.message:'评估失败');return false;}finally{busy('');}
   }
   return <div className="style-assessment">
-    <section className="desk-assess"><div><strong>用户画像</strong><p>{result?'最近评估于 '+new Date(result.updated).toLocaleString():'完成问卷后，即可查看风险承受能力和风格偏好。'}</p></div>
+    <section className="desk-assess"><div><strong>用户画像</strong>{!result && <p>完成问卷后，即可查看风险承受能力和风格偏好。</p>}</div>
       <div className="style-actions"><button className="desk-primary" disabled={!data||!!pending||mode!==null} onClick={()=>begin('questionnaire')}>{result?'重新评测':'开始评测'}</button>
       <button disabled={!data||!!pending||mode!==null} onClick={()=>begin('supplement')}>补充资料更新评估</button></div></section>
     {error&&<p role="alert">{error}</p>}{(pending||notice)&&<p role="status">{pending||notice}</p>}

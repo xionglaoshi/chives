@@ -72,7 +72,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
  <div className="holdings-actions"><button disabled={!portfolio.data} onClick={askPortfolio}>问AI</button><button aria-pressed={hidden} onClick={()=>{setHidden(!hidden);try{localStorage.setItem(privacyKey,hidden?'0':'1');}catch{/* Session display still works. */}}}>{hidden?'显示金额':'隐藏金额'}</button></div></div>
  {book.positions.length>0&&<small role="status">
  {portfolio.status==='loading'?'正在读取持仓行情…':!portfolio.data?'持仓行情暂不可用':
-  ['今日盈亏按现持股数及较昨收价差估算',portfolio.data.asOf&&new Date(portfolio.data.asOf).toLocaleString('zh-CN'),
+  ['今日盈亏按现持股数及较昨收价差估算',
    summary?.unpricedCount?'部分持仓缺少报价':null,portfolio.status==='error'?'最近缓存':null].filter(Boolean).join(' · ')}
  </small>}
  {editor&&<form key={current?.code??'new'} onSubmit={save}><h2>{current?'编辑持仓':'添加持仓'}</h2><fieldset disabled={busy}>
