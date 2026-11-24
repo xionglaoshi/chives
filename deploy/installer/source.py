@@ -207,6 +207,7 @@ def npm_install(node, npm, root, package, version, env):
     if manifest.is_file() and json.loads(manifest.read_text(encoding="utf-8"))["version"] == version:
         return manifest
     # Install into a new prefix, so a failed npm run cannot leave a reusable partial tree.
+    (root / "tools").mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=root / "tools") as tmp:
         staging = Path(tmp) / "prefix"
         run([node, npm, "install", "--prefix", staging, "--no-save", "--no-package-lock",
