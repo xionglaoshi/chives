@@ -17,10 +17,22 @@ def message(mid, role, content):
 
 class SharedTurns(unittest.TestCase):
     def test_only_documented_shell_commands_remain(self):
-        for args in (["bot"], ["chat"], ["cli"], ["ask"], ["stop"]):
+        for args in (["bot"], ["chat"], ["ask"], ["stop"]):
             with self.subTest(args=args), self.assertRaises(SystemExit), patch.object(chives_cli, "control") as service:
                 chives_cli.main("release", args)
                 service.assert_not_called()
+
+    def test_bare_interactive_command_opens_web_workbench(self):
+        with patch("sys.stdin.isatty", return_value=True), patch.object(chives_cli, "control") as service, \
+                patch("chives_terminal.actions.open_page") as open_page:
+            chives_cli.main("release", [])
+            service.assert_called_once_with("release")
+            open_page.assert_called_once_with()
+
+    def test_cli_command_opens_terminal_workbench(self):
+        with patch.object(chat, "run") as run:
+            chives_cli.main("release", ["cli"])
+            self.assertEqual(run.call_args.args[0], ["cli"])
 
     def test_bare_command_uses_stdin_for_script_queries(self):
         with patch.object(chat, "run") as run, patch("sys.stdin", StringIO("question")):

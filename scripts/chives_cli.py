@@ -10,8 +10,9 @@ import tempfile
 
 SCRIPT = Path(__file__).resolve()
 PROJECT = SCRIPT.parents[1]
-USAGE = """chives      启动终端工作台，也可从管道接收问题
-chives web  在浏览器打开工作台
+USAGE = """chives      在浏览器打开动态看板，也可从管道接收问题
+chives web  在浏览器打开动态看板
+chives cli  打开终端工作台
 chives uninstall  卸载 Chives 并永久删除本机用户数据"""
 
 
@@ -130,12 +131,12 @@ def main(mode, args):
     if args in (["--help"], ["-h"]):
         print(USAGE)
         return
-    if not args:
+    if args == ["cli"] or (not args and not sys.stdin.isatty()):
         from chives_chat import run
-        command = "cli" if sys.stdin.isatty() else "ask"
+        command = "cli" if args else "ask"
         run([command], lambda: control(mode), stop_service=lambda: control(mode, stop=True))
         return
-    if args == ["web"]:
+    if not args or args == ["web"]:
         control(mode)
         from chives_terminal.actions import open_page
         open_page()
