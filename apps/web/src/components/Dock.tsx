@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, type ReactElement, type ReactNode } from '
 import type { BotSummary, NotificationDto } from '@chives/server/protocol';
 import { formatTime } from '../utils/format';
 import { WatchesPanel, type WatchesPanelProps } from './WatchesPanel';
+import {useInitialization,type InitializationStep} from './DockInitialization';
 import './Dock.css';
 
 const LEVEL_TEXT: Record<NotificationDto['level'], string> = {
@@ -29,6 +30,7 @@ function SearchIcon(): ReactElement {
 }
 
 type DockProps = {
+  onInitialize: (step: InitializationStep) => void;
   searchOpen: boolean;
   onSearch: () => void;
   bots: readonly BotSummary[];
@@ -126,10 +128,12 @@ function readAddedTools(): string[] {
 }
 
 export function Dock(props: DockProps): ReactElement {
+  const initialization = useInitialization();
   const [addedTools, setAddedTools] = useState(readAddedTools);
   const [open, setOpen] = useState<string | null>(null);
   const root = useRef<HTMLElement>(null);
-  const expanded = props.searchOpen ? null : open;
+  const initializedPanel = open === 'initialize' && initialization.length > 0;
+  const expanded = props.searchOpen || (open === 'initialize' && !initializedPanel) ? null : open;
   const pinned = dockTools.filter(tool => tool.defaultPinned || addedTools.includes(tool.id));
   const active = pinned.find(tool => tool.id === expanded);
   const close = () => setOpen(null);
@@ -167,6 +171,12 @@ export function Dock(props: DockProps): ReactElement {
 
   return <header ref={root} aria-label="启动台" className="chat-header">
     <div className="chat-header__dock">
+      {initialization.length > 0 && <button type="button" className="chat-header__icon dock-initialization"
+        aria-expanded={expanded === 'initialize'} onClick={() => toggle('initialize')}>
+        <svg width="17" height="17" viewBox="0 0 16 16" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.5">
+          <circle cx="8" cy="8" r="6"/><path d="M8 4v5m0 2v1"/>
+        </svg><span>请先完成初始化</span>
+      </button>}
       {pinned.map(tool => {
         const count = tool.count?.(props) ?? 0;
         const isOpen = 'openOverlay' in tool ? props.searchOpen : expanded === tool.id;
@@ -189,6 +199,14 @@ export function Dock(props: DockProps): ReactElement {
         </svg>
       </button>
     </div>
+    {expanded === 'initialize' && <div className="chat-header__panel" role="dialog" aria-label="请先完成初始化">
+      <ul className="dock-initialization-steps">
+        {initialization.map(([id,label])=><li key={id}><button type="button" onClick={()=>{
+          close();
+          props.onInitialize(id);
+        }}>{label}</button></li>)}
+      </ul>
+    </div>}
     {(expanded === 'add' || (active && 'render' in active)) && (
       <div className="chat-header__panel" role="dialog" aria-label={active?.label ?? '添加工具'}>
         <div className="chat-header__panel-head">

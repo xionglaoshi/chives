@@ -263,3 +263,21 @@
 }
 .dock-tool-list button:not([aria-disabled="true"]):hover { background: var(--color-line); }
 .dock-tool-list button[aria-disabled="true"] { color: var(--color-text-muted); cursor: default; }
+
+.chat-header__icon.dock-initialization,
+.dock-initialization-steps button { color: #df2929; }
+.dock-initialization { animation: dock-initialization-blink 1s steps(1) infinite; }
+@keyframes dock-initialization-blink { 50% { opacity: .4; } }
+@media (prefers-reduced-motion: reduce) { .dock-initialization { animation: none; } }
+.dock-initialization-steps { margin: 0; padding: 0; list-style: none; }
+.dock-initialization-steps button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+}
+.dock-initialization-steps button:hover { background: var(--color-line); }

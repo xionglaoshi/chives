@@ -1,4 +1,5 @@
 import { useFollowupSuggestion } from './hooks/useFollowupSuggestion';
+import {initializationPrompts,type InitializationStep} from './components/DockInitialization';
 import { Hotspots } from './components/Hotspots';
 import { DashboardBotMessagesDemo } from './components/DashboardBotMessagesDemo';
 import { DashboardBotMessages } from './components/DashboardBotMessages';
@@ -646,6 +647,23 @@ export function App(): ReactElement {
     [addPending, markPending, removePending, running, selectedId]
   );
 
+  function openInitialization(step: InitializationStep) {
+    if(step==='model'||step==='profile'||step==='weixin'){
+      window.location.hash='/settings?tab='+({model:'models',profile:'account',weixin:'channels'}[step]);
+    }else if(step==='holdings'||step==='watchlist'){
+      navigate({name:'workspace',tool:step});
+    }else if(step==='portrait'){
+      const url=new URL(window.location.href);
+      url.searchParams.set('interview','1');
+      url.searchParams.set('from','workspace');
+      url.hash='';
+      window.open(url.toString(),'chives-style-interview');
+    }else{
+      openConversationTarget({botId:'operator'});
+      void send('operator',initializationPrompts[step]);
+    }
+  }
+
   function askOperator(prompt: string, askFile: File) {
     openConversationTarget({botId: 'operator', draft: prompt, askFile});
   }
@@ -864,6 +882,7 @@ export function App(): ReactElement {
     <div className="app">
       <ServiceBanner serverError={serverError} eventStatus={eventStatus} onRetry={reload} />
       <Dock
+        onInitialize={openInitialization}
         searchOpen={search !== null} onSearch={() => setSearch('global')}
         bots={bots} notifications={notifications.slice(0, 50)} unreadCount={unreadTotal}
         onMarkAllRead={markAllRead} onOpenNotification={notification => void openNotification(notification)}

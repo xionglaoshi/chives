@@ -1608,6 +1608,23 @@ export function createApp(options: CreateAppOptions): ChivesApp {
         }else if(section==='interview'&&method==='GET')result=assessment.questionnaire();
         else if(section==='interview-draft'&&method==='POST')result=assessment.saveDraft(await readJsonObject(request,1024*1024));
         else if(section==='interview-submit'&&method==='POST'){result=await assessment.submitDraft(await readJsonObject(request));}
+        else if(section==='initialization'&&method==='GET'){
+          const profile=preferences(store);
+          const portfolio=await holdings(config.repoRoot,config.dshHome,{action:'get'})
+            .catch(()=>null) as {positions?: unknown[]}|null;
+          result={
+            model:library.list().some(entry=>entry.active&&entry.keyConfigured),
+            portrait:Boolean(assessment.view().result),
+            profile:[profile.name,profile.email,profile.phone,profile.avatar].every(value=>value.trim()),
+            holdings:Boolean(portfolio?.positions?.length),
+            watchlist:watchlist.read().length>0,
+            weixin:Boolean(store.settings.get('onboarding.weixin.welcomed')),
+            watch:registry.list().some(bot=>store.watches.countActiveByBot(bot.id)>0),
+            briefing:store.routines.list().some(routine=>routine.source==='user'&&routine.enabled&&
+              routine.botId===coordinatorId&&routine.title==='每日投研简报'&&
+              routine.schedule.kind==='cron'&&routine.schedule.expression==='0 9 * * 1-5'),
+          };
+        }
         else if(section==='assessment'&&method==='GET')result=assessment.view();
         else if(section==='assessment'&&method==='POST'){
           result=await assessment.evaluate(await readJsonObject(request,512*1024));
