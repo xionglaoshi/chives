@@ -308,6 +308,7 @@ def install(root, archive, platform):
         existing = (release/".installed").is_file()
         if not existing:
             dest = work / "source"
+            core.assert_blank_application_archive(bundle, prefix="chives-main")
             bundle.extractall(dest, filter="data")
             app = dest / "chives-main"
             for required in ("pnpm-lock.yaml", "package.json", "scripts/chives_cli.py"):

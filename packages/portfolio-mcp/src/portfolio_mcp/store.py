@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import copy
-import fcntl
 import json
 import os
 import threading
@@ -12,6 +11,11 @@ from dataclasses import dataclass, field
 from datetime import date, datetime, timezone
 from pathlib import Path
 from typing import Any, Callable, Iterator, Mapping
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 from portfolio_mcp.atomic import atomic_write_text
 from portfolio_mcp.errors import PortfolioError
@@ -78,13 +82,20 @@ class PortfolioStore:
             lock_path = self.profile_dir / LOCK_FILENAME
             fd = os.open(lock_path, os.O_RDWR | os.O_CREAT, 0o600)
             try:
-                fcntl.flock(fd, fcntl.LOCK_EX)
-                yield
-            finally:
+                if os.name == "nt":
+                    msvcrt.locking(fd, msvcrt.LK_LOCK, 1)
+                else:
+                    fcntl.flock(fd, fcntl.LOCK_EX)
                 try:
-                    fcntl.flock(fd, fcntl.LOCK_UN)
+                    yield
                 finally:
-                    os.close(fd)
+                    if os.name == "nt":
+                        os.lseek(fd, 0, os.SEEK_SET)
+                        msvcrt.locking(fd, msvcrt.LK_UNLCK, 1)
+                    else:
+                        fcntl.flock(fd, fcntl.LOCK_UN)
+            finally:
+                os.close(fd)
 
     def _corrupt_state(self, message: str) -> PortfolioState:
         return PortfolioState(warnings=[_corrupt(message)])

@@ -6,7 +6,7 @@ import getpass
 import hashlib
 import json
 import os
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 import re
 import shutil
 import signal
@@ -439,6 +439,26 @@ def get_asset(root, tag, name):
     return dest
 
 
+def assert_blank_application_archive(archive, prefix=None):
+    user_roots = {"data", "user-data", "public-data", "workspace", "credentials", "secrets", "logs"}
+    for entry in archive:
+        parts = PurePosixPath(entry.name).parts
+        if prefix is not None:
+            if not parts or parts[0] != prefix:
+                raise ValueError("源码快照包含应用目录之外的条目")
+            parts = parts[1:]
+        if not parts:
+            continue
+        root, name = parts[0].lower(), parts[-1].lower()
+        shipped_runtime = root == "runtime" and (len(parts) == 1 or parts[1] == "ms-playwright")
+        if (root in user_roots or root == "runtime" and not shipped_runtime
+                or name == ".credentials.yaml"
+                or name == ".env" or name.startswith(".env.") and name != ".env.example"
+                or name.endswith((".sqlite", ".sqlite3", ".sqlite-wal", ".sqlite-shm", ".pem", ".key"))):
+            raise ValueError("应用发行包包含本机状态或凭据类型的文件")
+
+
+
 def extract_tar(path, target):
     with tarfile.open(path) as archive:
         archive.extractall(target, filter="data")
@@ -456,11 +476,13 @@ def unlock(payload, work, release):
     except (RuntimeError, ValueError, pyzipper.BadZipFile) as exc:
         raise RuntimeError("安装码不正确，或发行包损坏") from exc
     print("    ✓ 安装码验证通过，正在展开程序、浏览器和离线依赖…", flush=True)
-    extract_tar(plain, release)
+    with tarfile.open(plain) as app:
+        assert_blank_application_archive(app)
+        app.extractall(release, filter="data")
 
 
 BROWSER_CHECK = ("from playwright.sync_api import sync_playwright\n"
-                 "from pathlib import Path\n"
+                 "from pathlib import Path, PurePosixPath\n"
                  "with sync_playwright() as p:\n"
                  " path=Path(p.chromium.executable_path); assert path.is_file(), path\n"
                  " b=p.chromium.launch(); print(b.version); b.close()")

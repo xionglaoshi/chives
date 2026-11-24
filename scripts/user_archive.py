@@ -4,7 +4,6 @@ from __future__ import annotations
 import argparse
 from contextlib import closing, contextmanager
 from datetime import date, datetime, timezone
-import fcntl
 from hashlib import sha256
 import json
 import math
@@ -14,6 +13,11 @@ import re
 import sqlite3
 import sys
 import tempfile
+
+if os.name == "nt":
+    import msvcrt
+else:
+    import fcntl
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFINITIONS = ROOT / "presets/user-attributes"
@@ -128,9 +132,20 @@ def valid_value(field, value):
 def locked(data):
     state = data / "user-archive-state"
     state.mkdir(parents=True, exist_ok=True, mode=0o700)
-    with (state / "writer.lock").open("a") as lock:
-        fcntl.flock(lock, fcntl.LOCK_EX)
-        yield
+    with (state / "writer.lock").open("a+b") as lock:
+        if os.name == "nt":
+            lock.seek(0)
+            msvcrt.locking(lock.fileno(), msvcrt.LK_LOCK, 1)
+        else:
+            fcntl.flock(lock, fcntl.LOCK_EX)
+        try:
+            yield
+        finally:
+            if os.name == "nt":
+                lock.seek(0)
+                msvcrt.locking(lock.fileno(), msvcrt.LK_UNLCK, 1)
+            else:
+                fcntl.flock(lock, fcntl.LOCK_UN)
 
 
 def initialize(user):

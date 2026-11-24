@@ -13,6 +13,8 @@ import sys
 import tarfile
 import tempfile
 
+from install import assert_blank_application_archive
+
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parents[1]
 WINDOWS = os.name == "nt"
@@ -40,6 +42,7 @@ def archive_sources(app):
         subprocess.run(["git", "-C", REPO, "archive", "HEAD", "--", *paths], stdout=file, check=True)
         file.seek(0)
         with tarfile.open(fileobj=file) as source:
+            assert_blank_application_archive(source)
             source.extractall(app, filter="data")
 
 
@@ -158,6 +161,8 @@ def build(out, work, code):
     shutil.rmtree(browser / "browsers")
     plain = work / "chives.tar.gz"
     archive(plain, [(p.name, p) for p in app.iterdir()])
+    with tarfile.open(plain) as source:
+        assert_blank_application_archive(source)
     with pyzipper.AESZipFile(out / f"chives-{target}.zip", "w", compression=pyzipper.ZIP_STORED,
                              encryption=pyzipper.WZ_AES, allowZip64=True) as sealed:
         sealed.setpassword(code.encode())
