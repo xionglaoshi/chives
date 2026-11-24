@@ -105,6 +105,7 @@ export function Sidebar({
     } catch { return []; }
   });
   const hiddenBots = useSidebarPins('hidden-bots.v1', legacyHidden);
+  const hiddenBotItems = bots.filter(bot => !bot.permanent && hiddenBots.pins.includes(bot.id));
   const visibleBots = bots.filter(bot => bot.permanent || !hiddenBots.pins.includes(bot.id));
   return (
     <nav className={`sidebar${compact ? ' sidebar--compact' : ''}`} aria-label="Bot 列表">
@@ -154,8 +155,8 @@ export function Sidebar({
       ) : (
         <BotList onPin={hiddenBots.toggle} onMove={onMove} bots={visibleBots} selectedId={selectedId} onSelect={onSelect} />
       )}
-      {!loading || bots.length > 0 ? <HiddenMenu label="隐藏Bot" items={bots.filter(bot => !bot.permanent && hiddenBots.pins.includes(bot.id))}
-        open={onSelect} pin={hiddenBots.toggle}/> : null}
+      {hiddenBotItems.length > 0 && <HiddenMenu label="更多Bot" items={hiddenBotItems}
+        open={onSelect} pin={hiddenBots.toggle}/>}
       <div className="sidebar__footer">
         <button
           type="button"
