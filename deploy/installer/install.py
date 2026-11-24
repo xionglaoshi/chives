@@ -60,7 +60,7 @@ def run(*args, cwd, env, label=None):
 
 def workspace_directory(root):
     workspace = root / "workspace"
-    if (workspace / "bots").is_dir():
+    if storage_directories(root)[0].name == "user-data" or (workspace / "bots").is_dir():
         return workspace
     old_bots = root / "data/bots"
     if old_bots.is_dir() and any((bot / "workspace").is_dir() for bot in old_bots.iterdir()):
@@ -71,7 +71,7 @@ def workspace_directory(root):
 def storage_directories(root):
     user = root / "user-data"
     legacy = root / "data"
-    if legacy.is_dir() and not user.is_dir():
+    if legacy.is_dir() and not user.is_dir() and not any((root / "runtime").glob("data-migration-*/active")):
         return legacy, legacy
     return user, root / "public-data/mechanical-cache"
 

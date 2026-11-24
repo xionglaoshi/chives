@@ -3,7 +3,8 @@ set -eu
 cd "$(dirname "$0")/.."
 export CHIVES_DATA_DIR="$PWD/user-data"
 mechanical_dir="$PWD/public-data/mechanical-cache"
-if [[ -d "$PWD/data" && ! -d "$CHIVES_DATA_DIR" ]]; then
+if [[ -d "$PWD/data" && ! -d "$CHIVES_DATA_DIR" ]] &&
+  ! compgen -G "$PWD/runtime/data-migration-*/active" >/dev/null; then
   export CHIVES_DATA_DIR="$PWD/data"
   mechanical_dir="$PWD/data"
 fi

@@ -16,7 +16,8 @@ STRATEGY_PORT="${STRATEGY_HUB_PORT:-8869}"
 STRATEGY_DIR="$ROOT/packages/strategy-hub"
 default_user_dir="$ROOT/user-data"
 default_mechanical_dir="$ROOT/public-data/mechanical-cache"
-if [[ -d "$ROOT/data" && ! -d "$default_user_dir" ]]; then
+if [[ -d "$ROOT/data" && ! -d "$default_user_dir" ]] &&
+  ! compgen -G "$ROOT/runtime/data-migration-*/active" >/dev/null; then
   default_user_dir="$ROOT/data"
   default_mechanical_dir="$ROOT/data"
 fi

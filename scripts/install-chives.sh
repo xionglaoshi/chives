@@ -19,7 +19,8 @@ for package in "${packages[@]}"; do
     ln -s "$env_dir" "$link"
 done
 default_user_dir="$PWD/user-data"
-if [[ -d "$PWD/data" && ! -d "$default_user_dir" ]]; then
+if [[ -d "$PWD/data" && ! -d "$default_user_dir" ]] &&
+  ! compgen -G "$PWD/runtime/data-migration-*/active" >/dev/null; then
     default_user_dir="$PWD/data"
 fi
 "$env_dir/bin/python" scripts/user_archive.py --data "${CHIVES_DATA_DIR:-$default_user_dir}" init

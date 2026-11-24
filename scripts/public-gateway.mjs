@@ -100,8 +100,17 @@ async function handle(req,res){
   if(!p.startsWith('/chives/'))return finish(res,404);
   if(!read && (req.headers.origin!==origin || req.headers['sec-fetch-site']==='cross-site'))return finish(res,403);
   if(read && p==='/chives/entry/csi300.json'){
-    const legacy=await Promise.all(['data','user-data'].map(name=>fs.stat(join(root,name)).then(s=>s.isDirectory(),()=>false)));
-    return streamFile(req,res,join(root,legacy[0]&&!legacy[1]?'data':'public-data/mechanical-cache','market/login-chart/csi300.json'));
+    const [hasLegacy, hasUserData] = await Promise.all(
+      ['data', 'user-data'].map(name => fs.stat(join(root, name)).then(stat => stat.isDirectory(), () => false)),
+    );
+    let cache = 'public-data/mechanical-cache';
+    if (hasLegacy && !hasUserData) {
+      const runtime = join(root, 'runtime');
+      const batches = (await fs.readdir(runtime).catch(() => [])).filter(name => name.startsWith('data-migration-'));
+      const receipts = await Promise.all(batches.map(name => fs.stat(join(runtime, name, 'active')).then(stat => stat.isFile(), () => false)));
+      if (!receipts.some(Boolean)) cache = 'data';
+    }
+    return streamFile(req, res, join(root, cache, 'market/login-chart/csi300.json'));
   }
   if(read && publicFiles.has(p))return streamFile(req,res,publicFiles.get(p));
   const token=(req.headers.cookie??'').split(';').map(v=>v.trim()).find(v=>v.startsWith(sessionCookie+'='))?.slice(sessionCookie.length+1);

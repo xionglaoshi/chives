@@ -13,7 +13,9 @@ from zoneinfo import ZoneInfo
 import requests
 
 ROOT = Path(__file__).resolve().parents[1]
-DATA = "data" if (ROOT / "data").is_dir() and not (ROOT / "user-data").is_dir() else "public-data/mechanical-cache"
+legacy = (ROOT / "data").is_dir() and not (ROOT / "user-data").is_dir()
+legacy = legacy and not any((ROOT / "runtime").glob("data-migration-*/active"))
+DATA = "data" if legacy else "public-data/mechanical-cache"
 STORE = Path(os.environ.get("STATE_DIRECTORY", ROOT / DATA / "market/login-chart"))
 SEED = ROOT / "deploy/public/csi300.json"
 SINA = "https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService.getKLineData?symbol=sh000300&scale=240&ma=no&datalen=550"
