@@ -8,11 +8,11 @@ import { BotList, BotRail } from './BotList';
 import { HiddenMenu, Pin, useSidebarPins } from './SidebarPins';
 import './Sidebar.css';
 
-type QuickTool = Exclude<WorkbenchTool, 'portrait'>;
+type QuickTool = Exclude<WorkbenchTool, 'portrait' | 'strategies'>;
 
-const initialTools = ['holdings', 'watchlist', 'market', 'trends', 'strategies'];
+const initialTools = ['holdings', 'watchlist', 'market', 'trends'];
 const initialBots = ['chives', 'expert', 'equity-analyst', 'research', 'zhushenglang', 'report-builder'];
-const toolIds: QuickTool[] = ['trends', ...(Object.keys(workbenchTools) as WorkbenchTool[]).filter((id): id is Exclude<QuickTool, 'trends'> => id !== 'trends' && id !== 'portrait')];
+const toolIds: QuickTool[] = ['trends', ...(Object.keys(workbenchTools) as WorkbenchTool[]).filter((id): id is Exclude<QuickTool, 'trends'> => id !== 'trends' && id !== 'portrait' && id !== 'strategies')];
 
 const toolOrderKey = 'chives.sidebar.toolOrder';
 function readToolOrder(): QuickTool[] {
@@ -140,7 +140,7 @@ export function Sidebar({
           title={workbenchTools[key] + (key === 'trends' ? ' · 展示时置顶' : ' · 拖动排序，或按 Alt 加上下方向键')} aria-label={workbenchTools[key]} aria-current={activeTool===key?'page':undefined}
           onClick={()=>onTool(key)}>
           <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d={{watchlist:'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z',holdings:'M3 7h18v13H3z M8 7V4h8v3 M3 12c5 3 13 3 18 0 M11 13h2',market:'M3 4v16h18 M6 15l4-5 4 3 6-8',trends:'M13 3c1 5 6 6 6 12a7 7 0 0 1-14 0c0-3 2-6 4-8 0 4 1 5 2 5 2-2 3-5 2-9z',strategies:'M3 9l2-5h14l2 5 M3 9h18 M5 9v11h14V9 M9 20v-6h6v6'}[key]}/>
+            <path d={{watchlist:'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z',holdings:'M3 7h18v13H3z M8 7V4h8v3 M3 12c5 3 13 3 18 0 M11 13h2',market:'M3 4v16h18 M6 15l4-5 4 3 6-8',trends:'M13 3c1 5 6 6 6 12a7 7 0 0 1-14 0c0-3 2-6 4-8 0 4 1 5 2 5 2-2 3-5 2-9z'}[key]}/>
           </svg><span>{workbenchTools[key]}</span>
         </button><Pin name={workbenchTools[key]} pinned onClick={() => tools.toggle(key)}/></div>)}
         <HiddenMenu label="更多工具" items={order.filter(key => !tools.pins.includes(key)).map(id => ({id,name:workbenchTools[id]}))}
@@ -167,6 +167,19 @@ export function Sidebar({
             <path d="M4 6h7v7H4zM13 6h7v7h-7zM4 15h7v5H4zM13 15h7v5h-7z" />
           </svg>
           <span className="sidebar__all-label">Bot市场</span>
+        </button>
+        <button
+          type="button"
+          className={`sidebar__all${activeTool === 'strategies' ? ' sidebar__all--active' : ''}`}
+          onClick={() => onTool('strategies')}
+          aria-current={activeTool === 'strategies' ? 'page' : undefined}
+          title={workbenchTools.strategies}
+          aria-label={workbenchTools.strategies}
+        >
+          <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 9l2-5h14l2 5 M3 9h18 M5 9v11h14V9 M9 20v-6h6v6" />
+          </svg>
+          <span className="sidebar__all-label">{workbenchTools.strategies}</span>
         </button>
         <button
           type="button"
