@@ -204,15 +204,11 @@ export function Dock(props: DockProps): ReactElement {
               const isPinned = pinned.includes(tool);
               return <li key={tool.id}>
                 <span className="dock-tool-name">{tool.icon}{tool.label}</span>
-                {tool.defaultPinned && <small>固定</small>}
-                {[true, false].map(shouldPin => {
-                  const action = shouldPin ? '添加到 Dock' : '从 Dock 删除';
-                  const unavailable = tool.defaultPinned || shouldPin === isPinned;
-                  const hint = tool.defaultPinned
-                    ? (shouldPin ? '已固定在 Dock' : '固定工具，无法从 Dock 删除')
-                    : unavailable ? (shouldPin ? '已添加到 Dock' : '尚未添加到 Dock') : action;
+                {tool.defaultPinned ? <small>强制固定在Dock栏</small> : [true, false].map(shouldPin => {
+                  const action = shouldPin ? '添加到Dock栏' : '从Dock栏删除';
+                  const unavailable = shouldPin === isPinned;
                   return <button key={action} type="button" aria-disabled={unavailable}
-                    aria-label={action + '：' + tool.label} title={hint}
+                    aria-label={action + '：' + tool.label} title={action}
                     onClick={() => setPinned(tool, shouldPin)}>
                     <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" fill="none"
                       stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
