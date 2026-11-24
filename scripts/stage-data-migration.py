@@ -4,6 +4,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 from pathlib import Path
 import shutil
 import sqlite3
@@ -91,6 +92,63 @@ def stage_entry(root, stage, source, relative, method):
         if digest(target) != checksum:
             raise ValueError(f"File changed while copying: {source.relative_to(root)}")
     return digest(target)
+
+
+def relocate_session_workspaces(root, staged, manifest):
+    bot_root = root / "data" / "bots"
+    replacements = {
+        str(bot / "workspace"): str(root / "workspace" / "bots" / bot.name)
+        for bot in bot_root.iterdir() if (bot / "workspace").is_dir()
+    } if bot_root.is_dir() else {}
+    changed = 0
+    for entry in manifest:
+        relative = Path(entry["target"])
+        if entry["method"] != "copy" or relative.parts[:2] not in {
+            ("user-data", "dsh"), ("user-data", "harness")
+        } or relative.suffix not in {".json", ".yml", ".yaml"}:
+            continue
+        target = staged / relative
+        original = target.read_text(encoding="utf-8")
+        updated = original
+        for old, new in replacements.items():
+            # Include a path boundary and preserve JSON escaping on Windows.
+            for source, destination in {
+                (old, new), (json.dumps(old)[1:-1], json.dumps(new)[1:-1])
+            }:
+                updated = re.sub(re.escape(source) + r"""(?=[/\\"'\s]|$)""",
+                                 lambda _: destination, updated)
+        if updated != original:
+            if relative.suffix == ".json":
+                json.loads(updated)
+            with target.open("w", encoding="utf-8", newline="") as stream:
+                stream.write(updated)
+            entry["method"] = "relocated-workspace"
+            entry["sha256"] = digest(target)
+            changed += 1
+    return changed
+
+
+def verify_deliverables(root, staged):
+    database = staged / "user-data/chives.sqlite"
+    if not database.is_file():
+        return {"readable": 0, "missing_at_source": 0}
+    counts = {"readable": 0, "missing_at_source": 0}
+    with closing(sqlite3.connect(database.as_uri() + "?mode=ro", uri=True)) as db:
+        if not db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='deliverables'").fetchone():
+            return counts
+        for bot, path in db.execute("SELECT bot_id,path FROM deliverables"):
+            relative = Path(path)
+            if not re.fullmatch(r"[a-z0-9_-]+", bot) or relative.is_absolute() or ".." in relative.parts:
+                raise ValueError("Deliverable requires manual path review")
+            source = root / "data" / "bots" / bot / "workspace" / relative
+            target = staged / "workspace" / "bots" / bot / relative
+            if source.is_file():
+                if not target.is_file() or digest(source) != digest(target):
+                    raise ValueError("A readable historical deliverable was not preserved")
+                counts["readable"] += 1
+            else:
+                counts["missing_at_source"] += 1
+    return counts
 
 
 LIVE_DIRECTORIES = ("public-data", "workspace", "user-data")
@@ -181,6 +239,9 @@ def main():
             checksum = stage_entry(root, staged, source, target, method)
             manifest.append({"source": str(source.relative_to(root)), "target": str(target),
                              "method": method, "sha256": checksum})
+        relocated = relocate_session_workspaces(root, staged, manifest)
+        report = {"relocated_workspace_records": relocated, "deliverables": verify_deliverables(root, staged)}
+        (staged / "verification.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
         (staged / "manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     except BaseException:
         shutil.rmtree(staged)
