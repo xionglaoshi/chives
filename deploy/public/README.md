@@ -16,7 +16,7 @@
 ## 恢复与验收
 
 1. Mac 按项目 README 恢复依赖、同一前端源码及本机资料。将密码校验文件恢复到 `~/.agents/credentials/chives-public-entry.json`，权限设为 600。重新设密码时运行 `~/.agents/venv/bin/python3 scripts/public-password.py`，再执行 `launchctl kickstart -k gui/$(id -u)/local.chives.public-entry`。网关重启后会话需重新登录。
-2. 执行 `~/.agents/venv/bin/python3 scripts/install-public-jobs.py`。可立即运行 `scripts/build-public.sh` 启动一次本地构建。公网构建和网关日志在 `runtime/local.chives.public-*.log`。沪深 300 在 `data/market/login-chart/csi300.json`，双源不可用或冲突时沿用已有快照。旧的云端登录和行情服务模板供历史追溯。
+2. 执行 `~/.agents/venv/bin/python3 scripts/install-public-jobs.py`。可立即运行 `scripts/build-public.sh` 启动一次本地构建。公网构建和网关日志在 `runtime/local.chives.public-*.log`。沪深 300 在 `public-data/mechanical-cache/market/login-chart/csi300.json`，未迁移的安装沿用 `data/market/login-chart/csi300.json`，双源不可用或冲突时沿用已有快照。旧的云端登录和行情服务模板供历史追溯。
 3. 服务器恢复 SSH 中继和主机指纹，安装本目录 `chives-workbench-link.service`，执行 `systemctl daemon-reload` 和 `systemctl enable --now chives-workbench-link.service`。将 `chives.caddy` 装入 `/etc/caddy/`，保留主站配置的 import 与 HTTP 跳转。执行 `caddy validate --config /etc/caddy/Caddyfile` 后 reload。
 4. 公网检查登录页、行情和匿名 API 的 401。用有效密码登录后核对工作台、Bot 列表及静态资源，退出后复验 401。Mac 和腾讯云的独立安装分发服务对应 `/chives-install/`。
 

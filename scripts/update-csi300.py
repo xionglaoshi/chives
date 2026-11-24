@@ -13,7 +13,8 @@ from zoneinfo import ZoneInfo
 import requests
 
 ROOT = Path(__file__).resolve().parents[1]
-STORE = Path(os.environ.get("STATE_DIRECTORY", ROOT / "data/market/login-chart"))
+DATA = "data" if (ROOT / "data").is_dir() and not (ROOT / "user-data").is_dir() else "public-data/mechanical-cache"
+STORE = Path(os.environ.get("STATE_DIRECTORY", ROOT / DATA / "market/login-chart"))
 SEED = ROOT / "deploy/public/csi300.json"
 SINA = "https://quotes.sina.cn/cn/api/json_v2.php/CN_MarketDataService.getKLineData?symbol=sh000300&scale=240&ma=no&datalen=550"
 TENCENT = "https://web.ifzq.gtimg.cn/appstock/app/fqkline/get?param=sh000300,day,{start},{end},640,qfq"

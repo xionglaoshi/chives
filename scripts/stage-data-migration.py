@@ -11,7 +11,7 @@ import tempfile
 from contextlib import closing
 
 USER_ENTRIES = {
-    "audit", "bots", "chives.sqlite", "dsh", "harness", "library", "paper",
+    "audit", "bots", "chives.sqlite", "dsh", "equity-research", "harness", "library", "paper",
     "profile", "secrets", "user", "user-archive-state",
 }
 MECHANICAL_ENTRIES = {"market", "marketdata"}
@@ -27,7 +27,7 @@ def destination(relative):
         return Path("user-data") / relative
     if top in MECHANICAL_ENTRIES:
         return Path("public-data/mechanical-cache") / relative
-    if top == "hotspots" and rest and rest[0] in {"latest.json", "archive"}:
+    if top == "hotspots":
         return Path("public-data/chives-build") / relative
     return Path("review") / relative
 
@@ -41,7 +41,7 @@ def plan(root):
         sqlite_base = source.with_name(source.name.rsplit("-", 1)[0])
         sqlite_sidecar = (source.name.endswith(("-wal", "-shm", "-journal"))
                           and sqlite_base.suffix in SQLITE_SUFFIXES and sqlite_base.is_file())
-        if source.name in SKIP_NAMES or sqlite_sidecar:
+        if source.name in SKIP_NAMES or relative == Path("hotspots/status.json") or sqlite_sidecar:
             continue
         target = destination(relative)
         if source.is_symlink():

@@ -96,7 +96,7 @@ import {
 import { SessionTokenRegistry } from './delegations/tokens.js';
 import { approvedOnly, describeEntry, installed, manageConnection, mountConnections, templates } from './settings/mcp-connections.js';
 import { assets, assetOptions, saveAssets, type AssetProfile } from './harness/bot-assets.js';
-import { dirname, join as joinPath } from 'node:path';
+import { basename, dirname, join as joinPath } from 'node:path';
 import { homedir as userHome } from 'node:os';
 import { KernelManager } from './harness/kernel-manager.js';
 
@@ -424,10 +424,12 @@ export function createApp(options: CreateAppOptions): ChivesApp {
       && existsSync(joinPath(config.repoRoot, '.chives', DATABASE_FILE))) {
     throw new Error('检测到旧版数据库。请先停服，按 INSTALL.md「更新与备份」将旧数据迁至 data/，再启动 Chives。');
   }
-  const hotspots=hotspotService(config.repoRoot,config.dataDir);
+  const publicData=joinPath(dirname(config.dataDir),'public-data');
+  const featureBuild=basename(config.dataDir)==='user-data'?joinPath(publicData,'chives-build'):config.dataDir;
+  const hotspots=hotspotService(config.repoRoot,featureBuild);
   const featureEndpoint=process.env.CHIVES_FEATURE_DATA_URL?.trim();
   const features=featureEndpoint
-    ? featureDataService(featureEndpoint,joinPath(dirname(config.dataDir),'public-data','chives-cache'))
+    ? featureDataService(featureEndpoint,joinPath(publicData,'chives-cache'))
     : undefined;
 
   const store = Store.open(config.dataDir);

@@ -22,7 +22,7 @@ const scope='; Path=/chives/; HttpOnly; Secure; SameSite=Strict';
 const sessions=new Map(), attempts=new Map();
 const types={html:'text/html; charset=utf-8',css:'text/css; charset=utf-8',js:'text/javascript; charset=utf-8',svg:'image/svg+xml',png:'image/png',jpg:'image/jpeg',jpeg:'image/jpeg',webp:'image/webp',woff2:'font/woff2',json:'application/json'};
 const publicFiles=new Map(['login.css','chart.js','offline-reconnect.js'].map(name=>['/chives/entry/'+name,join(assets,name)]));
-publicFiles.set('/chives/entry/csi300.json',join(root,'data/market/login-chart/csi300.json'));
+
 publicFiles.set('/chives/entry/logo.svg',join(root,'apps/web/public/chives.svg'));
 const login=await fs.readFile(join(assets,'login.html'),'utf8');
 const offlinePanel=await fs.readFile(join(assets,'offline-panel.html'),'utf8');
@@ -99,6 +99,10 @@ async function handle(req,res){
   if(p==='/chives' && read){res.setHeader('Location','/chives/');return finish(res,308);}
   if(!p.startsWith('/chives/'))return finish(res,404);
   if(!read && (req.headers.origin!==origin || req.headers['sec-fetch-site']==='cross-site'))return finish(res,403);
+  if(read && p==='/chives/entry/csi300.json'){
+    const legacy=await Promise.all(['data','user-data'].map(name=>fs.stat(join(root,name)).then(s=>s.isDirectory(),()=>false)));
+    return streamFile(req,res,join(root,legacy[0]&&!legacy[1]?'data':'public-data/mechanical-cache','market/login-chart/csi300.json'));
+  }
   if(read && publicFiles.has(p))return streamFile(req,res,publicFiles.get(p));
   const token=(req.headers.cookie??'').split(';').map(v=>v.trim()).find(v=>v.startsWith(sessionCookie+'='))?.slice(sessionCookie.length+1);
   if(p==='/chives/login' && req.method==='POST'){
