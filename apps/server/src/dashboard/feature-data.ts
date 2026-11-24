@@ -1,5 +1,5 @@
 import { createHash, randomUUID } from 'node:crypto';
-import { mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
+import { copyFile, mkdir, mkdtemp, readFile, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import type { HoldingValuation } from './holding-valuations.js';
 
@@ -125,20 +125,41 @@ export function featureDataService(endpoint: string, cache: string) {
     if (!snapshot && !denied) denied = await readFile(denialPath,'utf8').then(value=>value===sourceId,()=>false);
     if (!snapshot && !denied && sameSource && previous) snapshot = await readRelease(previous).then(result=>result.release).catch(() => null);
     let staging: string | undefined;
+    let keepBackup = false;
     try {
       const bytes = await download(new URL('catalog.json', base));
       const next = parseCatalog(bytes);
       await mkdir(cache,{recursive:true});
       staging = await mkdtemp(join(cache,'.incoming-'));
       const {release,changed} = await readRelease(next, staging, sameSource);
-      for (const path of changed) {
-        const target=join(cache,path);
-        await mkdir(dirname(target),{recursive:true});
-        await rename(join(staging,path), target);
+      await atomicWrite(join(staging,'catalog.json'),bytes);
+      await atomicWrite(join(staging,'.source'),Buffer.from(sourceId));
+      const installed: {target: string; backup: string | null}[] = [];
+      try {
+        for (const path of [...changed,'.source','catalog.json']) {
+          const target=join(cache,path);
+          const backup=join(staging,'.previous',path);
+          await mkdir(dirname(target),{recursive:true});
+          await mkdir(dirname(backup),{recursive:true});
+          const copied=await copyFile(target,backup).then(()=>true,error=>{
+            if ((error as NodeJS.ErrnoException).code==='ENOENT') return false;
+            throw error;
+          });
+          await rename(join(staging,path),target);
+          installed.push({target,backup:copied?backup:null});
+        }
+        await rm(denialPath,{force:true});
+      } catch (error) {
+        for (const item of installed.reverse()) {
+          try {
+            if (item.backup) await rename(item.backup,item.target);
+            else await rm(item.target,{force:true});
+          } catch {
+            keepBackup = true;
+          }
+        }
+        throw error;
       }
-      await atomicWrite(catalogPath, bytes);
-      await atomicWrite(sourcePath, Buffer.from(sourceId));
-      await rm(denialPath,{force:true});
       denied = false;
       snapshot = release;
       const currentPaths = new Set(next.files.map(entry => entry.path));
@@ -153,7 +174,7 @@ export function featureDataService(endpoint: string, cache: string) {
       }
       // Transient failures retain the last successfully loaded release.
     } finally {
-      if (staging) await rm(staging,{recursive:true,force:true}).catch(() => {});
+      if (staging && !keepBackup) await rm(staging,{recursive:true,force:true}).catch(() => {});
       refreshed = Date.now();
     }
     return snapshot;
