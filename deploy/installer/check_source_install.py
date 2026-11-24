@@ -45,6 +45,49 @@ def check(work, target):
         with opener.open(request, timeout=15) as response:
             return json.load(response)
 
+    def check_browser():
+        web = release / "apps/web"
+        # Keep the app's normal Vite configuration and route to the isolated backend.
+        config = (web / "vite.config.ts").read_text(encoding="utf-8")
+        old = "const CHIVES_SERVER_PORT = 8880;"
+        assert old in config
+        isolated = web / "vite.install-check.config.ts"
+        isolated.write_text(config.replace(old, f"const CHIVES_SERVER_PORT = {port};"), encoding="utf-8")
+        with socket.socket() as listener:
+            listener.bind(("127.0.0.1", 0))
+            web_port = listener.getsockname()[1]
+        web_url = f"http://127.0.0.1:{web_port}/"
+        web_log = work / "web.log"
+        with web_log.open("w", encoding="utf-8") as output:
+            vite = subprocess.Popen(
+                [str(node), "node_modules/vite/bin/vite.js", "--config", isolated.name,
+                 "--host", "127.0.0.1", "--port", str(web_port), "--strictPort"],
+                cwd=web, env=env, stdout=output, stderr=output,
+            )
+            try:
+                for _ in range(80):
+                    if vite.poll() is not None:
+                        raise RuntimeError("Installed frontend exited prematurely")
+                    try:
+                        with opener.open(web_url, timeout=2):
+                            break
+                    except OSError:
+                        time.sleep(.25)
+                else:
+                    raise RuntimeError("Installed frontend did not become healthy")
+                browser_env = {**env, "PYTHONPATH": str(release / "runtime/ms-playwright/python")}
+                subprocess.run(
+                    [env["CALENDAR_PYTHON"], "-s", str(Path(__file__).with_name("check_initialization_browser.py")), web_url],
+                    env=browser_env, check=True, timeout=90,
+                )
+            except BaseException:
+                print(web_log.read_text(encoding="utf-8", errors="replace")[-3000:], file=sys.stderr)
+                raise
+            finally:
+                if vite.poll() is None:
+                    vite.kill()
+                vite.wait()
+
     log = work / "server.log"
     @contextmanager
     def running_server():
@@ -99,6 +142,7 @@ def check(work, target):
         with closing(sqlite3.connect(root / "user-data/chives.sqlite")) as db:
             assert db.execute("SELECT count(*) FROM messages").fetchone() == (0,)
         assert not (root / "data").exists()
+        check_browser()
         print("Installed backend is healthy; all eight onboarding steps and personal records are empty.")
 
     workspace = root / "workspace" / "bots" / "operator"

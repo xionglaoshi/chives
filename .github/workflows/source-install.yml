@@ -8,6 +8,7 @@ on:
       - 'deploy/installer/install.py'
       - 'deploy/installer/source.py'
       - 'deploy/installer/check_source_install.py'
+      - 'deploy/installer/check_initialization_browser.py'
       - 'scripts/install-chives.sh'
       - 'scripts/install-browser.sh'
       - 'apps/server/src/settings/channels.ts'

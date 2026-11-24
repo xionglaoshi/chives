@@ -4,8 +4,8 @@ import json
 import math
 import os
 import re
+import sys
 from decimal import Decimal, ROUND_HALF_UP
-from playwright.sync_api import sync_playwright
 from sources import ROOT
 
 PATTERNS = {
@@ -41,6 +41,11 @@ def expected_tables(snapshot, columns):
     return tables
 
 def check_candidate(path, columns):
+    bindings = ROOT / 'runtime/ms-playwright/python'
+    if bindings.is_dir() and str(bindings) not in sys.path:
+        sys.path.insert(0, str(bindings))
+    from playwright.sync_api import sync_playwright
+
     raw = path.read_bytes()
     snapshot = json.loads(raw)
     tables = expected_tables(snapshot, columns)
