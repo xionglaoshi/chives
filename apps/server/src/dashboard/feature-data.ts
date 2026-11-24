@@ -108,6 +108,12 @@ export function featureDataService(endpoint: string, cache: string) {
           changed.push(entry.path);
         }
       }));
+      // An access denial must invalidate cached data even if another download failed first.
+      for (const result of results) {
+        if (result.status === 'rejected' && result.reason instanceof FeatureAccessDenied) {
+          throw result.reason;
+        }
+      }
       for (const result of results) {
         if (result.status === 'rejected') throw result.reason;
       }
