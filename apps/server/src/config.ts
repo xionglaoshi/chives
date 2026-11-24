@@ -1,6 +1,7 @@
 /** Runtime configuration for Chives Server, read from the environment only. */
 
-import { resolve } from 'node:path';
+import { existsSync, globSync } from 'node:fs';
+import { basename, dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 export const DEFAULT_PORT = 8880;
@@ -125,8 +126,14 @@ function readRoute(raw: string | undefined): ChivesModelRoute | undefined {
 export function loadConfig(env: NodeJS.ProcessEnv = process.env): ChivesConfig {
   const repoRoot = DEFAULT_REPO_ROOT;
   const dataDirRaw = env.CHIVES_DATA_DIR?.trim();
-  const dataDir = dataDirRaw ? resolve(dataDirRaw) : resolve(repoRoot, 'data');
-  const dshHome = env.DSH_FINANCE_HOME ?? `${env.HOME ?? ''}/.dsh`;
+  const installRoot = basename(dirname(repoRoot)) === 'releases' ? dirname(dirname(repoRoot)) : repoRoot;
+  const userData = join(installRoot, 'user-data');
+  const legacy = join(installRoot, 'data');
+  const useLegacy = !dataDirRaw && !existsSync(userData)
+    && (existsSync(legacy) || existsSync(join(installRoot, '.chives', 'chives.sqlite')))
+    && globSync('runtime/data-migration-*/active', { cwd: installRoot }).length === 0;
+  const dataDir = dataDirRaw ? resolve(dataDirRaw) : useLegacy ? legacy : userData;
+  const dshHome = env.DSH_FINANCE_HOME ?? join(dataDir, 'dsh');
   const route = readRoute(env.CHIVES_DEFAULT_ROUTE);
   const config: ChivesConfig = {
     repoRoot,

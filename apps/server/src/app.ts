@@ -68,6 +68,7 @@ import {
   TEXT_CONTENT_LIMIT_BYTES,
   assertReadableFile,
   botWorkspace,
+  taskWorkspaceRoot,
   contentLimitBytes,
   contentTypeFor,
   extensionOf,
@@ -434,7 +435,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
     : undefined;
 
   const hadDatabase = existsSync(joinPath(config.dataDir, DATABASE_FILE));
-  resetWorkspaceIfUserDataIsMissing(config.dataDir, process.env.CHIVES_WORKSPACE_DIR);
+  resetWorkspaceIfUserDataIsMissing(config.dataDir, taskWorkspaceRoot(config.dataDir));
   const store = Store.open(config.dataDir);
   const browserStateKey = 'browser.state';
   let browserState = store.settings.get<{ generation: string; adoptLegacy: boolean }>(browserStateKey);

@@ -4,6 +4,7 @@ export {
   TEXT_CONTENT_LIMIT_BYTES,
   assertReadableFile,
   botWorkspace,
+  taskWorkspaceRoot,
   contentLimitBytes,
   listWorkspaceFiles,
   resolveWorkspacePath,

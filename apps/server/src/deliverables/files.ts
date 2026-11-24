@@ -1,7 +1,7 @@
 /** Resolves deliverable paths inside one bot workspace and enforces limits. */
 
 import { existsSync, readdirSync, realpathSync, statSync } from 'node:fs';
-import { join, relative, resolve, sep } from 'node:path';
+import { basename, dirname, join, relative, resolve, sep } from 'node:path';
 
 import type { WorkspaceFileDto, WorkspaceFileList } from '../api/protocol.js';
 import { AppError } from '../errors.js';
@@ -14,8 +14,12 @@ export const MAX_WORKSPACE_FILES = 200;
 export const TEXT_CONTENT_LIMIT_BYTES = 2 * 1024 * 1024;
 export const BINARY_CONTENT_LIMIT_BYTES = 20 * 1024 * 1024;
 
+export function taskWorkspaceRoot(dataDir: string, configured = process.env.CHIVES_WORKSPACE_DIR): string | undefined {
+  return configured?.trim() || (basename(dataDir) === 'user-data' ? join(dirname(dataDir), 'workspace') : undefined);
+}
+
 export function botWorkspace(dataDir: string, botId: string): string {
-  const workspaceRoot = process.env.CHIVES_WORKSPACE_DIR?.trim();
+  const workspaceRoot = taskWorkspaceRoot(dataDir);
   return workspaceRoot ? resolve(workspaceRoot, 'bots', botId) : join(dataDir, 'bots', botId, 'workspace');
 }
 
