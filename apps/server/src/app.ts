@@ -1688,7 +1688,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           }
           try{result=await library.perform(body.action,body);}catch(e){if(e instanceof AppError)throw e;throw new AppError(400,'model',e instanceof ModelProviderError?e.message:'模型连接失败，请核对地址和网络');}
           if(body.action==='tune')await orchestrator.reloadModel();
-          if(['save','delete','activate'].includes(String(body.action))){settings.writeDefaultModel(null);await orchestrator.reloadModel();}
+          if(['save','delete','activate','initialize-save'].includes(String(body.action))){settings.writeDefaultModel(null);await orchestrator.reloadModel();}
         }else if(section==='channels'&&method==='GET')result=await channels.manage('list',{});
         else if(section==='channels'&&method==='POST'){const body=await readJsonObject(request);result=await channels.manage(String(body.action),body);}
         else if(section==='updates'&&method==='POST'){

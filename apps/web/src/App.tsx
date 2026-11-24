@@ -159,6 +159,7 @@ const GlobalSearch = lazy(() => import('./components/GlobalSearch'));
 
 export function App(): ReactElement {
   const initialization=useInitialization();
+  const [initializingModel,setInitializingModel]=useState(false);
   const [briefingReply,setBriefingReply]=useState('');
   const [briefingBusy,setBriefingBusy]=useState(false);
   const [briefingError,setBriefingError]=useState('');
@@ -653,6 +654,7 @@ export function App(): ReactElement {
   );
 
   function openInitialization(step: InitializationStep) {
+    setInitializingModel(step==='model');
     if(step==='model'||step==='profile'||step==='weixin'){
       window.location.hash='/settings?tab='+({model:'models',profile:'account',weixin:'channels'}[step]);
     }else if(step==='holdings'||step==='watchlist'){
@@ -944,7 +946,7 @@ export function App(): ReactElement {
           />} />}
           {route.name==='workspace' && route.tool!=='market' && route.tool!=='holdings' && route.tool!=='watchlist' && route.tool!=='portrait' && route.tool!=='trends' && <section className="workbench-placeholder"><h1>{workbenchTools[route.tool]}</h1><p>功能开发中</p></section>}
           {route.name === 'settings' ? (
-            <Settings onAskExpert={askOperator}
+            <Settings onAskExpert={askOperator} initializeModel={initializingModel} onModelInitialized={()=>setInitializingModel(false)}
               onOpenProfile={(botId) => navigate({ name: 'profile', botId })}
             />
           ) : null}

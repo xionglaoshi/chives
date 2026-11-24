@@ -13,8 +13,9 @@ const blank:Config={baseURL:'https://api.deepseek.com/v1',model:'deepseek-flash'
 function tuningOf(c:ModelTuning):ModelTuning {
  return {...(c.reasoningEffort?{reasoningEffort:c.reasoningEffort}:{}),...(c.fastMode?{fastMode:true}:{})};
 }
-export function ModelsDesk(){
+export function ModelsDesk({initialize=false,onInitialized}:{initialize?:boolean;onInitialized?:(()=>void)|undefined}={}){
  const [entries,set]=useState<Entry[]>([]),[mode,show]=useState(''),[id,sel]=useState(''),[config,edit]=useState<Config>(blank),[key,setKey]=useState(''),[msg,note]=useState(''),[busy,wait]=useState(false),[models,list]=useState<string[]>([]);
+ useEffect(()=>{if(initialize){edit(blank);sel('');setKey('');note('');show('initialize');}},[initialize]);
  const [capabilities,setCapabilities]=useState<Record<string,ModelCapabilities>>({});
  function changeModel(patch:Partial<Config>){
    edit(({reasoningEffort,fastMode,...rest})=>({...rest,...patch}));
@@ -40,7 +41,7 @@ export function ModelsDesk(){
  };useEffect(()=>{void load().catch(e=>note(e.message));},[]);
  async function act(action:string,target=id){wait(true);note('');try{const r=await desk<{models?:string[];message?:string}>('models','POST',{action,id:target,config,key});
  if(action==='discover'){list(r.models??[]);note('已拉取 '+(r.models?.length??0)+' 个模型');}
- else if(action==='probe')note(r.message||'连接成功');else{await load();show('');setKey('');note(action==='delete'?'模型已删除':'模型配置已更新');}}catch(e){note(String(e));}finally{wait(false);}}
+ else if(action==='probe')note(r.message||'连接成功');else{await load();show('');setKey('');if(action==='initialize-save')onInitialized?.();note(action==='delete'?'模型已删除':'模型配置已更新');}}catch(e){note(String(e));}finally{wait(false);}}
  function start(e?:Entry){sel(e?.id??'');edit(e?{...tuningOf(e),model:e.model,api:e.api,baseURL:e.baseURL,displayName:e.displayName??'',deepseekThinking:e.deepseekThinking,...(e.contextWindow?{contextWindow:e.contextWindow}:{}),...(e.maxTokens?{maxTokens:e.maxTokens}:{})}:blank);setKey('');list([]);note('');show(e?(e.api==='openai-codex-subscription'?'auth':'manual'):'choose');}
  const txt=(k:'model'|'baseURL'|'displayName',label:string)=><label>{label}<input value={config[k]} onChange={e=>k==='displayName'?edit({...config,[k]:e.target.value}):changeModel({[k]:e.target.value})}/></label>;
  const [imports,setImports]=useState<ImportedModel[]>([]);
@@ -70,7 +71,7 @@ export function ModelsDesk(){
    setGrant(await desk<{url:string;code:string}>('models','POST',{action:'subscription-login',device}));
   }catch(e){note(String(e));}finally{wait(false);}
  }
- return <><div className="desk-actions"><button className="desk-primary" onClick={()=>start()}>＋ 添加模型</button></div>
+ return <><div className="desk-actions"><button className={initialize?'desk-primary dock-initialization':'desk-primary'} onClick={()=>{if(initialize)show('initialize');else start();}}>＋ 添加模型</button></div>
  <div className="desk-model-list">{entries.map(e=><Row key={e.id} title={e.displayName||e.model} hint={(e.active?'当前默认 · ':'')+e.model+' · '+e.baseURL}><div className="desk-end">{!e.active&&<button onClick={()=>void act('activate',e.id)}>设为默认</button>}<button onClick={()=>start(e)}>编辑</button><button onClick={()=>{sel(e.id);show('remove');note('');}}>删除</button></div></Row>)}</div>
  {mode&&<div className="desk-modal-layer"><section className="desk-modal" role="dialog" aria-modal="true" aria-label="模型连接"><button aria-label="关闭" className="desk-close" onClick={()=>{show('');setKey('');setImports([]);}}>×</button><h2>{mode==='remove'?'删除模型':id?'编辑模型':'添加模型'}</h2>
  {mode==='choose'&&<div className="desk-choice">{[['auth','OpenAI 订阅登录','使用 ChatGPT 账户授权 Codex 套餐。'],['import','导入本地配置','选择现有 Agent 或供应商的 API 配置文件。'],['manual','手动填写','指定推理接口、模型和密钥。']].map(([m,t,h])=><button key={m} onClick={()=>show(m!)}><strong>{t}</strong><p>{h}</p></button>)}</div>}
@@ -83,10 +84,15 @@ export function ModelsDesk(){
  {grant&&!grant.code&&<button disabled={busy} onClick={()=>void login(true)}>改用设备码授权</button>}</>}
  <details><summary>其他供应商与 API Key</summary>{[['DeepSeek','https://platform.deepseek.com/api_keys'],['OpenAI','https://platform.openai.com/api-keys'],['Anthropic','https://console.anthropic.com/settings/keys']].map(([name,url])=><p key={name}><a href={url} target="_blank" rel="noreferrer">{name} 控制台 ↗</a></p>)}<button onClick={()=>{edit(blank);sel('');show('manual');}}>填写 API 连接</button></details></>}
  {mode==='remove'&&<><p>将移除这条连接和它在 Chives 中保存的密钥。</p><button disabled={busy} onClick={()=>void act('delete')}>确认删除</button></>}
+ {mode==='initialize'&&<form onSubmit={e=>{e.preventDefault();void act('initialize-save');}}>
+ {txt('baseURL','API 地址')}
+ <label>协议<select value={config.api} onChange={e=>changeModel({api:e.target.value})}>{['openai-completions','openai-responses','anthropic-messages'].map(a=><option key={a}>{a}</option>)}</select></label>
+ <label>API Key<input required type="password" autoComplete="new-password" value={key} onChange={e=>setKey(e.target.value)}/></label>
+ <button className="desk-primary" disabled={busy||!config.baseURL.trim()||!key.trim()}>验证并保存</button></form>}
  {mode==='manual'&&<form onSubmit={e=>{e.preventDefault();void act('save');}}>{txt('displayName','显示名称')}{txt('baseURL','API 地址')}<label>协议<select value={config.api} onChange={e=>changeModel({api:e.target.value})}>{['openai-completions','openai-responses','anthropic-messages'].map(a=><option key={a}>{a}</option>)}</select></label>
  <label>API Key<input type="password" autoComplete="new-password" value={key} placeholder={id?'同一地址可留空沿用密钥':''} onChange={e=>setKey(e.target.value)}/></label>{txt('model','模型 ID')}
  {!!models.length&&<label>可用模型<select value={config.model} onChange={e=>changeModel({model:e.target.value})}><option value="">请选择</option>{models.map(v=><option key={v}>{v}</option>)}</select></label>}
- <div className="desk-fields">{(['contextWindow','maxTokens'] as const).map((k,i)=><label key={k}>{i?'最大输出':'上下文窗口'}<input type="number" min="1" value={config[k]??''} onChange={e=>{const v={...config};if(e.target.value)v[k]=Number(e.target.value);else delete v[k];edit(v);}}/></label>)}</div>
+
  <label><input type="checkbox" role="switch" checked={config.deepseekThinking} onChange={e=>changeModel({deepseekThinking:e.target.checked})}/> 启用 DeepSeek 思考参数</label>{controls}<div className="desk-end"><button type="button" disabled={busy} onClick={()=>void act('discover')}>拉取模型</button><button type="button" disabled={busy} onClick={()=>void act('probe')}>验证模型</button><button className="desk-primary" disabled={busy}>保存模型</button></div></form>}
  <p role="status">{msg}</p></section></div>}{!mode&&msg&&<p role="status">{msg}</p>}
  <section className="settings__section" aria-labelledby="bot-default-models">

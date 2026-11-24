@@ -63,10 +63,12 @@ function initialAppearance(): AppearanceSettingsDto {
 
 export interface SettingsProps {
   onAskExpert: AskExpert;
+  initializeModel?:boolean;
+  onModelInitialized?:()=>void;
   onOpenProfile: (botId: string) => void;
 }
 
-export function Settings({ onOpenProfile,onAskExpert }: SettingsProps): ReactElement {
+export function Settings({ onOpenProfile,onAskExpert,initializeModel=false,onModelInitialized }: SettingsProps): ReactElement {
   const fromHash=()=>window.location.hash.split('?tab=')[1]??'account';
   const [page,select]=useState(fromHash),[prefs,setPrefs]=useState<Preferences|null>(null),[deskError,deskErr]=useState('');
   useEffect(()=>{const update=()=>select(fromHash());window.addEventListener('hashchange',update);
@@ -180,7 +182,7 @@ export function Settings({ onOpenProfile,onAskExpert }: SettingsProps): ReactEle
     {page==='history'&&<UserHistory/>}
     {page==='channels'&&<ChannelSettings/>}
     {page==='capabilities'&&<CapabilitiesDesk onOpenProfile={onOpenProfile}/>}
-    {page==='models'&&<ModelsDesk/>}
+    {page==='models'&&<ModelsDesk initialize={initializeModel} onInitialized={onModelInitialized}/>}
     {page==='help'&&<HelpDesk/>}
     {page==='updates'&&prefs&&<Updates auto={prefs.autoUpdateOnCheck} save={save}/>}
     {(page==='chat'||page==='permissions')&&prefs&&<Behavior p={prefs} save={save} page={page}/>}

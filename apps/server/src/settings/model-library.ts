@@ -109,7 +109,7 @@ export class ModelLibrary {
     return this.provider.runtimeFor(cfg,key||'',botId);
   }
   list(){return this.records().map(r=>({...r,active:r.id===this.activeId(),keyConfigured:!!this.key(r.id)}));}
-  async perform(action:unknown,body:Record<string,unknown>){
+  async perform(action:unknown,body:Record<string,unknown>):Promise<unknown>{
     if(action==='subscription-status')return this.provider.subscription.status();
     if(action==='subscription-cancel'){this.provider.subscription.cancel();return {};}
     if(action==='subscription-login')return this.provider.subscription.login(body.device===true);
@@ -126,6 +126,21 @@ export class ModelLibrary {
         rmSync(this.file(id),{force:true});
       }
       return this.list();
+    }
+    if(action==='initialize-save'){
+      const input=body.config as Record<string,unknown>|undefined;
+      if(!input||!['openai-completions','openai-responses','anthropic-messages'].includes(String(input.api)))
+        throw new AppError(400,'model_protocol','请选择可用的 API 协议。');
+      const config={baseURL:input.baseURL,api:input.api};
+      const discovered=await this.perform('discover',{config,key:body.key}) as {models:string[]};
+      const model=discovered.models[0];
+      if(!model)throw new AppError(400,'model_unavailable','供应商未返回可用模型。');
+      const selected={...config,model};
+      await this.perform('probe',{config:selected,key:body.key});
+      const entries=await this.perform('save',{config:selected,key:body.key}) as ReturnType<ModelLibrary['list']>;
+      const entry=entries.at(-1);
+      if(entry&&!entry.active)return this.perform('activate',{id:entry.id});
+      return entries;
     }
     const tuning=action==='tune';
     let input=body.config;
