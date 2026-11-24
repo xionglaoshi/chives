@@ -1,11 +1,12 @@
 import type {ReactNode} from 'react';
+import type {WorldDashboardDto} from '@chives/server/protocol';
 import { askAiPrompts, fillAskPrompt } from '../utils/askAiPrompts';
 import content from '../../../../packages/chives-terminal/chives_terminal/workbench-content.json';
 import {useEffect,useState} from 'react';
 import type {AskExpert} from './askExpert';
 import {appPath} from '../appPath';
 import {useExpertSidebarData} from './ExpertSidebarData';
-import {ExpertSidebarMarket} from './ExpertSidebarMarket';
+import {ExpertSidebarMarket,MarketIndexRows} from './ExpertSidebarMarket';
 import {formatPercent,formatPrice,priceDirection,SESSION_TEXT} from './ExpertSidebarFormat';
 import './market-board.css';
 import {MarketNews} from './MarketNews';
@@ -13,7 +14,6 @@ import {MarketNews} from './MarketNews';
 type Row={name:string;code?:string;change_pct:number|null;amount_yuan:number|null;leader?:{name:string;change_pct:number|null}|null};
 type RankedRow = Row & {volume_shares: number | null};
 type Snapshot<T = Row>={rows:T[];asOf:string;stale:boolean};
-type World={rows:{name:string;market:string;price:number|null;changePct:number|null;time:string|null}[]};
 function useFeed<T>(part:string) {
   const [state,set]=useState<{part:string;data?:T;error?:boolean}>({part});
   useEffect(()=>{
@@ -56,7 +56,7 @@ export function MarketBoard({onAskExpert, messages}:{onAskExpert:AskExpert; mess
   const [sector, selectSector] = useState('');
   const movers = useFeed<Snapshot<RankedRow>>('limit-up');
   const losers = useFeed<Snapshot<RankedRow> & {order: 'volume' | 'change'}>('limit-down');
-  const sectors = useFeed<Snapshot>('sectors'), world = useFeed<World>('world');
+  const sectors = useFeed<Snapshot>('sectors'), world = useFeed<WorldDashboardDto>('world');
   const m = market.data;
   const tiles=sectors.data?.rows??[], tile=tiles.find(r=>r.name===sector)??tiles[0];
   const status=(error?:boolean)=>error?'暂时取不到，稍后自动重试':'正在读取行情…';
@@ -76,19 +76,32 @@ export function MarketBoard({onAskExpert, messages}:{onAskExpert:AskExpert; mess
       ].join('\n\n'))}>
       <ExpertSidebarMarket state={market} embedded/>
     </Panel>
-    <Panel title={content.market.world} ask={ask('外围市场',!!world.data?.rows.length,askAiPrompts['行情看板']['外围市场'],()=>[
-      '来源：腾讯行情。港股使用香港当地时间，美股使用纽约当地时间。'+(world.error?'当前显示缓存快照。':''),
-      table(['市场','指数','点位','涨跌幅','当地报价时间'],world.data!.rows.map(x=>[x.market,x.name,x.price,formatPercent(x.changePct),x.time]))
+    <Panel title={content.market.world} ask={ask('外围市场',!!world.data?.rows.some(row => row.price !== null),askAiPrompts['行情看板']['外围市场'],()=>[
+      '指数来源：Yahoo Finance，港美部分指数报价可回退腾讯行情。市场成交量和涨跌家数按 TradingView 有成交且有对应数据的主要上市普通股汇总。日本涨跌停来自株探，统计东证三个主要板块中现价仍在限制价的股票。'+(world.error?'当前显示缓存快照。':''),
+      table(['市场','指数','点位','涨跌幅','报价时间'],world.data!.rows.map(row=>[row.market,row.name,row.price,formatPercent(row.changePct),row.time])),
+      table(['市场','成交量（股）','上涨','下跌','涨停','跌停'],(world.data!.stats??[]).map(row=>[row.market,row.volumeShares,row.up,row.down,row.limitUp,row.limitDown]))
     ].join('\n\n'))}>
-      {!world.data ? <small>{status(world.error)}</small> : <div className="mb-world">
-        {['港股','美股'].map(region => <div key={region}>
-          <h3>{region}</h3>
-          <ul className="mb-world-quotes">{world.data!.rows.filter(row => row.market === region).map(row =>
-            <li key={row.name}>
-              <span>{row.name}</span><strong>{formatPrice(row.price)}</strong><Change n={row.changePct}/>
-            </li>
-          )}</ul>
-        </div>)}
+      {!world.data ? <small>{status(world.error)}</small> : <div className="mb-world-markets">
+        {[...new Set(world.data.rows.map(row => row.market))].map(region => {
+          const stats = world.data?.stats?.find(row => row.market === region);
+          const indexes = world.data!.rows.filter(row => row.market === region);
+          const shares = stats?.volumeShares;
+          const volume = shares == null ? '—' : new Intl.NumberFormat('zh-CN', {notation:'compact', maximumFractionDigits:2}).format(shares)+'股';
+          return <section className="mb-market-overview" key={region}>
+            <h3>{region}</h3>
+            <MarketIndexRows indexes={indexes.map(row => ({...row, code:row.code??row.name, spark:row.spark??[]}))} />
+            <dl className="expert-sidebar__stats">
+              <div className="expert-sidebar__stat"><dt>成交量</dt><dd>{volume}</dd></div>
+              <div className="expert-sidebar__stat"><dt>上涨 / 下跌</dt><dd>
+                <span className="mb-up">{stats?.up ?? '—'}</span> / <span className="mb-down">{stats?.down ?? '—'}</span>
+              </dd></div>
+              <div className="expert-sidebar__stat"><dt>涨停 / 跌停</dt><dd>
+                <span className="mb-up">{stats?.limitUp ?? '—'}</span> / <span className="mb-down">{stats?.limitDown ?? '—'}</span>
+              </dd></div>
+            </dl>
+          </section>;
+        })}
+        <small>成交量和涨跌家数按有成交的主要上市普通股汇总。日本涨跌停统计东证现价触及限制价的股票。— 表示缺少可比数据。</small>
       </div>}
       {world.error&&world.data&&<small>显示最近快照</small>}
     </Panel>

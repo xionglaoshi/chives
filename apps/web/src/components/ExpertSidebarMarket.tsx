@@ -26,7 +26,9 @@ function MarketSkeleton(): ReactElement {
   );
 }
 
-function IndexRow({ index }: { index: MarketIndexDto }): ReactElement {
+type IndexQuote = Pick<MarketIndexDto, 'code' | 'name' | 'spark' | 'price' | 'changePct'>;
+
+function IndexRow({ index }: { index: IndexQuote }): ReactElement {
   const direction = priceDirection(index.changePct);
   return (
     <li className="expert-sidebar__index">
@@ -40,6 +42,12 @@ function IndexRow({ index }: { index: MarketIndexDto }): ReactElement {
       </span>
     </li>
   );
+}
+
+export function MarketIndexRows({indexes}: {indexes: readonly IndexQuote[]}): ReactElement {
+  return <ul className="expert-sidebar__indexes">
+    {indexes.map(index => <IndexRow index={index} key={index.code} />)}
+  </ul>;
 }
 
 export function ExpertSidebarMarket({ state, embedded = false }: ExpertSidebarMarketProps): ReactElement {
@@ -67,11 +75,7 @@ export function ExpertSidebarMarket({ state, embedded = false }: ExpertSidebarMa
           暂时取不到，稍后自动重试
         </p>
       ) : null}
-      <ul className="expert-sidebar__indexes">
-        {market.indexes.map((index) => (
-          <IndexRow index={index} key={index.code} />
-        ))}
-      </ul>
+      <MarketIndexRows indexes={market.indexes} />
       <dl className="expert-sidebar__stats">
         <div className="expert-sidebar__stat">
           <dt>两市成交额</dt>

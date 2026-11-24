@@ -864,6 +864,25 @@ export interface MarketIndexDto {
   spark: number[];
 }
 
+export interface WorldIndexDto extends Pick<MarketIndexDto, 'code' | 'name' | 'price' | 'changePct' | 'spark'> {
+  market: string;
+  time: string | null;
+}
+
+export interface WorldMarketStatsDto {
+  market: string;
+  volumeShares: number | null;
+  up: number | null;
+  down: number | null;
+  limitUp: number | null;
+  limitDown: number | null;
+}
+
+export interface WorldDashboardDto {
+  rows: WorldIndexDto[];
+  stats: WorldMarketStatsDto[];
+}
+
 export interface MarketDashboardDto {
   indexes: MarketIndexDto[];
   /** Combined turnover of the two exchanges, in yuan. */
