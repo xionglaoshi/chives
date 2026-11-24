@@ -64,3 +64,10 @@ coverage/
 /midas-contrib/
 
 /apps/web/public/market-news.json
+
+# Published Chives data and production copies are separate from the application.
+**/chives-cache/
+**/chives-build/
+**/chives-features/
+**/rankings/*.json
+**/stocks/*.json

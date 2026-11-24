@@ -504,6 +504,7 @@ def get_asset(root, tag, name):
 
 def assert_blank_application_archive(archive, prefix=None):
     user_roots = {"data", "user-data", "public-data", "workspace", "credentials", "secrets", "logs"}
+    feature_directories = {"chives-cache", "chives-build", "chives-features", "rankings", "stocks"}
     local_files = {
         ".credentials.yaml", "finance-portfolio.json", "watchlist.json", "market-news.json",
         "plans.runtime.json", "rules.runtime.json", "watchlist.runtime.json",
@@ -522,6 +523,7 @@ def assert_blank_application_archive(archive, prefix=None):
         shipped_runtime = root == "runtime" and (len(parts) == 1 or parts[1] == "ms-playwright")
         if (root in user_roots or root == "runtime" and not shipped_runtime
                 or name in local_files
+                or feature_directories.intersection(segment.lower() for segment in parts[:-1])
                 or name == ".env" or name.startswith(".env.") and name != ".env.example"
                 or name.endswith(local_suffixes)):
             raise ValueError("应用发行包包含本机状态或凭据类型的文件")

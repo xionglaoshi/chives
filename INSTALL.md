@@ -94,7 +94,7 @@ Tab 或左右键切换「选 Bot」「工作台」「设置」，上下键选择
 | `user-data/` | 本机用户状态。数据库 `chives.sqlite` 保存会话、任务及设置等结构化状态。用户画像、参数和持仓在 `profile/`，关注在 `user/`，Bot 档案和记忆在 `bots/`，模型与频道凭证在 `secrets/`，模型运行状态在 `dsh/`、`harness/`，盯盘引擎的规则、计划和告警在 `watch-engine/`，Hub 的个人设置与处理状态在 `hub/`。 |
 | `workspace/` | Agent 和 Bot 的任务工作区。Bot 的输入、任务产物和交付文件保存于 `workspace/bots/<Bot ID>/`。这些文件也属于用户数据。 |
 | `public-data/mechanical-cache/` | 第三方机械数据缓存。行情和日线在 `marketdata/`，资讯、市场监控缓存和公开图表快照在 `market/`。 |
-| `public-data/chives-cache/` | 每次启动即从发布源拉取完整特色数据快照，并在后台检查更新，包含机会榜单、合理股价和后市判断。 |
+| `public-data/chives-cache/` | 启动时读取发布清单，逐文件同步。rankings/ 一榜一文件，stocks/ 一股一档。 |
 | `runtime/` | 日志、进程信息、浏览器、专用 Python、下载缓存和临时目录，也保存迁移批次与可回滚副本。 |
 | `credentials/` | 开发机本地发行凭证，独立于用户模型和频道凭证。 |
 | `data/` | 迁移前的旧混合目录。已迁移的本机保留它作回滚，日常读写使用分层后的目录。 |
@@ -186,8 +186,10 @@ Chives 开发测试统一使用 GitHub Actions 的临时虚拟机，验收环境
 
 Codex 在股票 AGENT 工作区下生产特色数据。以 `/Users/xiong/.agents/workspace/股票AGENT/Chives特色数据/` 为例：
 
-1. 原件放在 `production/`。生成榜单时向 `scripts/hotspots/generate.py` 传入 `--data "$production/hotspots"`。生成待发布估值时，在生产进程中将 `CHIVES_RESEARCH_LIBRARY` 设为 `"$production/equity-research"`。
-2. 从 Chives 源码目录用 `apps/server/node_modules/.bin/tsx scripts/build-feature-publication.ts` 导出。传入 `--source "$production"`、`--output "$publication"` 和估值日期 `--day YYYY-MM-DD`。两条路径均位于股票 AGENT 工作区内。用可重复的 `--board` 和 `--code` 明确指定本次准予公开的榜单和证券。发布包只包含 SHA-256 文件名的快照以及 `manifest.json`。
-3. 核对发布包所含范围。先上传快照，再更新服务器的 `manifest.json`，最后在 Chives 点击「刷新榜单」查看已发布结果。应用内缓存位于 `public-data/chives-cache/snapshot.json`。
+1. 原件放在 `production/`。榜单生成器传入 `--data "$production/hotspots"`，在同级 `rankings/` 写出一榜一文件。每只股票的公开档案放入 `stocks/<证券代码>.json`，可包含名称、日期、特色分析、专用分析策略及估值与后市判断。底层估值回执如需保留，在生产工作区的 `equity-research/` 留存。
+2. 从 Chives 源码目录用 `apps/server/node_modules/.bin/tsx scripts/build-feature-publication.ts` 导出。传入 `--source "$production"`、`--output "$publication"` 和估值日期 `--day YYYY-MM-DD`。两条路径均位于股票 AGENT 工作区内。用可重复的 `--board` 和 `--code` 明确指定本次准予公开的榜单和证券。发布包沿用分类目录。`catalog.json` 列出文件路径、各自 SHA-256 和发布日期。
+3. 核对发布包所含范围。先上传分类文件，再更新服务器的 `catalog.json`，最后在 Chives 点击「刷新榜单」查看已发布结果。应用内缓存位于 `public-data/chives-cache/`，结构与服务器一致。
 
-发行版安装器默认设置 `CHIVES_FEATURE_DATA_URL=https://150.158.11.154/chives-features/`。包括首次安装在内，每次启动都会立即在后台拉取发布清单和本次发布的完整快照，随后每分钟检查发布摘要，有新版本或本机缓存缺失时重新下载。缓存位于 `public-data/chives-cache/`，刷新失败时保留上次通过验证的版本。开发、测试和用户安装的机会榜单、关注和持仓均读取该缓存。服务器没有发布的估值或榜单显示为缺失。
+发行版安装器默认设置 `CHIVES_FEATURE_DATA_URL=https://150.158.11.154/chives-features/`。包括首次安装在内，每次启动都会立即在后台同步目录清单中的全部文件，随后每分钟检查发布摘要，仅下载摘要变化或本机缺失的文件。缓存位于 `public-data/chives-cache/`，刷新失败时保留上次通过验证的版本。开发、测试和用户安装的机会榜单、关注和持仓均读取该缓存。服务器没有发布的估值或榜单显示为缺失。
+
+GitHub 仅分发应用源码与安装程序。特色数据的生产文件、发布包和下载缓存均排除在仓库及安装包之外。当前试点服务器允许匿名读取。日后服务器启用账号和付费凭证后，拒绝访问返回 HTTP 401 或 403，此时客户端暂停展示特色数据并提示「依据不足：没有凭证能访问 Chives 数据库」。普通行情、用户本地记录和非特色分析仍可使用。

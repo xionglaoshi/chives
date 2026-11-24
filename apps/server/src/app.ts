@@ -854,7 +854,8 @@ export function createApp(options: CreateAppOptions): ChivesApp {
           const code=String(body.code??'').trim().toUpperCase();
           if(!/^\d{6}\.(SH|SZ|BJ)$/.test(code))throw new AppError(400,'security','请输入完整沪深北证券代码。');
           const publication=await features.read();
-          sendJson(response,200,{code,estimate:publication?.valuations[code]??null});
+          sendJson(response,200,{code,estimate:publication?.valuations[code]??null,profile:publication?.stockProfiles[code]??null,
+            ...(features.denied()?{reason:'依据不足：没有凭证能访问 Chives 数据库'}:{})});
           return;
         }
         if (path === '/api/internal/operator/watchlist') {
@@ -1553,9 +1554,12 @@ export function createApp(options: CreateAppOptions): ChivesApp {
             }
           }
           result=employment.list();
+        }else if(section==='feature-access' && method==='GET'){
+          await features.read();
+          result={denied:features.denied()};
         }else if(section==='hotspots' && (method==='GET'||method==='POST')){
           const publication=await features.read(method==='POST');
-          result={mode:'published',snapshot:publication?.hotspots??null,status:{state:publication?.hotspots?'ready':'idle'}};
+          result={mode:'published',snapshot:publication?.hotspots??null,status:{state:features.denied()?'denied':publication?.hotspots?'ready':'idle'}};
         }else if(section==='watchlist' && (method==='GET'||method==='POST')){
           if(method==='GET'){
             result=await publishedWatchlist();
@@ -1567,7 +1571,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
             else if(body.action==='estimate') {
               watchlist.get(code);
               const publication=await features.read(true);
-              if(!publication?.valuations[code])throw new AppError(404,'valuation_unavailable','暂无已发布估值。');
+              if(!publication?.valuations[code])throw new AppError(404,'valuation_unavailable',features.denied()?'依据不足：没有凭证能访问 Chives 数据库':'暂无已发布估值。');
               result={ok:true};
             }else throw new AppError(400,'watchlist_action','未知用户关注操作。');
           }
@@ -1586,7 +1590,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
               throw new AppError(400,'security','请选择账本中的沪深北证券。');
             const publication=await features.read(true);
             const estimate=publication?.valuations[code];
-            if(!estimate)throw new AppError(404,'valuation_unavailable','暂无已发布估值。');
+            if(!estimate)throw new AppError(404,'valuation_unavailable',features.denied()?'依据不足：没有凭证能访问 Chives 数据库':'暂无已发布估值。');
             result=estimate;
           }
         }else if(section==='holdings' && (method==='GET'||method==='POST')){

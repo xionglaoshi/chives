@@ -71,5 +71,5 @@ export function Hotspots({onAskExpert}:{onAskExpert:AskExpert}){
   }
   return <article className="market-board hotspots"><header className="mb-title"><div><small>工作台</small><h1>{workbenchTools.trends}</h1></div><div className="hs-actions"><small></small><button disabled={pending||!data} onClick={update}>{pending?'正在刷新…':'刷新榜单'}</button></div></header>
     <div role="status">{error|| (data?.status.state==='error'?'本次更新未完成，保留最近发布版本。':data?.status.state==='partial'?'部分榜单沿用上次结果。':pending?'正在同步已发布榜单。':'')}</div>
-    {data?.snapshot?<div className="mb-grid">{Object.entries(data.snapshot.boards).map(([id,b])=><Ranking key={id} id={id} b={b} onAsk={()=>void ask(id,b)}/>)}</div>:<p>{data?'等待首版榜单发布':'正在读取已发布榜单…'}</p>}</article>;
+    {data?.snapshot?<div className="mb-grid">{Object.entries(data.snapshot.boards).map(([id,b])=><Ranking key={id} id={id} b={b} onAsk={()=>void ask(id,b)}/>)}</div>:<p>{data?.status.state==='denied'?'没有凭证能访问 Chives 数据库':data?'等待首版榜单发布':'正在读取已发布榜单…'}</p>}</article>;
 }

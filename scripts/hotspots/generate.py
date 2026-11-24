@@ -1,8 +1,6 @@
 """Publish one version atomically. Both launchd and the UI enter through this lock."""
 import argparse
 import fcntl
-import gzip
-import hashlib
 import json
 import os
 import tempfile
@@ -40,8 +38,14 @@ def generate(folder,due):
     with (folder/'update.lock').open('a') as lock:
         try:fcntl.flock(lock,fcntl.LOCK_EX|fcntl.LOCK_NB)
         except BlockingIOError:return
-        stat=folder/'status.json'; latest=folder/'latest.json'
-        old=load(latest,None);previous=load(stat,{})
+        stat=folder/'status.json'
+        rankings=folder.parent/'rankings'
+        saved={k:load(rankings/(k+'.json'),None) for k in ORDER}
+        prior={k:v for k,v in saved.items() if v}
+        old=dict(boards={k:v['board'] for k,v in prior.items()},
+                 publishedAt=max(v['publishedAt'] for v in prior.values()),
+                 retained=[k for k,v in prior.items() if v.get('retained')]) if prior else None
+        previous=load(stat,{})
         start=now(); today=start.replace(hour=8,minute=30,second=0,microsecond=0)
         target=today if start>=today else today-timedelta(days=1)
         if due and previous.get('startedAt','')>=target.isoformat() and previous.get('finishedAt'):
@@ -91,11 +95,10 @@ def generate(folder,due):
                 write(staged,compact(candidate))
                 quality=check_candidate(staged,COLUMNS)
                 if changed:
-                    if old:
-                        raw=compact(old);archive=folder/'archive';archive.mkdir(exist_ok=True)
-                        archivefile=archive/(old['publishedAt'][:19].replace(':','')+'-'+hashlib.sha256(raw).hexdigest()[:10]+'.json.gz')
-                        if not archivefile.exists():write(archivefile,gzip.compress(raw,mtime=0))
-                    os.replace(staged,latest)
+                    rankings.mkdir(exist_ok=True)
+                    for key,board in ordered.items():
+                        write(rankings/(key+'.json'),compact(dict(
+                            id=key,publishedAt=candidate['publishedAt'],retained=key in missing,board=board)))
             finally:
                 staged.unlink(missing_ok=True)
             status('partial' if missing else 'ready',finishedAt=now().isoformat(),missing=missing,quality=quality)

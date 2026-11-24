@@ -5,7 +5,6 @@ import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'nod
 import { homedir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { parseArgs } from 'node:util';
-import { latestHoldingValuation } from '../apps/server/src/dashboard/holding-valuations.js';
 
 const boardFields = ['title','note','url','asOf','columns'];
 const rowFields = ['code','name','metric','why','url','rankGain','priceDate','r5','t5','r30','t30',
@@ -49,40 +48,56 @@ for (const root of [resolvedPath(installation), resolvedPath(standardRoot)]) {
   }
 }
 
-const valuations = Object.fromEntries([...new Set(code)].map(id => {
-  const estimate = latestHoldingValuation(sourcePath,id,day);
-  if (!estimate) throw new Error('Missing approved valuation: ' + id);
-  return [id,estimate];
-}));
-let hotspots = null;
-if (board.length) {
-  const file = realpathSync(join(sourcePath,'hotspots','latest.json'));
+const files: {path: string; sha256: string}[] = [];
+let publishedAt = '';
+
+function readSource(path: string) {
+  const file = realpathSync(join(sourcePath, path));
   const position = relative(sourcePath, file);
   if (isAbsolute(position) || position === '..' || position.startsWith('..' + sep)) {
-    throw new Error('Board snapshot must be inside the production workspace');
+    throw new Error('Publication input must be inside the production workspace');
   }
-  const snapshot = JSON.parse(readFileSync(file,'utf8'));
-  hotspots = {
-    ...selectFields(snapshot,['schema','publishedAt']),
-    retained: board.filter(id => snapshot.retained?.includes(id)),
-    boards: Object.fromEntries([...new Set(board)].map(id => {
-      if (!knownBoards.has(id) || !Array.isArray(snapshot.boards?.[id]?.rows)) {
-        throw new Error('Missing approved board: ' + id);
-      }
-      const entry = snapshot.boards[id];
-      return [id,{...selectFields(entry,boardFields),
-        rows: entry.rows.map((row: Record<string, unknown>) => selectFields(row,rowFields))}];
-    })),
-  };
+  return JSON.parse(readFileSync(file, 'utf8'));
 }
-mkdirSync(outputPath, { recursive: true });
-const bytes = Buffer.from(JSON.stringify({hotspots,valuations}) + '\n');
-const sha256 = createHash('sha256').update(bytes).digest('hex');
-function publish(name: string, value: string | Buffer) {
-  const temporary = join(outputPath,randomUUID()+'.tmp');
-  writeFileSync(temporary,value,{flag:'wx'});
-  renameSync(temporary,join(outputPath,name));
+
+function publish(path: string, value: unknown) {
+  const bytes = Buffer.from(JSON.stringify(value) + '\n');
+  const target = join(outputPath, path);
+  mkdirSync(dirname(target), { recursive: true });
+  const temporary = target + '.' + randomUUID() + '.tmp';
+  writeFileSync(temporary, bytes, { flag: 'wx' });
+  renameSync(temporary, target);
+  return createHash('sha256').update(bytes).digest('hex');
 }
-publish(sha256+'.json',bytes);
-publish('manifest.json',JSON.stringify({schema:1,sha256})+'\n');
-console.log(sha256);
+
+const objects: { path: string; content: unknown }[] = [];
+for (const id of new Set(board)) {
+  if (!knownBoards.has(id)) throw new Error('Unknown ranking: ' + id);
+  const path = 'rankings/' + id + '.json';
+  const item = readSource(path);
+  if (item.id !== id || !Array.isArray(item.board?.rows) || typeof item.publishedAt !== 'string') {
+    throw new Error('Invalid ranking: ' + id);
+  }
+  if (!publishedAt || item.publishedAt > publishedAt) publishedAt = item.publishedAt;
+  objects.push({ path, content: {
+    id, publishedAt: item.publishedAt, retained: item.retained === true,
+    board: { ...selectFields(item.board, boardFields),
+      rows: item.board.rows.map((row: Record<string, unknown>) => selectFields(row, rowFields)) },
+  } });
+}
+for (const codeId of new Set(code)) {
+  if (!/^\d{6}\.(SH|SZ|BJ)$/.test(codeId)) throw new Error('Invalid stock code: ' + codeId);
+  const path = 'stocks/' + codeId + '.json';
+  const item = readSource(path);
+  if (item.code !== codeId) throw new Error('Invalid stock profile: ' + codeId);
+  const valuation = item.valuation ? selectFields(item.valuation, ['low','high','valuationKind','score']) : null;
+  for (const field of ['analysis','strategy']) {
+    if (item[field] != null && typeof item[field] !== 'string') throw new Error('Expected text: ' + field);
+  }
+  objects.push({ path, content: { code:codeId, ...selectFields(item,['name','asOf','analysis','strategy']), valuation } });
+}
+for (const object of objects) {
+  files.push({ path: object.path, sha256: publish(object.path, object.content) });
+}
+publish('catalog.json', { schema: 2, publishedAt: publishedAt || day+'T00:00:00+08:00', files });
+console.log(files.length + ' published feature files prepared');
