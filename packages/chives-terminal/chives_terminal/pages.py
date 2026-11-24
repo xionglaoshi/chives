@@ -165,12 +165,18 @@ def holdings(book, quotes=None, valuations=None):
         low, high = (estimate.get("low"), estimate.get("high")) if estimate else (None, None)
         value, tone = ("依据不足" if estimate else "待测算"), "ink"
         if isinstance(low, (int, float)) and isinstance(high, (int, float)) and 0 < low <= high:
-            value = f"¥{number(low)}–{number(high)}"
+            value = f"{number(low)}–{number(high)}"
             if isinstance(price, (int, float)) and price > 0:
                 tone = "up" if price < low else "down" if price > high else "ink"
+        price_text, price_tone = number(price), "ink"
+        if isinstance(price, (int, float)) and price > 0:
+            pnl = round((price - row["cost_price"]) * row["qty"], 2)
+            price_tone = "up" if pnl > 0 else "down" if pnl < 0 else "ink"
+            outcome = ("浮盈 " if pnl > 0 else "浮亏 ") + number(abs(pnl)) if pnl else "持平"
+            price_text += " · " + outcome
         detail.append([cell(one(row["name"]), "strong"), cell(one(code), "dim"), cell(number(row["qty"])),
-                       cell(number(row["cost_price"], digits=4)), cell(number(price)), cell(value, tone)])
-    paper.table(["证券", "代码", "持股数", "成本价", "现价", "合理估值"], detail)
+                       cell(number(row["cost_price"], digits=4)), cell(price_text, price_tone), cell(value, tone)])
+    paper.table(["证券", "代码", "持股数", "成本价", "现价", "合理股价"], detail)
     for r in rows:
         note = r.get("note")
         if note and "模拟持仓" not in note:

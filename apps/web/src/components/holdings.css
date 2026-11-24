@@ -82,3 +82,8 @@
 @media (max-width: 720px) {
   .holdings .holding-row-actions button { width: 34px; height: 34px; }
 }
+
+.holding-current-price { display: grid; justify-items: center; gap: 3px; }
+.holding-price-pnl { font-size: .78rem; }
+.holding-price-profit { color: var(--color-up); }
+.holding-price-loss { color: var(--color-down); }

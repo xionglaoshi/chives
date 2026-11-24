@@ -10,6 +10,7 @@ import {HoldingSecurityFields} from './HoldingSecurityFields';
 
 type Position={code:string;name:string;qty:number;cost_price:number;available_qty?:number|null};
 type Ledger={positions:Position[];cash:number|null};
+const pnlNumber=new Intl.NumberFormat('zh-CN',{minimumFractionDigits:2,maximumFractionDigits:2});
 const money=new Intl.NumberFormat('zh-CN',{style:'currency',currency:'CNY'});
 const quantityLabel = '持股数';
 const priceLabel = '成本价';
@@ -41,7 +42,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
   let active=true;
   void desk<Record<string,EstimateRange|null>>('holdings-valuations')
    .then(result=>{if(active){setValuations(result);setValuationError('');}})
-   .catch(()=>{if(active)setValuationError('暂时无法读取合理估值。');});
+   .catch(()=>{if(active)setValuationError('暂时无法读取合理股价。');});
   return ()=>{active=false;};
  },[book]);
  async function measure(code:string){
@@ -103,19 +104,28 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
    <div className="holdings-table">
      <table role="table">
        <thead role="rowgroup">
-         <tr role="row">{['证券', quantityLabel, priceLabel, '现价', '合理估值', '今日涨跌', '今日贡献', '操作'].map(label =>
+         <tr role="row">{['证券', quantityLabel, priceLabel, '现价', '合理股价', '今日涨跌', '今日贡献', '操作'].map(label =>
            <th key={label} role="columnheader" scope="col">{label}</th>
          )}</tr>
        </thead>
        <tbody role="rowgroup">{book.positions.map(position => {
          const quote=quotes.get(position.code);
          const estimate=valuations[position.code];
+         const price=quote?.price??null;
+         const rawPnl=price!==null && price>0 ? (price-position.cost_price)*position.qty : NaN;
+         const pnl=Number.isFinite(rawPnl) ? Math.sign(rawPnl)*Math.round(Math.abs(rawPnl)*100)/100 : null;
+         const priceTone=hidden || pnl===null || pnl===0 ? '' : pnl>0 ? ' holding-price-profit' : ' holding-price-loss';
          const metrics = [
            [quantityLabel, hidden ? '••••' : position.qty.toLocaleString('zh-CN')],
            [priceLabel, hidden ? '••••' : position.cost_price],
-           ['现价', formatPrice(quote?.price??null)],
-           ['合理估值', <div className="holding-estimate">
-             {valuating===position.code?'测算中…':<ValuationRange estimate={estimate} price={quote?.price}/>}
+           ['现价', <div className={'holding-current-price'+priceTone}>
+             <span>{formatPrice(price)}</span>
+             {pnl!==null && <span className="holding-price-pnl">
+               {hidden?'浮动盈亏 ••••':pnl===0?'持平':(pnl>0?'浮盈 ':'浮亏 ')+pnlNumber.format(Math.abs(pnl))}
+             </span>}
+           </div>],
+           ['合理股价', <div className="holding-estimate">
+             {valuating===position.code?'测算中…':<ValuationRange estimate={estimate} price={price} showCurrency={false}/>}
              {!estimate?.low && valuating!==position.code && /^\d{6}\.(SH|SZ|BJ)$/.test(position.code) &&
                <button type="button" disabled={!!valuating||busy||!!editor} onClick={()=>void measure(position.code)}>测算</button>}
            </div>],

@@ -11,9 +11,9 @@ export function valuationComparison(estimate: EstimateRange|undefined|null, pric
   return {low, high, below:priced && price < low, above:priced && price > high, priced};
 }
 
-export function ValuationRange({estimate,price}: {estimate:EstimateRange|undefined|null;price:number|undefined|null}) {
+export function ValuationRange({estimate,price,showCurrency=true}: {estimate:EstimateRange|undefined|null;price:number|undefined|null;showCurrency?:boolean}) {
   const range=valuationComparison(estimate,price);
   if(!range)return estimate?'依据不足':'待测算';
   const tone=range.below?'below':range.above?'above':range.priced?'inside':'unpriced';
-  return <span className={'valuation-range--'+tone}>¥{format.format(range.low)}–{format.format(range.high)}</span>;
+  return <span className={'valuation-range--'+tone}>{showCurrency && '¥'}{format.format(range.low)}–{format.format(range.high)}</span>;
 }
