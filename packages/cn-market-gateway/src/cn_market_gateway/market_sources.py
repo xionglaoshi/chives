@@ -728,6 +728,55 @@ class MarketSources:
         )
         return _frame_records(frame)
 
+    def ths_industry_leaders(self, name: str, *, limit: int) -> list[dict[str, Any]]:
+        from akshare.stock.board import stock_board_industry_ths as ths
+        from bs4 import BeautifulSoup
+
+        def load() -> list[dict[str, Any]]:
+            mapping = ths.stock_board_industry_name_ths()
+            codes = mapping.loc[mapping["name"] == name, "code"]
+            if len(codes) != 1 or not re.fullmatch(r"[0-9]{6}", str(codes.iloc[0])):
+                raise UpstreamError("unknown_ths_industry", circuit=False)
+            code = str(codes.iloc[0])
+            signer = ths.py_mini_racer.MiniRacer()
+            signer.eval(ths._get_file_content_ths("ths.js"))
+            headers = {
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/89.0.4389.90 Safari/537.36",
+                "Cookie": f"v={signer.call('v')}",
+            }
+            response = ths.http.get(
+                f"https://{THS_SUMMARY_HOST}/thshy/detail/code/{code}/", headers=headers, timeout=7,
+            )
+            response.raise_for_status()
+            soup = BeautifulSoup(response.text, "lxml")
+            sort = soup.select_one('table th.cur a[field="199112"][order="desc"]')
+            if sort is None:
+                raise UpstreamError("unexpected_ths_industry_sort", circuit=False)
+            table = sort.find_parent("table")
+            rows = []
+            for tr in table.select("tbody tr"):
+                cells = [td.get_text(strip=True) for td in tr.find_all("td", recursive=False)]
+                if len(cells) < 11:
+                    continue
+                change = _number(cells[4])
+                if change is None:
+                    continue
+                try:
+                    symbol = normalize_code(cells[1]).canonical
+                except InvalidCode:
+                    continue
+                raw_amount = cells[10].removesuffix("元")
+                suffix = raw_amount[-1:]
+                multiplier = {"亿": 100_000_000, "万": 10_000, "千": 1_000}.get(suffix)
+                amount = _number(raw_amount[:-1] if multiplier else raw_amount)
+                rows.append({"code": symbol, "name": cells[2], "change_pct": change,
+                             "amount": None if amount is None else amount * (multiplier or 1)})
+                if len(rows) == limit:
+                    break
+            return rows
+
+        return self.governor.run_external(THS_SUMMARY_HOST, load)
+
     def sina_boards(self, kind: str) -> list[dict[str, Any]]:
         params = {"param": "class"} if kind == "concept" else None
         text = self.governor.request(

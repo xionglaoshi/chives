@@ -1335,6 +1335,14 @@ export function createApp(options: CreateAppOptions): ChivesApp {
         return;
       }
 
+      if (path === '/api/dashboard/sector-leaders') {
+        if (method !== 'GET') { methodNotAllowed(response,'GET'); return; }
+        const result = await dashboard.sectorLeaders(url.searchParams.get('name'));
+        response.setHeader('cache-control','no-store');
+        sendJson(response,result.status,result.body);
+        return;
+      }
+
       const boardPart = path.slice('/api/dashboard/'.length);
       if (path.startsWith('/api/dashboard/') && (boardPart === 'gainers' || boardPart === 'active' || boardPart === 'sectors' || boardPart === 'world' || boardPart === 'limit-up' || boardPart === 'limit-down' || boardPart === 'sectors-hk' || boardPart === 'sectors-us')) {
         if (method !== 'GET') { methodNotAllowed(response,'GET'); return; }

@@ -95,16 +95,21 @@ export async function worldIndustries(market: 'hk' | 'us') {
   const exchanges = market === 'hk' ? ['HKEX'] : ['NASDAQ', 'NYSE', 'AMEX'];
   const stocks = await scanStocks(market === 'hk' ? 'hongkong' : 'america',
     ['description', 'industry', 'change', 'Value.Traded', 'currency'], exchanges);
-  const groups = new Map<string, { count: number; sum: number; amount: number; leader: {name: string; change_pct: number} }>();
+  type Stock = {code: string; name: string; change_pct: number; amount: number};
+  const groups = new Map<string, {count: number; sum: number; amount: number; leaders: Stock[]}>();
   for (const {s: symbol, d: [name, industry, change, amount, quoteCurrency]} of stocks) {
     if (!exchanges.includes(symbol?.split(':')[0] ?? '') || quoteCurrency !== currency || typeof name !== 'string' || typeof industry !== 'string' ||
         !industry || !finite(change) || !finite(amount) || amount <= 0) continue;
-    const stock = {name, change_pct: change};
-    const group = groups.get(industry) ?? {count: 0, sum: 0, amount: 0, leader: stock};
+    const code = symbol!.split(':')[1];
+    if (!code) continue;
+    const stock = {code, name, change_pct: change, amount};
+    const group = groups.get(industry) ?? {count: 0, sum: 0, amount: 0, leaders: []};
     group.count++;
     group.sum += change;
     group.amount += amount;
-    if (change > group.leader.change_pct) group.leader = stock;
+    group.leaders.push(stock);
+    group.leaders.sort((a, b) => b.change_pct - a.change_pct || b.amount - a.amount || a.code.localeCompare(b.code));
+    if (group.leaders.length > 5) group.leaders.pop();
     groups.set(industry, group);
   }
   if (!groups.size) throw new Error('Industry quotes unavailable');
@@ -113,7 +118,8 @@ export async function worldIndustries(market: 'hk' | 'us') {
       name: industryNames[industry] ?? industry,
       change_pct: group.sum / group.count,
       amount: group.amount,
-      leader: group.leader,
+      leader: group.leaders[0],
+      leaders: group.leaders,
     }));
   return {rows, asOf: new Date().toISOString(), stale: false};
 }

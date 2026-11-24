@@ -69,6 +69,18 @@ export class DashboardService {
     }
   }
 
+  async sectorLeaders(name: string | null): Promise<DashboardResult> {
+    if (!name || name.length > 32) return {status:400, body:{error:{code:'invalid_industry', message:'行业名称无效'}}};
+    try {
+      const result = await callGateway<{rows: unknown[]}>(this.gateway, 'market_sectors', {
+        kind: 'industry', code: 'ths:' + name, limit: 5,
+      });
+      return {status:200, body:{rows:result.data.rows, asOf:result.as_of, stale:result.stale === true}};
+    } catch {
+      return failure('industry_unavailable', '暂时取不到该行业的领涨股');
+    }
+  }
+
   private async limitUp() {
     type PoolRow = { code: string; name: string; change_pct: number | null };
     type Quote = { code: string; volume_shares: number | null };

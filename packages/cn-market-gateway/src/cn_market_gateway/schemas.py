@@ -148,7 +148,7 @@ TOOLS: list[dict[str, Any]] = [
             "读取行业/概念板块：kind 取 industry/concept，sort 取 change/amount，limit 默认 20；"
             "排行含板块内上涨/下跌家数、涨停家数、相对沪深300涨跌幅（百分点）、30分钟排名变化"
             "与成交额占比（百分数）；不同分类口径取不到的字段逐项写入 missing，口径差异写在 basis。"
-            "给 code（取自排行结果里的 code）时返回单个板块详情与成分。"
+            "给 code 时返回单个板块详情；ths:行业名称 返回同花顺行业涨幅前五及成交额。"
         ),
         "inputSchema": {
             "type": "object",

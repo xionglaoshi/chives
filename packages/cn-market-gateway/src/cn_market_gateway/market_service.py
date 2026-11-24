@@ -382,6 +382,17 @@ class MarketTools:
 
     def _sectors_compute(self, kind: str, sort: str, limit: int, code: str | None) -> dict[str, Any]:
         if code:
+            if kind == "industry" and code.startswith("ths:"):
+                name = code.removeprefix("ths:")
+                if not 1 <= len(name) <= 32:
+                    raise MarketError("行业名称无效")
+                try:
+                    leaders = self.sources.ths_industry_leaders(name, limit=min(limit, 5))
+                    self._event("market_sectors", "q.10jqka.com.cn", ok=True)
+                except Exception as exc:
+                    self._event("market_sectors", "q.10jqka.com.cn", ok=False, error=type(exc).__name__)
+                    raise MarketError("该行业的领涨股暂时取不到") from None
+                return envelope("ok", data={"name": name, "rows": leaders}, as_of=now_iso(self.service.now()))
             if code.startswith(("new_", "gn_")):
                 return self._sector_detail_sina(kind, code, limit)
             raise MarketError("code 需要是 market_sectors 排行里返回的板块代码（例如 new_jxhy、gn_hwhs）")

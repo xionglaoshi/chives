@@ -12,12 +12,15 @@ import './market-board.css';
 import {MarketNews} from './MarketNews';
 
 type Row={name:string;code?:string;change_pct:number|null;amount_yuan:number|null;leader?:{name:string;change_pct:number|null}|null};
-type IndustryRow = {name:string;change_pct:number|null;amount_yuan?:number|null;amount?:number|null;leader?:Row['leader']};
+type IndustryLeader = {name:string;code:string;change_pct:number;amount:number|null};
+type IndustryRow = {name:string;change_pct:number|null;amount_yuan?:number|null;amount?:number|null;leader?:Row['leader'];leaders?:IndustryLeader[]};
 type RankedRow = Row & {volume_shares: number | null};
 type Snapshot<T = Row>={rows:T[];asOf:string;stale:boolean};
-function useFeed<T>(part:string) {
-  const [state,set]=useState<{part:string;data?:T;error?:boolean}>({part});
+type Feed<T> = {part:string|null;data?:T;error?:boolean};
+function useFeed<T>(part:string|null): Feed<T> {
+  const [state,set]=useState<Feed<T>>({part});
   useEffect(()=>{
+    if (part === null) return;
     const controller=new AbortController();
     let pending=false;
     async function read(){
@@ -55,6 +58,10 @@ function IndustryHeatmap({market, endpoint, currency, ask}: {
   const [selected, selectSector] = useState('');
   const tiles = sectors.data?.rows ?? [];
   const tile = tiles.find(row => row.name === selected) ?? tiles[0];
+  const mainland = market === 'A股';
+  const leaderFeed = useFeed<Snapshot<IndustryLeader>>(mainland && tile ? 'sector-leaders?name=' + encodeURIComponent(tile.name) : null);
+  const leaders = mainland ? leaderFeed.data?.rows ?? [] : tile?.leaders ?? [];
+  const turnover = new Intl.NumberFormat('zh-CN', {notation:'compact', maximumFractionDigits:2});
   const title = market + '行业热图';
   const prompt = market === 'A股' ? askAiPrompts['行情看板']['行业热图'] : askAiPrompts['行情看板']['港美股行业热图'];
   return <Panel title={title} cls="mb-sectors" ask={ask(title, !!tile,
@@ -62,7 +69,9 @@ function IndustryHeatmap({market, endpoint, currency, ask}: {
       '成交额前12行业 · ' + sectors.data!.asOf + (sectors.error || sectors.data!.stale ? ' · 缓存快照' : '') + ' · 当前选择：' + tile!.name,
       ...(market === 'A股' ? [] : ['涨跌幅为有成交的主要上市普通股的等权平均。成交额按' + currency + '计。']),
       table(['行业','涨跌幅','成交额（'+currency+'）','领涨股','领涨股涨跌幅'],
-        tiles.map(row => [row.name, formatPercent(row.change_pct), row.amount ?? row.amount_yuan, row.leader?.name, formatPercent(row.leader?.change_pct??null)]))
+        tiles.map(row => [row.name, formatPercent(row.change_pct), row.amount ?? row.amount_yuan, row.leader?.name, formatPercent(row.leader?.change_pct??null)])),
+      ...(leaders.length ? ['当前行业领涨股', table(['股票','代码','涨幅','成交额（'+currency+'）'],
+        leaders.map(row => [row.name,row.code,formatPercent(row.change_pct),row.amount]))] : [])
     ].join('\n\n'))}>
       {tile ? <>
         <div className="mb-tiles">{tiles.map(row=>{
@@ -76,8 +85,15 @@ function IndustryHeatmap({market, endpoint, currency, ask}: {
             <span>{row.name}</span><Change n={row.change_pct}/>
           </button>;
         })}</div>
-        <div className="mb-sector-detail"><small>{tile.name} · 领涨股</small>
-          <div><strong>{tile.leader?.name??'—'}</strong><Change n={tile.leader?.change_pct??null}/></div>
+        <div className="mb-sector-leaders">
+          <h3>{tile.name}领涨股（{currency}）</h3>
+          {leaders.length ? <ul>{leaders.map(stock => <li key={stock.code}>
+            <strong>{stock.name}</strong><small>{stock.code}</small><Change n={stock.change_pct}/>
+            <span aria-label={'成交额 '+(stock.amount == null ? '暂无' : stock.amount.toLocaleString('zh-CN'))}>
+              {stock.amount == null ? '—' : turnover.format(stock.amount)}
+            </span>
+          </li>)}</ul> : <small role="status">{leaderFeed.error ? '领涨股暂不可用' : mainland && !leaderFeed.data ? '正在读取领涨股…' : '暂无领涨股数据'}</small>}
+          {leaderFeed.data?.stale && <small>显示最近缓存</small>}
         </div>
         {(sectors.error||sectors.data?.stale) && <small>显示最近缓存</small>}
       </> : <div className="mb-sector-empty" role="status">{sectors.error?'行业行情暂不可用，将自动重试':sectors.data?'暂无行业数据':'正在读取行业行情…'}</div>}
@@ -123,7 +139,7 @@ export function MarketBoard({onAskExpert, messages}:{onAskExpert:AskExpert; mess
       </div>}
     </Panel>
     <IndustryHeatmap market="A股" endpoint="sectors" currency="人民币" ask={ask}/>
-    <IndustryHeatmap market="港股" endpoint="sectors-hk" currency="港元" ask={ask}/>
+    <IndustryHeatmap market="港股" endpoint="sectors-hk" currency="港币" ask={ask}/>
     <IndustryHeatmap market="美股" endpoint="sectors-us" currency="美元" ask={ask}/>
     {([{title:'个股涨停榜', feed:movers, order:'成交量', empty:'暂无涨停股票'},
       {title:'个股跌停榜', feed:losers, order:losers.data?.order === 'volume' ? '成交量' : '跌幅', empty:'暂无下跌股票'}
