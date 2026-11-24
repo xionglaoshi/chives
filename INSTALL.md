@@ -138,6 +138,10 @@ bash scripts/install-chives.sh
 
 「问AI」的预设集中在 [config/ask-ai-prompts.json](config/ask-ai-prompts.json)。每张榜单、卡片与报告段落有自己的条目，金额显示等分支也可分别修改。保留需要的双花括号变量，例如 `{{榜单名}}`，修改后刷新本机开发网页或重建静态网页使之生效。
 
+### 开发与发布验收
+
+Chives 开发测试统一使用 GitHub Actions 的临时虚拟机，验收环境固定为 `linux-x64`、`windows-x64`、`macos-arm64`。本次数据分层与发布改造也采用这三个环境。跨平台源码安装、空白初始化与恢复出厂由 [源码安装工作流](.github/workflows/source-install.yml) 验证。填写验收记录时附上工作流链接和提交号。
+
 ### 特色数据发布试点
 
 开发侧可用服务端安装的 `tsx` 运行 `scripts/build-feature-publication.ts`，传入 `--source`、`--output`、`--day`，以及明确批准发布的 `--board`、`--code`（可多次指定）。例如用已有公共榜单的产出目录，先选择一张榜和一只证券演练。导出器只写内容摘要命名的快照及 `manifest.json`。将该目录单独映射到静态只读下载路径，先发布快照，再发布清单。

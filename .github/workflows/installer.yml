@@ -41,7 +41,7 @@ jobs:
           CHIVES_INSTALL_CODE: ${{ secrets.CHIVES_INSTALL_CODE }}
         run: '"$BUILD_PYTHON" deploy/installer/build_release.py dist-installer'
       - name: Install from the staged release and check all services
-        if: inputs.smoke_test
+        if: inputs.smoke_test && contains(fromJSON('["linux-x64","windows-x64","macos-arm64"]'), matrix.target)
         shell: bash
         env:
           CHIVES_INSTALL_CODE: ${{ secrets.CHIVES_INSTALL_CODE }}
