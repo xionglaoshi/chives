@@ -84,6 +84,7 @@ def runtime(root, release):
     for key in ("CHIVES_INSTALL_CODE", "CHIVES_SETUP_PROXY"):
         env.pop(key, None)
     env.setdefault("HOME", str(Path.home()))
+    env.setdefault("CHIVES_FEATURE_DATA_URL", "https://150.158.11.154/chives-features/")
     user, mechanical = storage_directories(root)
     env.update({
         "PYTHONUTF8": "1", "CALENDAR_PYTHON": str(python),

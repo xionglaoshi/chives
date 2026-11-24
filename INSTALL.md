@@ -142,4 +142,4 @@ bash scripts/install-chives.sh
 
 开发侧可用服务端安装的 `tsx` 运行 `scripts/build-feature-publication.ts`，传入 `--source`、`--output`、`--day`，以及明确批准发布的 `--board`、`--code`（可多次指定）。例如用已有公共榜单的产出目录，先选择一张榜和一只证券演练。导出器只写内容摘要命名的快照及 `manifest.json`。将该目录单独映射到静态只读下载路径，先发布快照，再发布清单。
 
-设置 `CHIVES_FEATURE_DATA_URL` 后，机会榜单、用户关注和用户持仓从同一发布源读取，缓存位于用户数据目录的同级 `public-data/chives-cache/`。刷新失败时使用上次通过验证的版本。未配置发布源时，开发环境沿用现有本机计算入口。
+发行版安装器默认设置 `CHIVES_FEATURE_DATA_URL=https://150.158.11.154/chives-features/`。设置发布地址后，机会榜单、用户关注和用户持仓从同一发布源读取，缓存位于用户数据目录的同级 `public-data/chives-cache/`。刷新失败时使用上次通过验证的版本。未配置发布源时，开发环境沿用现有本机计算入口。
