@@ -170,9 +170,9 @@ def holdings(book, quotes=None, valuations=None):
                 tone = "up" if price < low else "down" if price > high else "ink"
         price_text, price_tone = number(price), "ink"
         if isinstance(price, (int, float)) and price > 0:
-            pnl = round((price - row["cost_price"]) * row["qty"], 2)
+            pnl = round(price - row["cost_price"], 2)
             price_tone = "up" if pnl > 0 else "down" if pnl < 0 else "ink"
-            outcome = ("浮盈 " if pnl > 0 else "浮亏 ") + number(abs(pnl)) if pnl else "持平"
+            outcome = ("每股浮盈 " if pnl > 0 else "每股浮亏 ") + f"{abs(pnl):,.2f}元" if pnl else "每股持平 0.00元"
             price_text += " · " + outcome
         detail.append([cell(one(row["name"]), "strong"), cell(one(code), "dim"), cell(number(row["qty"])),
                        cell(number(row["cost_price"], digits=4)), cell(price_text, price_tone), cell(value, tone)])

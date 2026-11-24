@@ -112,7 +112,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
          const quote=quotes.get(position.code);
          const estimate=valuations[position.code];
          const price=quote?.price??null;
-         const rawPnl=price!==null && price>0 ? (price-position.cost_price)*position.qty : NaN;
+         const rawPnl=price!==null && price>0 ? price-position.cost_price : NaN;
          const pnl=Number.isFinite(rawPnl) ? Math.sign(rawPnl)*Math.round(Math.abs(rawPnl)*100)/100 : null;
          const priceTone=hidden || pnl===null || pnl===0 ? '' : pnl>0 ? ' holding-price-profit' : ' holding-price-loss';
          const metrics = [
@@ -121,7 +121,7 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
            ['现价', <div className={'holding-current-price'+priceTone}>
              <span>{formatPrice(price)}</span>
              {pnl!==null && <span className="holding-price-pnl">
-               {hidden?'浮动盈亏 ••••':pnl===0?'持平':(pnl>0?'浮盈 ':'浮亏 ')+pnlNumber.format(Math.abs(pnl))}
+               {hidden?'每股盈亏 ••••':pnl===0?'每股持平 0.00元':(pnl>0?'每股浮盈 ':'每股浮亏 ')+pnlNumber.format(Math.abs(pnl))+'元'}
              </span>}
            </div>],
            ['合理股价', <div className="holding-estimate">
