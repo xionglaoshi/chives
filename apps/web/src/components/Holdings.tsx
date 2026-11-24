@@ -91,11 +91,13 @@ export function Holdings({onAskExpert}:{onAskExpert:AskExpert}){
  <div><span>持仓市值</span><strong>{amount(summary?.totalMarketValue)}</strong></div>
  <div><span>累计浮盈亏</span><strong className={'holding-'+priceDirection(summary?.totalPnl??null)}>{amount(summary?.totalPnl)}</strong></div><div><span>持仓成本合计</span><strong>{amount(book.positions.reduce((a,p)=>a+p.qty*p.cost_price,0))}</strong></div><div><span>证券数量</span><strong>{book.positions.length} 只</strong></div>
  <div className="holdings-actions"><button disabled={!portfolio.data} onClick={askPortfolio}>问AI</button><button aria-pressed={hidden} onClick={()=>{setHidden(!hidden);try{localStorage.setItem(privacyKey,hidden?'0':'1');}catch{/* Session display still works. */}}}>{hidden?'显示金额':'隐藏金额'}</button></div></div>
- {book.positions.length>0&&<small role="status">
+ {book.positions.length>0&&<>
+ <small role="status">
  {portfolio.status==='loading'?'正在读取持仓行情…':!portfolio.data?'持仓行情暂不可用':
-  ['今日盈亏按现持股数及较昨收价差估算',
-   summary?.unpricedCount?'部分持仓缺少报价':null,portfolio.status==='error'?'最近缓存':null].filter(Boolean).join(' · ')}
- </small>}
+  [summary?.unpricedCount?'部分持仓缺少报价':null,portfolio.status==='error'?'最近缓存':null].filter(Boolean).join(' · ')}
+ </small>
+ <small>合理股价由Chives基于该股基本面、近一年交易数据及所处行业动态等复合估算而出。AI会犯错，数据仅供投研参考，请勿作为投资依据。</small>
+ </>}
  {editor&&<form key={current?.code??'new'} onSubmit={save}><h2>{current?'编辑持仓':'添加持仓'}</h2><fieldset disabled={busy}>
  <HoldingSecurityFields current={current} hidden={hidden}/>
  </fieldset><div className="holdings-actions"><button type="button" disabled={busy} onClick={()=>{setEditor(null);setError('');}}>取消</button><button className="holdings-primary" disabled={busy}>保存持仓</button></div></form>}
