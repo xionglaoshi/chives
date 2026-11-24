@@ -40,7 +40,7 @@ function resolvedPath(path: string): string {
 }
 const sourcePath = realpathSync(source);
 const outputPath = resolvedPath(resolve(output));
-for (const root of [installation, standardRoot]) {
+for (const root of [resolvedPath(installation), resolvedPath(standardRoot)]) {
   for (const path of [sourcePath, outputPath]) {
     const position = relative(root, path);
     if (!isAbsolute(position) && position !== '..' && !position.startsWith('..' + sep)) {
@@ -50,13 +50,18 @@ for (const root of [installation, standardRoot]) {
 }
 
 const valuations = Object.fromEntries([...new Set(code)].map(id => {
-  const estimate = latestHoldingValuation(source,id,day);
+  const estimate = latestHoldingValuation(sourcePath,id,day);
   if (!estimate) throw new Error('Missing approved valuation: ' + id);
   return [id,estimate];
 }));
 let hotspots = null;
 if (board.length) {
-  const snapshot = JSON.parse(readFileSync(join(source,'hotspots','latest.json'),'utf8'));
+  const file = realpathSync(join(sourcePath,'hotspots','latest.json'));
+  const position = relative(sourcePath, file);
+  if (isAbsolute(position) || position === '..' || position.startsWith('..' + sep)) {
+    throw new Error('Board snapshot must be inside the production workspace');
+  }
+  const snapshot = JSON.parse(readFileSync(file,'utf8'));
   hotspots = {
     ...selectFields(snapshot,['schema','publishedAt']),
     retained: board.filter(id => snapshot.retained?.includes(id)),

@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto';
-import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join } from 'node:path';
+import { readdirSync, readFileSync, realpathSync, statSync } from 'node:fs';
+import { isAbsolute, join, relative, sep } from 'node:path';
 
 const codePattern = /^\d{6}\.(SH|SZ|BJ)$/;
 const dayPattern = /^\d{4}-\d{2}-\d{2}$/;
@@ -8,7 +8,13 @@ const idPattern = /^[a-f0-9]{64}$/;
 
 export function readValuationReceipt(data: string, code: string, day: string, id: string) {
   if (!codePattern.test(code) || !dayPattern.test(day) || !idPattern.test(id)) throw new Error('Invalid receipt path');
-  const blob = readFileSync(join(data, 'equity-research', 'valuations', code, day, id + '.json'));
+  const root = realpathSync(data);
+  const file = realpathSync(join(root, 'equity-research', 'valuations', code, day, id + '.json'));
+  const position = relative(root, file);
+  if (isAbsolute(position) || position === '..' || position.startsWith('..' + sep)) {
+    throw new Error('Valuation receipt is outside the production workspace');
+  }
+  const blob = readFileSync(file);
   if (createHash('sha256').update(blob).digest('hex') !== id) throw new Error('Invalid receipt hash');
   const record = JSON.parse(blob.toString('utf8'));
   if (record.code !== code || record.requested_as_of !== day || record.currency !== 'CNY' ||
