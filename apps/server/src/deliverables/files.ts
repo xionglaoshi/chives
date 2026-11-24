@@ -15,7 +15,8 @@ export const TEXT_CONTENT_LIMIT_BYTES = 2 * 1024 * 1024;
 export const BINARY_CONTENT_LIMIT_BYTES = 20 * 1024 * 1024;
 
 export function botWorkspace(dataDir: string, botId: string): string {
-  return join(dataDir, 'bots', botId, 'workspace');
+  const workspaceRoot = process.env.CHIVES_WORKSPACE_DIR?.trim();
+  return workspaceRoot ? resolve(workspaceRoot, 'bots', botId) : join(dataDir, 'bots', botId, 'workspace');
 }
 
 function isInside(root: string, target: string): boolean {

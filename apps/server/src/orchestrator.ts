@@ -1,3 +1,4 @@
+import { botWorkspace } from './deliverables/files.js';
 import { isSampleStyleReport, sampleReportSegment, styleReportAttachment } from './settings/style-report-turn.js';
 /** One conversation turn: select a task, drive the harness, persist and publish events. */
 
@@ -923,7 +924,7 @@ export class Orchestrator {
     report?: {attachment: MessageAttachmentDto; messageId: string},
   ): Promise<void> {
     const workspace =
-      this.dataDir === undefined ? null : join(this.dataDir, 'bots', bot.id, 'workspace');
+      this.dataDir === undefined ? null : botWorkspace(this.dataDir, bot.id);
     if (workspace !== null) {
       try {
         prepareWorkspace(workspace, { now: this.now() });

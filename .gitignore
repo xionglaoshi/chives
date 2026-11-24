@@ -10,6 +10,9 @@ __pycache__/
 /credentials/
 /user/
 /data/
+/user-data/
+/public-data/
+/workspace/
 /cache/
 /runtime/
 /logs/

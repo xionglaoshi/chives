@@ -1,5 +1,6 @@
 /** dsh-backed harness: one long-lived ACP process per bot, sessions resume when possible. */
 
+import { botWorkspace } from '../deliverables/files.js';
 import { mkdirSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -248,7 +249,7 @@ export class DshDriver implements HarnessDriver, TemporaryPromptDriver, HiddenPr
   }
 
   private workspace(bot: BotManifest): string {
-    const cwd = join(this.options.dataDir, 'bots', bot.id, 'workspace');
+    const cwd = botWorkspace(this.options.dataDir, bot.id);
     mkdirSync(cwd, { recursive: true });
     return cwd;
   }

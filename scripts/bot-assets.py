@@ -20,6 +20,8 @@ bot = sys.argv[2]
 if not re.fullmatch('[a-z0-9_-]+', bot):
     raise ValueError('invalid bot')
 root = data / 'bots' / bot
+workspace_path = os.environ.get('CHIVES_BOT_WORKSPACE', '').strip()
+workspace = Path(workspace_path).resolve() if workspace_path else root / 'workspace'
 config = root / 'profile/resources.json'
 profile = json.loads(config.read_text()) if config.exists() else {}
 profile.update(json.loads(os.environ.get('CHIVES_EFFECTIVE_RESOURCES', '{}')))
@@ -57,7 +59,7 @@ def read_skill(name: str = '') -> str:
 
 def save_report(title: str, markdown: str) -> str:
     """Save a Markdown deliverable in this bot's workspace."""
-    directory = root / 'workspace/reports'
+    directory = workspace / 'reports'
     if directory.resolve() != directory or len(markdown) > 500000:
         raise ValueError('交付目录或长度无效')
     directory.mkdir(parents=True, exist_ok=True)
@@ -184,7 +186,7 @@ async def browser_research(url: str, steps: list[BrowserStep] | None = None, scr
     """
     if screenshot and policy.get("workspaceWrite") is False:
         raise ValueError("工作区写入已关闭，无法保存截图")
-    directory = root / "workspace/reports" if screenshot else None
+    directory = workspace / "reports" if screenshot else None
     return await asyncio.to_thread(research_page, url, steps or [], directory)
 
 

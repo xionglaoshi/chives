@@ -565,6 +565,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
                 return [{name:'bot_assets',command:joinPath(userHome(),'.agents/venvs/chives/bin/python'),
                 args:[joinPath(config.repoRoot,'scripts/bot-assets.py'),config.dataDir,bot.id],
                 env:[
+                  {name:'CHIVES_BOT_WORKSPACE',value:botWorkspace(config.dataDir,bot.id)},
                   {name:'CHIVES_EFFECTIVE_RESOURCES',value:JSON.stringify({tools,databases,skills,skillMode})},
                   {name:'CHIVES_ASSET_POLICY',value:JSON.stringify(preferencesForTools())},
                   {name:'CHIVES_API',value:api},{name:'CHIVES_SESSION_TOKEN',value:token},

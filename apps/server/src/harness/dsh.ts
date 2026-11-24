@@ -1,5 +1,6 @@
 /** Translates a bot manifest into dsh ACP process configuration (patch YAML, MCP list, spawn spec). */
 
+import { botWorkspace } from '../deliverables/files.js';
 import { selectedVersion } from './kernel-manager.js';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join, resolve } from 'node:path';
@@ -104,7 +105,7 @@ export function buildDshPatch(bot: BotManifest, options: DshPatchOptions): strin
 
   if (options.dataDir !== undefined) {
     entries.push({insert:[{id:'chives-staff-boundary',name:join(repoRoot,'overlays/staff-boundary.plugin.mjs'),
-      config:{workspace:resolve(options.dataDir,'bots',bot.id,'workspace')}}]});
+      config:{workspace:botWorkspace(options.dataDir, bot.id)}}]});
     entries.push({
       id: 'skill-filesystem',
       config: {
@@ -302,7 +303,7 @@ export function dshSpawnSpec(bot: BotManifest, options: DshSpawnOptions): DshSpa
     repoRoot,
     ...(routes === undefined ? {} : { routes }),
   });
-  const cwd = join(options.dataDir, 'bots', bot.id, 'workspace');
+  const cwd = botWorkspace(options.dataDir, bot.id);
   mkdirSync(cwd, { recursive: true });
   const modelPatch = runtime?.patchPath ?? options.modelOverlay;
 
