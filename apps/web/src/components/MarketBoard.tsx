@@ -115,33 +115,12 @@ export function MarketBoard({onAskExpert, messages}:{onAskExpert:AskExpert; mess
       <ExpertSidebarMarket state={market} embedded/>
     </Panel>
     <Panel title={content.market.world} ask={ask('外围市场',!!world.data?.rows.some(row => row.price !== null),askAiPrompts['行情看板']['外围市场'],()=>[
-      '指数来源：Yahoo Finance，港美部分指数报价可回退腾讯行情。市场成交量和涨跌家数按 TradingView 有成交且有对应数据的主要上市普通股汇总。日本涨跌停来自株探，统计东证三个主要板块中现价仍在限制价的股票。'+(world.error?'当前显示缓存快照。':''),
-      table(['市场','指数','点位','涨跌幅','报价时间'],world.data!.rows.map(row=>[row.market,row.name,row.price,formatPercent(row.changePct),row.time])),
-      table(['市场','成交量（股）','上涨','下跌','涨停','跌停'],(world.data!.stats??[]).map(row=>[row.market,row.volumeShares,row.up,row.down,row.limitUp,row.limitDown]))
+      '指数来源：Yahoo Finance，港美部分指数报价可回退腾讯行情。'+(world.error?'当前显示缓存快照。':''),
+      table(['市场','指数','点位','涨跌幅','报价时间'],world.data!.rows.map(row=>[row.market,row.name,row.price,formatPercent(row.changePct),row.time]))
     ].join('\n\n'))}>
-      {!world.data ? <small>{status(world.error)}</small> : <div className="mb-world-markets">
-        {[...new Set(world.data.rows.map(row => row.market))].map(region => {
-          const stats = world.data?.stats?.find(row => row.market === region);
-          const indexes = world.data!.rows.filter(row => row.market === region);
-          const shares = stats?.volumeShares;
-          const volume = shares == null ? '—' : new Intl.NumberFormat('zh-CN', {notation:'compact', maximumFractionDigits:2}).format(shares)+'股';
-          return <section className="mb-market-overview" key={region}>
-            <h3>{region}</h3>
-            <MarketIndexRows indexes={indexes.map(row => ({...row, code:row.code??row.name, spark:row.spark??[]}))} />
-            <dl className="expert-sidebar__stats">
-              <div className="expert-sidebar__stat"><dt>成交量</dt><dd>{volume}</dd></div>
-              <div className="expert-sidebar__stat"><dt>上涨 / 下跌</dt><dd>
-                <span className="mb-up">{stats?.up ?? '—'}</span> / <span className="mb-down">{stats?.down ?? '—'}</span>
-              </dd></div>
-              <div className="expert-sidebar__stat"><dt>涨停 / 跌停</dt><dd>
-                <span className="mb-up">{stats?.limitUp ?? '—'}</span> / <span className="mb-down">{stats?.limitDown ?? '—'}</span>
-              </dd></div>
-            </dl>
-          </section>;
-        })}
-        <small>成交量和涨跌家数按有成交的主要上市普通股汇总。日本涨跌停统计东证现价触及限制价的股票。— 表示缺少可比数据。</small>
+      {!world.data ? <small>{status(world.error)}</small> : <div className="mb-market-overview">
+        <MarketIndexRows indexes={world.data.rows.map(row => ({...row, code: row.code ?? row.name, spark: row.spark ?? []}))}/>
       </div>}
-      {world.error&&world.data&&<small>显示最近快照</small>}
     </Panel>
     <IndustryHeatmap market="A股" endpoint="sectors" currency="人民币" ask={ask}/>
     <IndustryHeatmap market="港股" endpoint="sectors-hk" currency="港元" ask={ask}/>

@@ -1,23 +1,20 @@
-import type { WorldDashboardDto, WorldIndexDto, WorldMarketStatsDto } from '../api/protocol.js';
+import type { WorldDashboardDto, WorldIndexDto } from '../api/protocol.js';
 import { CoalescedTtlCache } from './cache.js';
 
 const markets = [
-  { name: '香港', scanner: 'hongkong', indexes: [
+  { name: '香港', indexes: [
     ['^HSI', '恒生指数', 'r_hkHSI'], ['HSTECH.HK', '恒生科技', 'r_hkHSTECH'], ['^HSCE', '恒生国企', 'r_hkHSCEI'],
   ] },
-  { name: '美国', scanner: 'america', indexes: [
+  { name: '美国', indexes: [
     ['^GSPC', '标普500', 'usINX'], ['^IXIC', '纳斯达克综合', 'usIXIC'], ['^DJI', '道琼斯工业', 'usDJI'],
   ] },
-  { name: '英国', scanner: 'uk', indexes: [['^FTSE', '富时100', '']] },
-  { name: '德国', scanner: 'germany', indexes: [['^GDAXI', '德国DAX', '']] },
-  { name: '法国', scanner: 'france', indexes: [['^FCHI', '法国CAC 40', '']] },
-  { name: '日本', scanner: 'japan', indexes: [['^N225', '日经225', '']] },
+  { name: '英国', indexes: [['^FTSE', '富时100', '']] },
+  { name: '德国', indexes: [['^GDAXI', '德国DAX', '']] },
+  { name: '法国', indexes: [['^FCHI', '法国CAC 40', '']] },
+  { name: '日本', indexes: [['^N225', '日经225', '']] },
 ] as const;
 
 const indexCache = new Map<string, CoalescedTtlCache<WorldIndexDto>>();
-const statsCache = new Map<string, CoalescedTtlCache<WorldMarketStatsDto>>();
-const japanLimitCache = new CoalescedTtlCache<{limitUp: number | null; limitDown: number | null}>(Date.now);
-const emptyStats = { volumeShares: null, up: null, down: null, limitUp: null, limitDown: null };
 
 const finite = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 
@@ -50,7 +47,7 @@ async function fallbackQuotes(codes: string[]) {
   return new Map(Array.from(raw.matchAll(/v_(\w+)="([^"]*)"/g), m => [m[1]!, m[2]!.split('~')]));
 }
 
-async function scanStocks(scanner: string, columns: string[]) {
+async function scanStocks(scanner: string, columns: string[], exchanges: readonly string[]) {
   const response = await fetch('https://scanner.tradingview.com/' + scanner + '/scan', {
     method: 'POST',
     headers: {'content-type': 'application/json'},
@@ -60,6 +57,7 @@ async function scanStocks(scanner: string, columns: string[]) {
         {left: 'typespecs', operation: 'has', right: ['common']},
         {left: 'is_primary', operation: 'equal', right: true},
         {left: 'volume', operation: 'greater', right: 0},
+        {left: 'exchange', operation: 'in_range', right: exchanges},
       ],
       columns,
       range: [0, 10_000],
@@ -67,28 +65,10 @@ async function scanStocks(scanner: string, columns: string[]) {
     signal: AbortSignal.timeout(7500),
   });
   if (!response.ok) throw new Error('Market breadth unavailable');
-  const result = await response.json() as {totalCount?: number; data?: Array<{d: unknown[]}>};
+  const result = await response.json() as {totalCount?: number; data?: Array<{s?: string; d: unknown[]}>};
   if (!result.data?.length || result.data.length !== result.totalCount) throw new Error('Incomplete market breadth');
 
   return result.data;
-}
-
-async function loadStats(scanner: string, market: string): Promise<WorldMarketStatsDto> {
-  const stocks = await scanStocks(scanner, ['change', 'volume']);
-  let volumeShares = 0, volumeCount = 0, changeCount = 0, up = 0, down = 0;
-  for (const {d: [change, volume]} of stocks) {
-    if (finite(volume) && volume > 0) { volumeShares += volume; volumeCount++; }
-    if (!finite(change)) continue;
-    changeCount++;
-    if (change > 0) up++;
-    if (change < 0) down++;
-  }
-  return {
-    ...emptyStats, market,
-    volumeShares: volumeCount === stocks.length ? volumeShares : null,
-    up: changeCount > 0 ? up : null,
-    down: changeCount > 0 ? down : null,
-  };
 }
 
 const industryNames: Record<string, string> = {
@@ -112,11 +92,12 @@ const industryNames: Record<string, string> = {
 
 export async function worldIndustries(market: 'hk' | 'us') {
   const currency = market === 'hk' ? 'HKD' : 'USD';
+  const exchanges = market === 'hk' ? ['HKEX'] : ['NASDAQ', 'NYSE', 'AMEX'];
   const stocks = await scanStocks(market === 'hk' ? 'hongkong' : 'america',
-    ['description', 'industry', 'change', 'Value.Traded', 'currency']);
+    ['description', 'industry', 'change', 'Value.Traded', 'currency'], exchanges);
   const groups = new Map<string, { count: number; sum: number; amount: number; leader: {name: string; change_pct: number} }>();
-  for (const {d: [name, industry, change, amount, quoteCurrency]} of stocks) {
-    if (quoteCurrency !== currency || typeof name !== 'string' || typeof industry !== 'string' ||
+  for (const {s: symbol, d: [name, industry, change, amount, quoteCurrency]} of stocks) {
+    if (!exchanges.includes(symbol?.split(':')[0] ?? '') || quoteCurrency !== currency || typeof name !== 'string' || typeof industry !== 'string' ||
         !industry || !finite(change) || !finite(amount) || amount <= 0) continue;
     const stock = {name, change_pct: change};
     const group = groups.get(industry) ?? {count: 0, sum: 0, amount: 0, leader: stock};
@@ -137,41 +118,13 @@ export async function worldIndustries(market: 'hk' | 'us') {
   return {rows, asOf: new Date().toISOString(), stale: false};
 }
 
-async function japanLimitCount(direction: 'up' | 'down'): Promise<number> {
-  const response = await fetch('https://s.kabutan.jp/warnings/price_limit_' + direction + '/', {
-    signal: AbortSignal.timeout(7000),
-  });
-  if (!response.ok) throw new Error('Japan price-limit table unavailable');
-  const html = await response.text();
-  const stockLinks = [...html.matchAll(/<a\b[^>]*class="[^"]*\bstockPopup\b[^"]*"[^>]*href="\/stocks\/([0-9A-Z]+)\/"[^>]*>([\s\S]*?)<\/a>/g)];
-  if (!stockLinks.length) throw new Error('Japan price-limit table missing');
-  const color = direction === 'up' ? 'red' : 'blue';
-  const atLimit = new RegExp('<span class="text-' + color + ' [^"]*">Ｓ</span>');
-  return new Set(stockLinks.filter(([, , row]) =>
-    />東[PSG]<\/span>/.test(row ?? '') && atLimit.test(row ?? '')
-  ).map(([, code]) => code)).size;
-}
-
 export async function worldIndices(): Promise<WorldDashboardDto> {
   const symbols = markets.flatMap(({name: market, indexes}) => indexes.map(([code, name, fallback]) => ({code, name, fallback, market})));
-  const [quotes, stats, japanLimits] = await Promise.all([
-    Promise.allSettled(symbols.map(({code, name, market}) => {
-      const cache = indexCache.get(code) ?? new CoalescedTtlCache<WorldIndexDto>(Date.now);
-      indexCache.set(code, cache);
-      return cache.get(120_000, () => loadIndex(code, name, market));
-    })),
-    Promise.all(markets.map(async ({name, scanner}) => {
-      const cache = statsCache.get(scanner) ?? new CoalescedTtlCache<WorldMarketStatsDto>(Date.now);
-      statsCache.set(scanner, cache);
-      try { return await cache.get(180_000, () => loadStats(scanner, name)); }
-      catch { return {market: name, ...emptyStats}; }
-    })),
-    japanLimitCache.get(180_000, async () => {
-      const [up, down] = await Promise.allSettled([japanLimitCount('up'), japanLimitCount('down')]);
-      if (up.status === 'rejected' && down.status === 'rejected') throw up.reason;
-      return {limitUp: up.status === 'fulfilled' ? up.value : null, limitDown: down.status === 'fulfilled' ? down.value : null};
-    }).catch(() => ({limitUp: null, limitDown: null})),
-  ]);
+  const quotes = await Promise.allSettled(symbols.map(({code, name, market}) => {
+    const cache = indexCache.get(code) ?? new CoalescedTtlCache<WorldIndexDto>(Date.now);
+    indexCache.set(code, cache);
+    return cache.get(120_000, () => loadIndex(code, name, market));
+  }));
 
   const missing = symbols.flatMap(({fallback}, i) => fallback && quotes[i]?.status === 'rejected' ? [fallback] : []);
   const fallback = missing.length ? await fallbackQuotes(missing).catch(() => undefined) : undefined;
@@ -184,8 +137,8 @@ export async function worldIndices(): Promise<WorldDashboardDto> {
     return {code, name, market, price: price > 0 ? price : null,
       changePct: finite(changePct) ? changePct : null, time: fields?.[30] ?? null, spark: []};
   });
-  if (!rows.some(row => row.price !== null) && stats.every(market => market.volumeShares === null)) {
+  if (!rows.some(row => row.price !== null)) {
     throw new Error('海外行情暂不可用');
   }
-  return {rows, stats: stats.map(row => row.market === '日本' ? {...row, ...japanLimits} : row)};
+  return {rows};
 }
