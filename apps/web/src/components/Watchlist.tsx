@@ -51,7 +51,7 @@ function WatchPrices({code,latest}:{code:string;latest:Estimate|undefined}) {
     </> : '暂无行情'}</div>
     <div><small className="watchlist-mobile-label">合理股价</small>
       <ValuationRange estimate={latest} price={price} showCurrency={false}/>
-      {boundary!==null && <small>现价{below?'低于估值下限':'高于估值上限'} {fmt.format(Math.abs(price/boundary-1)*100)}%</small>}
+      {hasPrice && boundary!==null && <small>现价{below?'低于估值下限':'高于估值上限'} {fmt.format(Math.abs(price/boundary-1)*100)}%</small>}
     </div>
   </>;
 }
