@@ -57,7 +57,7 @@ export function HiddenMenu({label, items, open, pin}: {label:string; items:Entry
       });
     }}><b aria-hidden="true">···</b><span>{label}</span></button>
     <div {...{ popover: "auto" }} id={id} ref={panel} className="sidebar-pin-menu" aria-label={label}>
-      {items.length === 0 && <p>{label === '更多工具' ? '所有工具均已固定' : '所有 Bot 均已固定'}</p>}
+      {items.length === 0 && <p>所有 Bot 均已固定</p>}
       {items.map(item => <div className="sidebar-pin-row" key={item.id}>
         <button className="sidebar-menu-link" onClick={() => { panel.current?.hidePopover(); open(item.id); }}>{item.name}</button>
         <Pin name={item.name} pinned={false} onClick={() => { pin(item.id); panel.current?.hidePopover(); trigger.current?.focus(); }}/>

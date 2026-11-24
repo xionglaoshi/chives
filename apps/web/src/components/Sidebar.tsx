@@ -88,6 +88,7 @@ export function Sidebar({
   const tools = useSidebarPins('tools', initialTools);
   const [order, setOrder] = useState(readToolOrder);
   const visibleTools = order.filter(id => tools.pins.includes(id));
+  const hiddenTools = order.filter(id => !tools.pins.includes(id)).map(id => ({id, name: workbenchTools[id]}));
   function moveTool(source: string, target: QuickTool) {
     const from = order.findIndex(id => id === source);
     if (source === 'trends' || target === 'trends' || from < 0 || source === target || !tools.pins.includes(source)) return;
@@ -143,8 +144,8 @@ export function Sidebar({
             <path d={{watchlist:'M12 3l2.8 5.7 6.2.9-4.5 4.4 1.1 6.2-5.6-3-5.6 3 1.1-6.2L3 9.6l6.2-.9z',holdings:'M3 7h18v13H3z M8 7V4h8v3 M3 12c5 3 13 3 18 0 M11 13h2',market:'M3 4v16h18 M6 15l4-5 4 3 6-8',trends:'M13 3c1 5 6 6 6 12a7 7 0 0 1-14 0c0-3 2-6 4-8 0 4 1 5 2 5 2-2 3-5 2-9z'}[key]}/>
           </svg><span>{workbenchTools[key]}</span>
         </button><Pin name={workbenchTools[key]} pinned onClick={() => tools.toggle(key)}/></div>)}
-        <HiddenMenu label="更多工具" items={order.filter(key => !tools.pins.includes(key)).map(id => ({id,name:workbenchTools[id]}))}
-          open={id => onTool(id as WorkbenchTool)} pin={tools.toggle}/>
+        {hiddenTools.length > 0 && <HiddenMenu label="更多工具" items={hiddenTools}
+          open={id => onTool(id as WorkbenchTool)} pin={tools.toggle}/>}
       </section>
       {loading && bots.length === 0 ? (
         <SidebarSkeleton />
