@@ -1,5 +1,6 @@
 import { useFollowupSuggestion } from './hooks/useFollowupSuggestion';
 import { Hotspots } from './components/Hotspots';
+import { DashboardBotMessagesDemo } from './components/DashboardBotMessagesDemo';
 import { DashboardBotMessages } from './components/DashboardBotMessages';
 import { MarketBoard } from './components/MarketBoard';
 import {StyleAssessment} from './components/StyleAssessment';
@@ -917,7 +918,10 @@ export function App(): ReactElement {
             <StyleAssessment onAskExpert={askOperator} interviewReturn="workspace"/>
           </div></div></section>}
           {route.name==='workspace' && route.tool==='trends' && <Hotspots onAskExpert={askOperator} />}
-          {route.name==='workspace' && route.tool==='market' && <MarketBoard onAskExpert={askOperator} messages={<DashboardBotMessages
+          {route.name==='workspace' && route.tool==='market' && <MarketBoard onAskExpert={askOperator} messages={
+            import.meta.env.DEV && window.location.hostname === '127.0.0.1' &&
+              new URLSearchParams(window.location.search).get('demo') === 'bot-messages'
+              ? <DashboardBotMessagesDemo/> : <DashboardBotMessages
             notifications={notifications} bots={bots} expanded={expandedNotifications} loading={loadingUnread}
             error={unreadLoadError} onLoadMore={() => void loadUnreadNotifications()}
             onOpen={notification => void openNotification(notification)}

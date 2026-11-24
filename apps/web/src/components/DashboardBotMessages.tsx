@@ -2,7 +2,7 @@ import type { BotSummary, NotificationDto } from '@chives/server/protocol';
 
 export function DashboardBotMessages({notifications, bots, expanded, loading, error, onLoadMore, onOpen}: {
   notifications: NotificationDto[];
-  bots: BotSummary[];
+  bots: Pick<BotSummary, 'id' | 'name'>[];
   expanded: boolean;
   loading: boolean;
   error: boolean;
@@ -14,7 +14,7 @@ export function DashboardBotMessages({notifications, bots, expanded, loading, er
   return <section className="mb-panel mb-bot-messages">
     <header>
       <h2>Bot消息</h2>
-      {!expanded && <button className="mb-ask" disabled={loading} onClick={onLoadMore}>{loading ? '正在载入…' : '载入更多'}</button>}
+      <button type="button" className="mb-ask" disabled={loading} onClick={onLoadMore}>{loading ? '正在载入…' : '载入更多'}</button>
     </header>
     {error && <p role="status">未能载入全部未读消息，请重试。</p>}
     {entries.length === 0 ? <p>暂无 Bot 消息</p> : <ul>
