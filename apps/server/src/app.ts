@@ -17,6 +17,7 @@ import {Channels} from './settings/channels.js';
 import { randomUUID } from 'node:crypto';
 import { ArchiveMemory } from './settings/archive-memory.js';
 import { UserArchive } from './settings/user-archive.js';
+import { resetWorkspaceIfUserDataIsMissing } from './settings/reset-workspace.js';
 import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs';
 import {
   createServer as createHttpServer,
@@ -432,6 +433,7 @@ export function createApp(options: CreateAppOptions): ChivesApp {
     ? featureDataService(featureEndpoint,joinPath(publicData,'chives-cache'))
     : undefined;
 
+  resetWorkspaceIfUserDataIsMissing(config.dataDir, process.env.CHIVES_WORKSPACE_DIR);
   const store = Store.open(config.dataDir);
   const registry =
     options.registry ?? loadBots(config.botsDir, buildCatalog(config.repoRoot));
