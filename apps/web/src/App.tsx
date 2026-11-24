@@ -44,10 +44,9 @@ import {
 import { BotProfile } from './components/BotProfile';
 import { BotsOverview } from './components/BotsOverview';
 import { ResponsiveNavigation } from './components/ResponsiveNavigation';
-import { ChatHeader } from './components/ChatHeader';
+import { Dock } from './components/Dock';
 import { Composer } from './components/Composer';
 import { DeliverablePreview } from './components/DeliverablePreview';
-import { SidePanel, useSidePanelState } from './components/SidePanel';
 import { SearchOverlay } from './components/SearchOverlay';
 import { ServiceBanner } from './components/ServiceBanner';
 import { Settings } from './components/Settings';
@@ -202,7 +201,6 @@ export function App(): ReactElement {
   }
   const [proactiveSettings, setProactiveSettings] = useState<ProactiveSettingsDto | null>(null);
   const [locateTaskId, setLocateTaskId] = useState<string | null>(null);
-  const [taskClosedToken, setTaskClosedToken] = useState(0);
   const [watchRevision, setWatchRevision] = useState(0);
 
   const hiredBots = useMemo(() => bots.filter(bot => bot.hired !== false), [bots]);
@@ -212,7 +210,6 @@ export function App(): ReactElement {
     () => bots.find((bot) => bot.id === selectedId) ?? null,
     [bots, selectedId]
   );
-  const sidePanel = useSidePanelState(route.name === 'conversation' ? selectedId : null);
   const timeline = useTimeline(selectedBot?.id ?? null);
   const { applyEvent } = timeline;
   const selectedBotIdRef = useRef<string | null>(null);
@@ -442,19 +439,6 @@ export function App(): ReactElement {
     [openConversationTarget, setBots]
   );
 
-  const openInbox = async (): Promise<boolean> => {
-    const candidates = bots.filter(bot => (bot.unreadNotifications ?? 0) > 0);
-    candidates.sort((left, right) => Number(right.id === 'operator') - Number(left.id === 'operator'));
-    for (const bot of candidates) {
-      const [notification] = await fetchNotifications({botId: bot.id, unreadOnly: true, limit: 1});
-      if (notification) {
-        await openNotification(notification);
-        return true;
-      }
-    }
-    return false;
-  };
-
   const maybeShowBrowserNotification = useCallback(
     (notification: NotificationDto): void => {
       if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
@@ -477,9 +461,6 @@ export function App(): ReactElement {
   const handleEvent = useCallback(
     (event: ServerEvent) => {
       applyEvent(event);
-      if (event.type === 'task.closed') {
-        setTaskClosedToken((value) => value + 1);
-      }
       if (event.type === 'bot.status') {
         setBotStatus(event.botId, { status: event.status, runningTaskId: event.runningTaskId });
         // Idle is when a report-back child count becomes visible in the bot list.
@@ -882,13 +863,16 @@ export function App(): ReactElement {
   return (
     <div className="app">
       <ServiceBanner serverError={serverError} eventStatus={eventStatus} onRetry={reload} />
-      <ChatHeader
-        onSearch={() => setSearch('global')}
-        onOpenInbox={openInbox}
-        inboxCount={bots.reduce((total, bot) => total + (bot.unreadNotifications ?? 0), 0)}
+      <Dock
+        searchOpen={search !== null} onSearch={() => setSearch('global')}
         bots={bots} notifications={notifications.slice(0, 50)} unreadCount={unreadTotal}
         onMarkAllRead={markAllRead} onOpenNotification={notification => void openNotification(notification)}
-        openPanels={sidePanel.open} onTogglePanel={sidePanel.toggle}
+        watches={{
+          revision: watchRevision,
+          onEditWatch: (label, botId) => openConversationTarget({botId, draft: `修改盯盘「${label}」：`}),
+          onLocateTask: (taskId, botId) => openConversationTarget({botId, taskId}),
+          onCancelWatch: handleCancelWatch
+        }}
       />
       <div className={`app__body${preview === null ? '' : ' app__body--preview'}`}>
         {route.name !== 'settings' && (
@@ -1116,17 +1100,6 @@ export function App(): ReactElement {
             )
           ) : null}
         </main>
-        {sidePanel.open.length > 0 && <SidePanel
-          panels={sidePanel.open} narrow={sidePanel.narrow}
-          taskClosedToken={taskClosedToken} watchRevision={watchRevision}
-          onPickName={name => openConversationTarget({
-            botId: showConversation && selectedBot?.hired !== false ? selectedId ?? 'operator' : 'operator',
-            draft: `看看${name}`
-          })}
-          onEditWatch={(label, botId) => openConversationTarget({botId, draft: `修改盯盘「${label}」：`})}
-          onLocateTask={(taskId, botId) => openConversationTarget({botId, taskId})}
-          onCancelWatch={handleCancelWatch}
-        />}
         {preview !== null ? (
           <DeliverablePreview
             deliverable={preview.deliverable}
