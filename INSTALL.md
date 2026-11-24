@@ -134,7 +134,7 @@ python3 scripts/user_archive.py reindex
 
 ### 恢复出厂
 
-先在设置中停止 Chives。本机开发检出可运行 `./start stop`，等服务退出后再操作。将 `user-data/` 移出安装根并保留作备份，然后重新启动。Chives 会重建空白用户状态，并将旧 `workspace/` 转移到 `runtime/user-reset-*/workspace/`，让新会话从空白工作区开始。
+先在设置中停止 Chives。本机开发检出可运行 `./start stop`，等服务退出后再操作。在安装根的 `runtime/` 下新建一个独立备份目录，将 `user-data/` 移入其中，然后重新启动。Chives 会重建空白用户状态，并将旧 `workspace/` 转移到 `runtime/user-reset-*/workspace/`，让新会话从空白工作区开始。
 
 保留整个 `public-data/`。缓存中的行情、资讯及已发布特色数据仍可使用和继续更新。迁移前的 `data/`、迁移批次和旧工作区恢复副本仍用于回滚，也可能包含历史用户内容。全新用户安装会重新显示八项初始化，开发和测试环境依照环境设置隐藏入口。
 
