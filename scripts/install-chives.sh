@@ -18,7 +18,11 @@ for package in "${packages[@]}"; do
     if [ -e "$link" ] || [ -L "$link" ]; then echo "已有依赖目录：$link" >&2; exit 1; fi
     ln -s "$env_dir" "$link"
 done
-"$env_dir/bin/python" scripts/user_archive.py --data "${CHIVES_DATA_DIR:-$PWD/data}" init
+default_user_dir="$PWD/user-data"
+if [[ -d "$PWD/data" && ! -d "$default_user_dir" ]]; then
+    default_user_dir="$PWD/data"
+fi
+"$env_dir/bin/python" scripts/user_archive.py --data "${CHIVES_DATA_DIR:-$default_user_dir}" init
 pnpm install --frozen-lockfile --store-dir "$store"
 pnpm build
 bash scripts/run-dsh.sh --version

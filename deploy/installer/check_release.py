@@ -44,7 +44,8 @@ def client(work, folder, tag, target):
     client.install(root, tag, target)
     release = root / "releases" / f"{tag}-{target}"
     # Reentry must reuse the configured version and must not alter personal data.
-    sentinel = root / "data" / "smoke-marker"
+    _, _, env = client.runtime(root, release)
+    sentinel = Path(env["CHIVES_DATA_DIR"]) / "smoke-marker"
     sentinel.parent.mkdir(exist_ok=True)
     sentinel.write_text("preserve")
     if os.environ.get("CHIVES_INSTALL_BUILD_ONLY") != "1":

@@ -290,7 +290,7 @@ def configure(root, release, node, npm, npx, proxy):
             interactive=os.geteuid() != 0)
         run([python, "-s", "-c", core.BROWSER_CHECK], release, browser_env, "检查 Chromium 运行环境")
     if (release / "scripts/user_archive.py").is_file():
-        run([python, "scripts/user_archive.py", "--data", root/"data", "init"], release, env, "初始化共享用户档案")
+        run([python, "scripts/user_archive.py", "--data", env["CHIVES_DATA_DIR"], "init"], release, env, "初始化共享用户档案")
 
 
 def install(root, archive, platform):
