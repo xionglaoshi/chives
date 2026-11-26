@@ -61,7 +61,7 @@ export class ProfileService {
   if(body.mode!=='questionnaire'&&body.mode!=='supplement')throw new AppError(400,'invalid_mode','无效的评测方式');
   const supplement=body.mode==='supplement';
   if(supplement&&!p)throw new AppError(409,'missing_answers','请先完成一次新版风格评测。');
-  const scope=z.enum(['personal','family']).parse(supplement?p?.scope:body.scope);
+  const scope=z.enum(['personal','family']).parse(supplement?p?.scope:'personal');
   const answers=interviewAnswers.parse(supplement?p?.answers:body.answers);
   if(!Object.values(answers).some(a=>!a.skipped))throw new AppError(400,'missing_answers','请至少回答一道题。');
   const added=materialsSchema.parse(body.materials??[]);

@@ -3,7 +3,7 @@ import type { NotificationDto } from '@chives/server/protocol';
 import { DashboardBotMessages } from './DashboardBotMessages';
 
 const senders = [
-  {id: 'operator', name: '总调度'},
+  {id: 'ceo', name: '总经理'},
   {id: 'market', name: '市场观察'},
   {id: 'research', name: '行业研究'},
   {id: 'analyst', name: '个股分析'},

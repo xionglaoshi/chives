@@ -44,7 +44,7 @@ description: "单只标的作战卡写法与 Cond 取值指南：市场/板块/�
 
 ### `sector_change` / `sector_rank` —— 板块涨幅/排名
 
-- `sector_code` 必须是 `BK` + 4 位数字（如 `BK0433`）。**不要手写猜代码**：从 market-watch `/sectors` 的返回里取 `code`，或从 `hub_get_review_data()` 的 `sectors[].code` 取（同一口径）。
+- `sector_code` 必须是 `BK` + 4 位数字（如 `BK0433`）。**不要手写猜代码**：从 chives-compass `/sectors` 的返回里取 `code`，或从 `hub_get_review_data()` 的 `sectors[].code` 取（同一口径）。
 - `sector_change.value` 是百分数；`sector_rank.value` 是名次（≥1，越小越靠前）。
 - 例：`{"type":"sector_change","sector_code":"BK0433","op":">=","value":1.0}`、`{"type":"sector_rank","sector_code":"BK0433","op":"<=","value":5}`。
 

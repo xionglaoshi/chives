@@ -11,7 +11,7 @@ import requests
 
 from .storage import library
 from .market import gateway
-from cn_market_gateway.announcement import (
+from chives_data.announcement import (
     MAX_PDF_BYTES,
     PdfExtractionError,
     extract_pdf_text,

@@ -9,7 +9,7 @@ const labels={philosophy:'投资理念',style:'决策风格',industries:'偏好�
 type Insight=keyof typeof labels;
 type View={
   questions:InterviewQuestion[];
-  result:{scope?:string;version:number;updated:string;grade:number|null;summary:Record<Insight,string>;overview?:string;report?:Report;model:string;answers:Answers;materials:string[]}|null;
+  result:{scope?:string;version:number;answered?:number;findings?:{id:string;label:string;status:string;value:unknown;reason:string;refs:string[]}[];preferences?:{text:string}[];recent?:{text:string}[];updated:string;grade:number|null;summary:Record<Insight,string>;overview?:string;report?:Report;model:string;answers:Answers;materials:string[]}|null;
   sample?:{report:Report;overview:string};
 };
 export async function preview(file:File){
@@ -40,27 +40,40 @@ export function StyleAssessment({interviewReturn='settings',onAskExpert}:{interv
   async function submit(answers:Answers={},scope="personal"){
     busy('模型正在评估…');err('');notify('');
     try{
-      const next=await desk<View>('assessment','POST',{version:3,mode,scope,revision:result?.updated??null,answers,
+      const next=await desk<View>('assessment','POST',{version:4,mode,scope,revision:result?.updated??null,answers,
         materials:files.map(({name,text})=>({name,text}))});
       set(next);open(null);attach([]);notify('用户画像已更新。');return true;
     }catch(e){err(e instanceof Error?e.message:'评估失败');return false;}finally{busy('');}
   }
   return <div className="style-assessment">
-    <section className="desk-assess"><div><strong>用户画像</strong>{!result && <p>完成问卷后，即可查看风险承受能力和风格偏好。</p>}</div>
+    <section className="desk-assess"><div><strong>用户画像</strong>{!result && <p>由总经理通过一次访谈了解您的资金安排、投资经历和服务偏好。</p>}</div>
       <div className="style-actions"><button className="desk-primary" disabled={!data||!!pending||mode!==null} onClick={()=>begin('questionnaire')}>{result?'重新评测':'开始评测'}</button>
       <button disabled={!data||!!pending||mode!==null} onClick={()=>begin('supplement')}>补充资料更新评估</button></div></section>
     {error&&<p role="alert">{error}</p>}{(pending||notice)&&<p role="status">{pending||notice}</p>}
     {mode==='supplement'&&<form className="desk-card" onSubmit={e=>{e.preventDefault();void submit();}}><h3>补充评估资料</h3><fieldset disabled={!!pending}>
-      {result?.version!==3?<p>请先完成新版问卷，之后可以结合成交记录或持仓报告更新画像。</p>:<>
+      {!result || result.version!==4?<p>请先完成新版问卷，之后可以结合成交记录或持仓报告更新画像。</p>:<>
         <label>选择成交记录、持仓报告或研究笔记<input type="file" multiple accept=".csv,.tsv,.xlsx,.pdf,.docx,.txt,.md,.png,.jpg,.jpeg" onChange={e=>{const list=Array.from(e.target.files??[]);e.target.value='';void select(list);}}/></label>
         <p>支持 CSV、Excel（.xlsx）、文本 PDF、Word（.docx）、文本和图片。每份最多 4 MB，扫描页可导出为图片识别。</p>
         {files.map((f,i)=><div key={f.name}><label>{f.name}{f.truncated?'（已截取前 12000 字，可替换为关键片段）':''}<textarea required maxLength={12000} value={f.text} onChange={e=>attach(files.map((v,j)=>i===j?{...v,text:e.target.value}:v))}/></label><button type="button" onClick={()=>attach(files.filter((_,j)=>i!==j))}>移除该摘录</button></div>)}
       </>}
       {result&&result.materials.length>0&&<p>本次沿用的资料：{result.materials.join('、')}。上传同名文件可替换摘录。</p>}
       <p>已配置的模型将读取问卷和您确认的资料摘录，请先删去账号等私人信息。</p>
-      <div className="style-actions">{result?.version!==3?<button type="button" onClick={()=>begin('questionnaire')}>去填问卷</button>:<button className="desk-primary" disabled={!files.length}>提交评估</button>}
+      <div className="style-actions">{!result || result.version!==4?<button type="button" onClick={()=>begin('questionnaire')}>去填问卷</button>:<button className="desk-primary" disabled={!files.length}>提交评估</button>}
       <button type="button" onClick={()=>open(null)}>取消</button></div></fieldset>
     </form>}
+    {!mode&&result?.version===4&&<article className="investor-report">
+      <header><small>总经理 · 客户访谈 · {result.answered} 题</small><h3>您的客户档案</h3></header>
+      <p>{result.overview}</p>
+      {!!result.preferences?.length&&<section><h4>长期服务约定</h4>{result.preferences.map((r,i)=><p key={i}>{r.text}</p>)}</section>}
+      {!!result.recent?.length&&<section><h4>访谈时交接的近期事项</h4>{result.recent.map((r,i)=><p key={i}>{r.text}</p>)}</section>}
+      {['待核实','已采纳','沿用原依据'].map(status=>{
+        const rows=result.findings?.filter(f=>f.status===status)??[];
+        if(!rows.length&&status==='沿用原依据')return null;
+        return <section key={status}><h4>{status} · {rows.length} 项</h4>{rows.map(row=>
+          <details key={row.id}><summary>{row.label}{row.value!==null?' · '+(Array.isArray(row.value)?row.value.join('、'):typeof row.value==='boolean'?(row.value?'是':'否'):String(row.value)):''}</summary>
+          <p>{row.reason}</p><small>访谈依据 {row.refs.join('、')}</small></details>)}</section>;
+      })}
+    </article>}
     {!mode&&result?.report&&result.overview&&<StyleReport onAskExpert={onAskExpert} updated={result.updated} report={result.report} overview={result.overview}/>}
     {!mode&&result?.version===1&&<section><h3>上次评估 · 旧版问卷</h3><p>Chives 研究参考 C{result.grade}。重新评测后可查看风格解读与人物匹配。</p>{Object.entries(labels).map(([k,label])=><p key={k}><strong>{label}</strong>　{result.summary[k as Insight]}</p>)}</section>}
     {!mode&&data?.sample&&!result&&<StyleReport onAskExpert={onAskExpert} report={data.sample.report} overview={data.sample.overview} example/>}

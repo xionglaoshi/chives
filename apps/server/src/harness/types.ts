@@ -66,7 +66,7 @@ export interface HarnessDriver {
   ensureSession(
     bot: BotManifest,
     task: TaskRecord,
-    options?: { silent?: boolean },
+    options?: { silent?: boolean; onLiveSession?: () => void },
   ): Promise<string>;
   prompt(
     bot: BotManifest,

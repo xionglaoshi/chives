@@ -61,14 +61,14 @@ export function CapabilitiesDesk({onOpenProfile}:{onOpenProfile:(id:string)=>voi
       <button key={id} aria-pressed={tab===id} onClick={()=>{setTab(id!);setMessage('');}}>{label}</button>)}</div>
       {data&&!data.approvedOnly&&<button className="desk-primary" onClick={()=>open({source:'custom'})}>＋ 手动添加</button>}</div>
     {!data&&!message&&<p>正在读取服务…</p>}
-    {data&&tab==='installed'&&<>{!data.connections.length&&<div className="mcp-empty"><strong>尚未添加第三方服务</strong><p>从市场选择服务{data.approvedOnly?'':'，或导入供应商提供的 MCP 配置'}，再授权给需要它的 Bot。</p><button onClick={()=>setTab('market')}>浏览 MCP 市场</button></div>}
+    {data&&tab==='installed'&&<>{!data.connections.length&&<div className="mcp-empty"><strong>尚未添加第三方服务</strong><p>从市场选择服务{data.approvedOnly?'':'，或导入供应商提供的 MCP 配置'}。Bot 的服务权限由开发者维护。</p><button onClick={()=>setTab('market')}>浏览 MCP 市场</button></div>}
       {data.connections.map(c=><article className="mcp-card" key={c.id}><div className="mcp-heading"><strong>{c.name}</strong>
         <label><input type="checkbox" role="switch" aria-label={'启用 '+c.name} checked={c.enabled} disabled={busy} onChange={()=>void perform('toggle',c)}/></label></div>
         <p>{c.transport} · {c.enabled?'已启用':'已停用'} · {c.bots.length?'已授权给'+c.bots.join('、'):'尚未授权给 Bot'}</p>
         <details><summary>{c.tools.length} 个工具</summary><ul>{c.tools.map(t=><li key={t}>{t}</li>)}</ul></details>
         <div className="mcp-actions"><button disabled={busy} onClick={()=>void perform('test',c)}>测试连接</button><button disabled={busy} onClick={()=>open({source:c.source,entry:c})}>{c.source==='custom'?'编辑配置':'更换密钥'}</button>
         <button disabled={busy} onClick={()=>open({source:c.source,entry:c,remove:true})}>移除</button></div></article>)}
-      {!!data.connections.length&&<section><h3>授权给 Bot</h3><p>打开 Bot 档案，在「技能、工具与 Bot 指令」中勾选 MCP 服务并保存。</p><div className="mcp-actions">{data.bots.map(b=><button key={b.id} onClick={()=>onOpenProfile(b.id)}>{b.name}</button>)}</div></section>}</>}
+      {!!data.connections.length&&<section><h3>查看 Bot 工具配置</h3><div className="mcp-actions">{data.bots.map(b=><button key={b.id} onClick={()=>onOpenProfile(b.id)}>{b.name}</button>)}</div></section>}</>}
     {data&&tab==='market'&&<>{data.templates.map(t=>{const added=data.connections.some(c=>c.source===t.id);return <article className="mcp-card" key={t.id}><div className="mcp-heading"><strong>{t.name}</strong><button disabled={added} onClick={()=>open({source:t.id})}>{added?'已添加':'添加'}</button></div><p>{t.description}</p><a href={t.docs} target="_blank" rel="noreferrer">供应商说明 ↗</a></article>;})}</>}
     {data&&tab==='builtin'&&<><p>这些接口由 Chives 维护。各 Bot 按自己的授权调用。</p><div className="mcp-official">{data.official.map(n=><code key={n}>{n}</code>)}</div></>}
     {!editor&&status}

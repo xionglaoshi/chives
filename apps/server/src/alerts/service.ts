@@ -1,3 +1,4 @@
+import { WATCH_TRADER_ID } from '../bots/types.js';
 import { watchIdFromPlan } from '../watches/plan.js';
 /** Polls the two read-only watch engines, applies cost guardrails, starts bot tasks. */
 
@@ -36,6 +37,7 @@ export interface AlertServiceOptions {
   repoRoot: string;
   /** T139: `chives-*` plan alerts wake the owning bot instead of being skipped. */
   watches?: WatchService;
+  heldSymbols?: () => Promise<ReadonlySet<string>>;
   fetchImpl?: typeof fetch;
   log?: (message: string, detail?: unknown) => void;
   /** Injected in tests so no real timer is left behind. */
@@ -146,6 +148,7 @@ export class AlertService {
   private readonly presetText: string;
   private readonly presetHasPlaceholder: boolean;
   private readonly watches: WatchService | undefined;
+  private readonly heldSymbols: AlertServiceOptions['heldSymbols'];
   private readonly nextAttempt = new Map<string, number>();
   private readonly failures = new Map<string, number>();
   private readonly timers = new Set<{ unref?: () => void }>();
@@ -174,6 +177,7 @@ export class AlertService {
     this.presetText = this.loadPreset(options.repoRoot);
     this.presetHasPlaceholder = this.presetText.includes('{alert_json}');
     this.watches = options.watches;
+    this.heldSymbols = options.heldSymbols;
   }
 
   private loadPreset(repoRoot: string): string {
@@ -364,6 +368,7 @@ export class AlertService {
 
       type Group = { botId: string; strategyId: string; day: string; alerts: AlertView[] };
       const groups = new Map<string, Group>();
+      let heldSymbols: ReadonlySet<string> | undefined;
       for (const alert of views) {
         if (alert.strategyId === '') {
           this.skip(source, alert, 'not_strategy_event', now);
@@ -377,7 +382,13 @@ export class AlertService {
           this.skip(source, alert, 'invalid_alert_ts', now);
           continue;
         }
-        const bots = this.strategyBots(alert.strategyId);
+        let bots = this.strategyBots(alert.strategyId);
+        if (bots.includes(WATCH_TRADER_ID) && this.heldSymbols) {
+          heldSymbols ??= this.registry.isHired(WATCH_TRADER_ID) ? await this.heldSymbols() : new Set();
+          if (!heldSymbols.has(alert.code.toUpperCase().split('.')[0] ?? '')) {
+            bots = bots.filter(id => id !== WATCH_TRADER_ID);
+          }
+        }
         if (bots.length === 0) {
           this.skip(source, alert, 'not_subscribed', now);
           continue;

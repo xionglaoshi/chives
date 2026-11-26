@@ -46,8 +46,8 @@ export interface AlertsConfig {
 }
 
 export const DEFAULT_ROUTES: AlertRoute[] = [
-  { source: 'cn-watch', ruleId: '*', code: '*', bot: 'operator' },
-  { source: 'market-watch', ruleId: '*', code: '*', bot: 'operator' },
+  { source: 'cn-watch', ruleId: '*', code: '*', bot: 'trader' },
+  { source: 'market-watch', ruleId: '*', code: '*', bot: 'cio' },
 ];
 
 export const DEFAULT_LIMITS: AlertsLimits = {

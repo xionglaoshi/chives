@@ -1,6 +1,7 @@
-/** Watch lifecycle: local persistence, cn-watch sync, expiry, reconciliation and triggers. */
+import { botHasWatches, WATCH_REFERRAL } from '../bots/types.js';
+/** Watch lifecycle: local persistence, chives-radar sync, expiry, reconciliation and triggers. */
 
-import { randomUUID } from 'node:crypto';
+import { createHash, randomUUID } from 'node:crypto';
 
 import { toMessageDto, toWatchDto } from '../api/dto.js';
 import type { WatchDto } from '../api/protocol.js';
@@ -11,7 +12,7 @@ import type { Orchestrator } from '../orchestrator.js';
 import { readProactiveSettings } from '../proactive-settings.js';
 import type { JsonRecord, Store, WatchEventKind, WatchRecord, WatchStatus } from '../store/index.js';
 import type { AlertView } from '../alerts/service.js';
-import { CnWatchClient, type EnginePlanState } from './engine.js';
+import { ChivesRadarClient, type EnginePlanState } from './engine.js';
 import {
   DEFAULT_EXPIRES_DAYS,
   MAX_LABEL_CHARS,
@@ -54,6 +55,7 @@ export interface WatchServiceOptions {
 
 /** A queued trigger older than this is given up and the user is notified instead. */
 const PENDING_MAX_MS = 30 * 60_000;
+const PAUSE_KEY = 'watch.pause:';
 const TRIGGER_STATES = new Set(['execute', 'abandon', 'exit']);
 
 export interface WatchTriggerInput {
@@ -124,7 +126,7 @@ export class WatchService {
   private readonly bus: EventBus;
   private readonly notifications: NotificationService;
   private readonly now: () => Date;
-  private readonly engine: CnWatchClient;
+  private readonly engine: ChivesRadarClient;
   private readonly syncIntervalMs: number;
   private readonly log: (message: string, detail?: unknown) => void;
   private timer: ReturnType<typeof setInterval> | undefined;
@@ -140,7 +142,7 @@ export class WatchService {
     this.bus = options.bus;
     this.notifications = options.notifications;
     this.now = options.now;
-    this.engine = new CnWatchClient({
+    this.engine = new ChivesRadarClient({
       baseUrl: options.cnWatchUrl,
       ...(options.fetchImpl === undefined ? {} : { fetchImpl: options.fetchImpl }),
     });
@@ -192,7 +194,7 @@ export class WatchService {
   async flushPending(botId?: string): Promise<void> {
     for (const [watchId, entry] of [...this.pending]) {
       const watch = this.store.watches.get(watchId);
-      if (watch === undefined || watch.status !== 'active') {
+      if (watch === undefined || !this.enabled(watch)) {
         this.pending.delete(watchId);
         continue;
       }
@@ -221,12 +223,12 @@ export class WatchService {
   }
 
   /**
-   * cn-watch only alerts on a state transition; if that alert was missed (server
+   * chives-radar only alerts on a state transition; if that alert was missed (server
    * restart, lost poll) a one-shot watch would sit in a trigger state forever.
    */
   private catchUpTriggers(byId: Map<string, EnginePlanState>): void {
     for (const watch of this.store.watches.list({ status: 'active' })) {
-      if (watch.repeat === true || watch.triggeredAt !== null || this.pending.has(watch.id)) continue;
+      if (!this.enabled(watch) || watch.repeat === true || watch.triggeredAt !== null || this.pending.has(watch.id)) continue;
       const planId = savedPlanId(watch);
       const state = byId.get(planId);
       if (state === undefined || !TRIGGER_STATES.has(state.state)) continue;
@@ -256,8 +258,45 @@ export class WatchService {
     }
   }
 
+  private enabled(watch: WatchRecord): boolean {
+    return this.registry.isHired(watch.botId) && watch.status === 'active' && this.store.settings.get<boolean | string>(PAUSE_KEY + watch.id) !== true;
+  }
+
   private view(watch: WatchRecord): WatchDto {
-    return toWatchDto(watch);
+    return { ...toWatchDto(watch), enabled: this.enabled(watch) };
+  }
+
+  managedRules(watch: WatchRecord) {
+    const plan = watch.plan;
+    return {
+      when: Array.isArray(plan.stock) ? plan.stock as JsonRecord[] : [],
+      giveUp: Array.isArray(plan.giveup) ? plan.giveup as JsonRecord[] : [],
+      market: Array.isArray(plan.market) ? plan.market as JsonRecord[] : [],
+      match: plan.policy === 'all' ? 'all' as const : 'any' as const,
+    };
+  }
+
+  async setEnabled(id: string, enabled: boolean, owner?: { botId: string; taskId: string }): Promise<void> {
+    if (owner) { this.requireBot(owner.botId); this.requireOwned(id, owner.botId); }
+    const watch = this.store.watches.get(id);
+    if (!watch || watch.status !== 'active' || Date.parse(watch.expiresAt) <= this.now().getTime()) {
+      throw new WatchValidationError('not_active', '这条盯盘已结束。');
+    }
+    if (this.enabled(watch) === enabled) return;
+    const now = this.now().toISOString();
+    this.store.settings.set(PAUSE_KEY + id, enabled ? now : true);
+    this.pending.delete(id);
+    this.store.watches.update(id, { engineState: null, syncError: null, updatedAt: now });
+    const sync = enabled ? await this.engine.upsert(watch.plan) : await this.engine.remove(savedPlanId(watch));
+    const current = this.store.watches.get(id);
+    if (!current || current.status !== 'active') return;
+    if (this.enabled(current) !== enabled) {
+      await this.tick();
+      return;
+    }
+    const updated = this.store.watches.update(id, { syncError: sync.ok ? null : 'engine_unreachable' }) ?? current;
+    this.addEvent(updated, 'updated', owner ? 'bot' : 'user', owner?.taskId ?? null, enabled ? '恢复盯盘' : '暂停盯盘');
+    this.publish('watch.updated', updated);
   }
 
   getDetail(id: string): WatchDetail | undefined {
@@ -387,6 +426,9 @@ export class WatchService {
   private requireBot(botId: string): void {
     const bot = this.registry.get(botId);
     if (bot === undefined) throw new WatchValidationError('unknown_bot', `没有这个 bot：${botId}`);
+    if (!botHasWatches(bot) || !this.registry.isHired(botId)) {
+      throw new WatchValidationError('watch_owner_required', WATCH_REFERRAL);
+    }
     if (bot.background) {
       throw new WatchValidationError('background_bot', '后台 bot 不能设置盯盘');
     }
@@ -408,9 +450,13 @@ export class WatchService {
     return new Date(from.getTime() + input.expiresInDays * 86_400_000).toISOString();
   }
 
-  async create(botId: string, taskId: string | null, raw: WatchCreateInput): Promise<WatchDto> {
+  async create(botId: string, taskId: string | null, raw: WatchCreateInput, handoffId?: string): Promise<WatchDto> {
     this.requireBot(botId);
     const input = validateWatchInput(raw);
+    const identity=[handoffId,input.code,input.when,input.giveUp,input.market,input.match,input.repeat,input.expiresInDays];
+    const id=handoffId?createHash('sha256').update(JSON.stringify(identity)).digest('hex').slice(0,24):randomUUID().replace(/-/g,'').slice(0,24);
+    const existing=this.store.watches.get(id);
+    if(existing)return this.view(existing);
     if (this.store.watches.countActiveByBot(botId) >= MAX_WATCHES_PER_BOT) {
       throw new WatchValidationError(
         'too_many_watches',
@@ -424,7 +470,6 @@ export class WatchService {
       );
     }
     const now = this.now();
-    const id = randomUUID().replace(/-/g, '').slice(0, 24);
     const expiresAt = this.expiryFrom(input, now);
     const plan = this.planFor(input, id, expiresAt);
     const planRecord = planToRecord(plan);
@@ -436,6 +481,8 @@ export class WatchService {
         sync.field ?? undefined,
       );
     }
+    const duplicate=this.store.watches.get(id);
+    if(duplicate)return this.view(duplicate);
     const watch = this.store.watches.create({
       id,
       botId,
@@ -472,9 +519,9 @@ export class WatchService {
       label: patch.label ?? watch.label,
       when: patch.when ?? stock,
       match: patch.match ?? (plan['policy'] === 'all' ? 'all' : 'any'),
-      give_up: patch.giveUp ?? giveup,
+      giveUp: patch.giveUp ?? giveup,
       market: patch.market ?? market,
-      expires_in_days:
+      expiresInDays:
         patch.expiresInDays ??
         Math.max(
           1,
@@ -485,7 +532,7 @@ export class WatchService {
         ),
       note: patch.note ?? watch.note,
       repeat: patch.repeat ?? watch.repeat,
-    } as WatchCreateInput);
+    });
   }
 
   async update(
@@ -493,7 +540,9 @@ export class WatchService {
     taskId: string | null,
     id: string,
     patch: WatchUpdateInput,
+    actor: 'bot' | 'user' = 'bot',
   ): Promise<{ watch: WatchDto; diff: string }> {
+    if (actor === 'bot') this.requireBot(botId);
     const watch = this.requireOwned(id, botId);
     if (watch.status !== 'active') {
       throw new WatchValidationError('not_active', '这条盯盘已经不在生效中');
@@ -503,7 +552,8 @@ export class WatchService {
     const expiresAt = patch.expiresInDays === undefined ? watch.expiresAt : this.expiryFrom(input, now);
     const plan = { ...this.planFor(input, watch.id, expiresAt), id: savedPlanId(watch) };
     const planRecord = planToRecord(plan);
-    const sync = await this.engine.upsert(planRecord);
+    const wasEnabled = this.enabled(watch);
+    const sync = wasEnabled ? await this.engine.upsert(planRecord) : {ok: true as const};
     if (!sync.ok && !sync.unreachable) {
       throw new WatchValidationError(
         sync.code,
@@ -511,8 +561,15 @@ export class WatchService {
         sync.field ?? undefined,
       );
     }
+    const current = this.store.watches.get(id);
+    if (!current || current.status !== 'active') {
+      await this.engine.remove(savedPlanId(watch));
+      throw new WatchValidationError('not_active', '这条盯盘已结束。');
+    }
+    if (!this.enabled(current) && wasEnabled) await this.engine.remove(savedPlanId(watch));
     const updated = this.store.watches.update(watch.id, {
       code: input.code,
+      ...(input.code !== watch.code ? {name: '', engineState: null, lastPrice: null} : {}),
       label: input.label,
       note: input.note,
       plan: planRecord,
@@ -524,8 +581,8 @@ export class WatchService {
     });
     if (updated === undefined) throw new WatchValidationError('not_found', '没有找到这条盯盘');
     const diff = this.describeChange(watch, updated);
-    this.addEvent(updated, 'updated', 'bot', taskId, diff, watch.plan, planRecord);
-    this.appendCard(updated, taskId, 'updated', diff);
+    this.addEvent(updated, 'updated', actor, taskId, diff, watch.plan, planRecord);
+    if (actor === 'bot') this.appendCard(updated, taskId, 'updated', diff);
     this.publish('watch.updated', updated);
     return { watch: this.view(updated), diff };
   }
@@ -554,6 +611,7 @@ export class WatchService {
   }
 
   async cancelByBot(botId: string, taskId: string | null, id: string): Promise<WatchDto> {
+    this.requireBot(botId);
     const watch = this.requireOwned(id, botId);
     if (watch.status !== 'active') {
       throw new WatchValidationError('not_active', '这条盯盘已经不在生效中');
@@ -656,7 +714,7 @@ export class WatchService {
         await this.expire(watch);
       }
       const remote = await this.engine.list();
-      const active = this.store.watches.list({ status: 'active' });
+      const active = this.store.watches.list({ status: 'active' }).filter(watch => this.enabled(watch));
       if (!remote.ok) {
         for (const watch of active) {
           if (watch.syncError !== 'engine_unreachable') {
@@ -669,13 +727,17 @@ export class WatchService {
       const byId = new Map(remote.plans.map((plan) => [plan.id, plan]));
       const activePlanIds = new Set(active.map((watch) => savedPlanId(watch)));
       for (const watch of active) {
-        const planId = savedPlanId(watch);
+        const current = this.store.watches.get(watch.id);
+        if (!current || !this.enabled(current)) continue;
+        const planId = savedPlanId(current);
         const state = byId.get(planId);
         if (state?.state === 'expired') {
           await this.expire(watch);
           continue;
         }
-        const sync = await this.engine.upsert(watch.plan);
+        const sync = await this.engine.upsert(current.plan);
+        const after = this.store.watches.get(watch.id);
+        if (!after || !this.enabled(after)) { await this.engine.remove(planId); continue; }
         if (!sync.ok && !sync.unreachable) {
           await this.cancelBySystem(watch, `${sync.code}：${sync.message}`);
           continue;
@@ -695,11 +757,8 @@ export class WatchService {
         if (watchIdFromPlan(planId) === null) continue;
         if (activePlanIds.has(planId)) continue;
         const id = watchIdFromPlan(planId);
-        if (id !== null && this.store.watches.get(id) === undefined) {
-          await this.engine.remove(planId);
-        } else {
-          await this.engine.remove(state.id);
-        }
+        const current = id === null ? undefined : this.store.watches.get(id);
+        if (!current || !this.enabled(current)) await this.engine.remove(state.id);
       }
     } finally {
       this.ticking = false;
@@ -744,7 +803,11 @@ export class WatchService {
     const watch = this.store.watches.get(id);
     if (watch === undefined) return { status: 'skipped', reason: 'unknown_watch' };
     if (!this.registry.isHired(watch.botId)) return { status: 'skipped', reason: 'bot_not_hired' };
-    if (watch.status !== 'active') return { status: 'skipped', reason: 'watch_not_active' };
+    if (!this.enabled(watch)) return { status: 'skipped', reason: 'watch_not_active' };
+    const resumed = this.store.settings.get<boolean | string>(PAUSE_KEY + id);
+    if (typeof resumed === 'string' && (!input.alert.ts || Date.parse(input.alert.ts) < Date.parse(resumed))) {
+      return { status: 'skipped', reason: 'before_watch_resume' };
+    }
     const to = stateOf(input.alert);
     let current = watch;
     const alertName = input.alert.name.replace(/\s+/g, '');

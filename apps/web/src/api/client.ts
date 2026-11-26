@@ -18,6 +18,7 @@ import type {
   RoutineDto,
   AlertEventDto,
   ActiveRoutineDto,
+  ManagedTaskDto,
   AppearanceSettingsDto,
   DataLocationDto,
   ComposerModelMenu, ComposerModelState, ModelTuning,
@@ -29,6 +30,7 @@ import type {
   WatchDetailDto,
   WatchDto,
   NotificationDto,
+  BotActivityPage,
   MarketDashboardDto,
   PortfolioDashboardDto,
   MessageAttachmentDto,
@@ -470,6 +472,15 @@ export function fetchRuntimeSettings(signal?: AbortSignal): Promise<RuntimeSetti
   });
 }
 
+export function fetchManagedTasks(signal?: AbortSignal): Promise<ManagedTaskDto[]> {
+  return request('/api/settings/tasks', signal ? { signal } : undefined);
+}
+
+export function changeManagedTask(task: Pick<ManagedTaskDto, 'kind' | 'id'>, patch?: Record<string, unknown>): Promise<{ ok: true }> {
+  return request(`/api/settings/tasks/${task.kind}/${encodeURIComponent(task.id)}`,
+    patch ? { method: 'PATCH', body: JSON.stringify(patch) } : { method: 'DELETE' });
+}
+
 export function fetchManagedRoutines(signal?: AbortSignal): Promise<ActiveRoutineDto[]> {
   return request('/api/settings/routines?scope=all', signal ? { signal } : {});
 }
@@ -516,6 +527,15 @@ export function cancelWatch(id: string): Promise<{ ok: boolean; watch: WatchDto 
     `/api/watches/${encodeURIComponent(id)}/cancel`,
     { method: 'POST' }
   );
+}
+
+export function fetchBotActivity(botId: string, before: BotActivityPage['next'], signal: AbortSignal): Promise<BotActivityPage> {
+  const params = new URLSearchParams(before ? { before: before.createdAt, beforeId: before.id } : {});
+  return request(`/api/bots/${encodeURIComponent(botId)}/activity?${params}`, { signal });
+}
+
+export function markBotReplyRead(botId: string, id: string): Promise<{ readAt: string }> {
+  return request(`/api/bots/${encodeURIComponent(botId)}/activity/${encodeURIComponent(id)}/read`, { method: 'POST' });
 }
 
 export function fetchNotifications(

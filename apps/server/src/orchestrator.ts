@@ -45,6 +45,7 @@ import {
 import type { EventBus, EventInput } from './events/index.js';
 import { MemoryService } from './memory/index.js';
 import { DshDriver, type DshDriverOptions } from './harness/dsh-driver.js';
+import {renderCustomerContext,type CustomerContextFiles} from './settings/user-archive.js';
 import type { HarnessDriver, HarnessEvent, HarnessSink } from './harness/types.js';
 import { SessionTokenRegistry } from './delegations/tokens.js';
 import { formatShanghaiTime } from './time.js';
@@ -131,10 +132,10 @@ interface PendingApproval {
 }
 
 export interface OrchestratorOptions {
-  styleReportTurn?: (botId: string, text: string, attachment: MessageAttachmentDto, messageId: string, sink: HarnessSink) => Promise<string>;
-  profileCommand?: (botId:string,text:string)=>Promise<string|null>;
+  styleReportTurn?: (botId: string, text: string, attachment: MessageAttachmentDto, messageId: string, sink: HarnessSink, profile?:string) => Promise<string>;
+  profileCommand?: (botId:string,text:string,taskId:string)=>Promise<string|null>;
   profileNotice?: (botId:string,text:string) => Promise<string>;
-  profileForTurn?: (botId:string,text:string) => string;
+  profileForTurn?: (botId:string,text:string) => string | CustomerContextFiles;
   executionFor?: (id: string) => Record<string,string>;
   registry: BotRegistry;
   store: Store;
@@ -176,7 +177,8 @@ export interface ProactiveTaskInput {
   /** Routine prompt or alert-analysis request appended after the T132 injection. */
   prompt: string;
   /** Daily-budget bucket. */
-  origin: 'routine' | 'alert';
+  origin: 'routine' | 'alert' | 'handoff' | 'technical';
+  taskId?: string;
   /** Extra JSON stored on the proactive separator message. */
   meta?: JsonRecord;
 }
@@ -218,6 +220,7 @@ export class Orchestrator {
   private readonly styleReportTurn: OrchestratorOptions['styleReportTurn'];
   private readonly profileCommand: OrchestratorOptions['profileCommand'];
   private readonly profileNotice: OrchestratorOptions['profileNotice'];
+  private readonly customerContext = new Map<string,{sessionId:string; files:CustomerContextFiles; turns:number; used:number; size:number}>();
   private readonly profileForTurn: OrchestratorOptions['profileForTurn'];
   private readonly executionFor: OrchestratorOptions['executionFor'];
 
@@ -507,6 +510,7 @@ export class Orchestrator {
     const task = this.store.tasks.create({
       botId,
       title: input.title,
+      ...(input.taskId ? {id: input.taskId} : {}),
       startedAt: now.toISOString(),
       depth: 0,
       delegated: false,
@@ -523,7 +527,7 @@ export class Orchestrator {
       taskId: task.id,
       role: 'system',
       kind: 'proactive',
-      content: separatorText,
+      content: input.origin === 'handoff' ? separatorText+'\n'+String(input.meta?.original ?? '') : input.origin==='technical'?separatorText+'\n'+String(input.meta?.signal??''):separatorText,
       meta: { ...(input.meta ?? {}), origin: input.origin, title: input.title },
       createdAt: now.toISOString(),
     });
@@ -774,6 +778,17 @@ export class Orchestrator {
     await driver.reloadModel?.(botId);
   }
 
+  async reviewCustomerArchive(prompt:string):Promise<string>{
+    const bot=this.requireHired('ceo');
+    const driver=this.driver as HarnessDriver & Partial<import('./harness/types.js').TemporaryPromptDriver>;
+    if(!driver.temporaryPrompt)throw new AppError(503,'archive_harness','总经理的模型会话未就绪。');
+    const profile=this.profileForTurn?.(bot.id,'')??'';
+    const context=typeof profile==='string'?profile:renderCustomerContext(profile);
+    const result=await driver.temporaryPrompt(bot,context+'\n\n'+prompt,{timeoutMs:240000});
+    if(!result?.trim())throw new AppError(503,'archive_turn','总经理尚未返回完整结果，档案保留原状，可重试。');
+    return result;
+  }
+
   /** Current turn number of a task; delegations started in the same turn share it. */
   currentRound(taskId: string): number {
     return this.rounds.get(taskId) ?? 1;
@@ -965,7 +980,13 @@ export class Orchestrator {
         this.appendBotMessage(bot.id, taskId, turn.eventBotId, content);
       }
     };
+    let usage: {used:number;size:number}|undefined;
+    let usageDropped=false;
     const sink: HarnessSink = (event) => {
+      if(event.type==='usage'&&event.size>0&&event.used>0){
+        if(usage&&(usage.size!==event.size||usage.used>event.used))usageDropped=true;
+        usage=event;
+      }
       try {
         if (this.store.tasks.get(taskId)?.status !== 'running') return;
         this.handleHarnessEvent(bot, taskId, turn, event, committed);
@@ -979,16 +1000,24 @@ export class Orchestrator {
       if (!turn.delegated) this.setStatus(bot.id, 'starting');
       const task = this.store.tasks.get(taskId);
       if (task === undefined) throw new AppError(500, 'task_missing', `task "${taskId}" disappeared`);
+      let profile:string|CustomerContextFiles|undefined;
+      try{profile=this.profileForTurn?.(bot.id,text);}
+      catch(error){
+        const notice=error instanceof AppError&&error.code==='customer_context'?error.message:'本轮未能读齐客户档案，请检查用户索引、近期记忆和属性文件后重试。';
+        this.appendSystem(bot.id,taskId,'notice',notice);
+        finish('failed');
+        return;
+      }
       if (report && this.styleReportTurn) {
         phase = 'prompt';
         this.setStatus(bot.id, 'working');
-        const answer = await this.styleReportTurn(bot.id, userText ?? text, report.attachment, report.messageId, sink);
+        const answer = await this.styleReportTurn(bot.id, userText ?? text, report.attachment, report.messageId, sink,typeof profile==='object'?renderCustomerContext(profile):profile);
         if (!turn.cancelled) this.appendBotMessage(bot.id, taskId, turn.eventBotId, answer);
         finish(turn.cancelled ? 'cancelled' : 'done');
         return;
       }
       if(userText!==undefined&&this.profileCommand){
-        const receipt=await this.profileCommand(bot.id,userText);
+        const receipt=await this.profileCommand(bot.id,userText,taskId);
         if(receipt!==null){
           if(!turn.cancelled)this.appendBotMessage(bot.id,taskId,turn.eventBotId,receipt);
           finish(turn.cancelled?'cancelled':'done');
@@ -1017,7 +1046,10 @@ export class Orchestrator {
         }
         this.store.tasks.setContextMeta(task.id, {...task.contextMeta, execution});
       }
-      const sessionId = await this.driver.ensureSession(bot, sessionTask);
+      let live=false;
+      const sessionId = await this.driver.ensureSession(bot, sessionTask,{onLiveSession:()=>{live=true;}});
+      const cached=this.customerContext.get(bot.id);
+      this.customerContext.delete(bot.id);
       if (execution) this.store.settings.set('execution/' + task.id, execution);
       turn.sessionReady = true;
       turn.sessionId = sessionId;
@@ -1031,12 +1063,25 @@ export class Orchestrator {
       }
       if (!turn.delegated) this.setStatus(bot.id, 'working');
       phase = 'prompt';
-      const profile=this.profileForTurn?.(bot.id,text);
-      const prompt=profile?profile+'\n\n本轮任务：\n'+text:text;
+      // ACP reports budget usage, but does not provide a compaction receipt.
+      // Reuse only short stretches of a confirmed live session with ample observed headroom.
+      const reusable=live&&cached?.sessionId===sessionId&&cached.turns<3&&cached.used/cached.size<0.5
+        && [...text].length<cached.size*0.1;
+      let injection=typeof profile==='string'?profile:'';
+      if(typeof profile==='object'){
+        const changed=reusable?Object.fromEntries(Object.entries(profile).filter(([name,body])=>cached.files[name]!==body)):profile;
+        if(Object.keys(changed).length)injection=renderCustomerContext(changed,reusable);
+      }
+      const prompt=injection?injection+'\n\n本轮任务：\n'+text:text;
       const result = await this.driver.prompt(bot, sessionId, prompt, sink);
       flush();
       const status: TaskStatus =
         turn.cancelled || result.stopReason === 'cancelled' ? 'cancelled' : 'done';
+      const archiveReloadRequested=committed.join('\n').trimStart().startsWith('需要重新加载客户档案：');
+      if(!archiveReloadRequested&&result.stopReason==='end_turn'&&status==='done'&&!turn.engineUnavailable&&typeof profile==='object'
+        &&usage&&!usageDropped&&(!reusable||(cached.size===usage.size&&cached.used<=usage.used))){
+        this.customerContext.set(bot.id,{sessionId,files:profile,turns:reusable?cached.turns+1:0,...usage});
+      }
       if (status === 'done' && turn.engineUnavailable) {
         const engineFailure: ClassifiedFailure = { code: 'engine_unavailable', detail: '' };
         this.appendSystem(

@@ -21,7 +21,7 @@ afterEach(()=>{store.close();rmSync(dir,{recursive:true,force:true});});
 it('shares the saved connection with new Bot processes, including terminal changes and clearing both overrides',async()=>{
   await library.perform('save',{config:{...cfg,reasoningEffort:'high',fastMode:true}});
   const id=library.list()[0]!.id;
-  const patch=()=>parse(readFileSync(library.runtime(id,'operator').patchPath,'utf8'));
+  const patch=()=>parse(readFileSync(library.runtime(id,'ceo').patchPath,'utf8'));
   expect(patch()[0].config.providers['openai-codex'].reasoning).toBe('high');
   expect(patch()[1].insert[0].config.fastMode).toBe(true);
   expect(provider.runtime('another-model','other')?.reasoningEffort).toBeUndefined();
@@ -47,7 +47,7 @@ it('binds a subscription variant and its tuning to one bot without editing the c
   await library.perform('save',{config:{...cfg,reasoningEffort:'high'}});
   const id=library.list()[0]!.id;
   const {pick}=await library.composerPreference({connection:id,model:'second',tuning:{reasoningEffort:'low',fastMode:true}});
-  const runtime=library.runtime(id,'operator',pick);
+  const runtime=library.runtime(id,'ceo',pick);
   expect(runtime.route.model).toBe('second');
   expect(runtime.reasoningEffort).toBe('low');
   expect(parse(readFileSync(runtime.patchPath,'utf8'))[1].insert[0].config.fastMode).toBe(true);

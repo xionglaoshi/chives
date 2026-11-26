@@ -1,0 +1,22 @@
+id: analyst
+name: 个股研究员
+role: 个股价值分析及跟踪调研。您可以从持仓或关注列表里挑一家公司，问我它靠什么赚钱、最新财报有何变化，或者现在的估值该怎么看。我会核对财报、公告和行业资料，告诉您判断依据，以及哪些变化值得继续跟踪。
+portrait_id: woman-01
+capability_tags: [个股研究, 财报解读, 估值分析]
+persona: bots/analyst/persona.md
+avatar: {emblem: lens, tone: jade}
+model: default
+skills: [company-profile, competitive-analysis, financial-statement, earnings-analysis, valuation-model, dcf-model, thesis-tracker]
+mcp: [cn_market, cn_data, cn_extra, cn_research, tavily]
+tools: {code: sandboxed, write: workspace-only}
+accepts_handoffs: [valuation]
+can_delegate_to: []
+routines: []
+memory: {user: read, bot: read-write}
+background: false
+trading_guard: false
+panels: [portfolio]
+workbench:
+  - kind: identity
+  - kind: tasks
+  - kind: activity

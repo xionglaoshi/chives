@@ -19,8 +19,8 @@ export class InterviewDraft {
   private path:string;
   constructor(dir:string){this.path=join(dir,draftPath);}
   read(profile:Profile|null,profileRevision:string|null):Draft {
-    if(existsSync(this.path))return snapshot.parse(JSON.parse(readFileSync(this.path,'utf8')));
-    return {revision:null,profileRevision,index:0,scope:profile?.scope==='family'?'family':'personal',answers:profile?.answers??{},
+    if(existsSync(this.path))return {...snapshot.parse(JSON.parse(readFileSync(this.path,'utf8'))),scope:'personal'};
+    return {revision:null,profileRevision,index:0,scope:'personal',answers:profile?.answers??{},
       selfDescription:profile?.selfDescription??'',materials:[]};
   }
   save(body:unknown,profile:Profile|null,profileRevision:string|null){
@@ -28,7 +28,7 @@ export class InterviewDraft {
     if(next.revision!==current.revision)throw new AppError(409,'draft_changed','另一窗口已保存更新，请重新打开问卷读取最新进度。');
     if(next.profileRevision!==profileRevision)throw new AppError(409,'profile_changed','正式画像有了更新，请重新打开问卷，核对后继续。');
     const revision=randomUUID();
-    writePrivateJson(this.path,{...next,revision});
+    writePrivateJson(this.path,{...next,scope:'personal',revision});
     return {revision};
   }
   assertCurrent(revision:unknown){

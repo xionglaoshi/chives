@@ -61,6 +61,7 @@ export interface DshDriverOptions {
   effectiveBot?: (bot: BotManifest) => BotManifest;
   extraServers?: (bot: BotManifest, api: string, token: string) => McpServer[];
   workspaceWrite?: () => boolean;
+  attachmentsRead?: () => boolean;
   env?: Readonly<Record<string, string | undefined>>;
   /** Route-name map forwarded to `buildDshPatch`, e.g. `{ default: ... }`. */
   routes?: Readonly<Record<string, DshModelRoute>>;
@@ -212,6 +213,7 @@ export class DshDriver implements HarnessDriver, TemporaryPromptDriver, HiddenPr
       ...(this.options.env === undefined ? {} : { env: this.options.env }),
       ...(this.options.routes === undefined ? {} : { routes: this.options.routes }),
     };
+    if (this.options.attachmentsRead) spawnOptions.attachmentsRead=this.options.attachmentsRead();
     if (this.options.workspaceWrite) spawnOptions.workspaceWrite = this.options.workspaceWrite();
     const runtime = this.options.modelRuntime?.(bot);
     if (runtime !== undefined) {spawnOptions.modelRuntime = runtime; spawnOptions.model = runtime.route;}
@@ -226,7 +228,7 @@ export class DshDriver implements HarnessDriver, TemporaryPromptDriver, HiddenPr
     const chives = {
       api: this.options.chivesApi ?? 'http://127.0.0.1:8880',
       ...(issued === undefined ? {} : { token: issued }),
-      features: botHasWatches(bot) ? ['watches'] : [],
+      features: [...(botHasWatches(bot) ? ['watches'] : []), ...(bot.id==='ceo'?['coordinator']:[]), ...(bot.can_delegate_to.length?[]:['no-delegates'])],
     };
     const servers = buildMcpServers(
       bot,
@@ -239,7 +241,7 @@ export class DshDriver implements HarnessDriver, TemporaryPromptDriver, HiddenPr
     );
     const extra = this.options.extraServers?.(bot,chives.api,issued ?? '') ?? [];
     const bridge = extra.find(server => server.name === 'bot_assets');
-    if (bot.id !== 'operator' || !bridge || !('env' in bridge)) return servers.concat(extra);
+    if (bot.id !== 'ceo' || !bridge || !('env' in bridge)) return servers.concat(extra);
     // Research providers are independent and stateless. Discover them on demand so an
     // offline feed cannot prevent a conversation. The broker retains its native approval path.
     const research = new Set(['cn_market','cn_data','cn_extra','cn_research','tavily','scrape','strategy']);
@@ -319,7 +321,7 @@ export class DshDriver implements HarnessDriver, TemporaryPromptDriver, HiddenPr
   async ensureSession(
     bot: BotManifest,
     task: TaskRecord,
-    options: { silent?: boolean } = {},
+    options: { silent?: boolean; onLiveSession?: () => void } = {},
   ): Promise<string> {
     this.bots.set(bot.id, bot);
     const spec = this.spawnSpec(bot);
@@ -339,6 +341,7 @@ export class DshDriver implements HarnessDriver, TemporaryPromptDriver, HiddenPr
       // Already loaded in this process: dsh rejects a second resume of a live session.
       // Reuse the token the MCP child was started with; issuing here would revoke it.
       this.sessionTasks.set(task.harnessSessionId, task);
+      options.onLiveSession?.();
       return task.harnessSessionId;
     }
     // Only a session that is actually established needs a fresh token.
@@ -432,6 +435,7 @@ export class DshDriver implements HarnessDriver, TemporaryPromptDriver, HiddenPr
     const sessionId = created.sessionId;
     const parts: string[] = [];
     try {
+      await this.applySelection(client,sessionId,created.configOptions??[],spec);
       for (const [configId, value] of Object.entries(options.config ?? {})) {
         try {
           await client.setConfigOption(sessionId, configId, value);

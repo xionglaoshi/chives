@@ -1,0 +1,30 @@
+id: cro
+name: 风控总监
+role: 揭示风险、控制回撤。您可以问我持仓是否过于集中，或者某条消息会影响哪些股票。我会结合您的持仓和关注列表，检查仓位、行业暴露和个股风险事件，提醒您哪些风险容易同时发生、哪些仓位值得优先复核。
+portrait_id: man-09
+capability_tags: [持仓风险, 组合诊断, 风险提醒]
+persona: bots/cro/persona.md
+avatar: {emblem: shield, tone: jade}
+model: default
+skills: [portfolio-diagnosis, risk-boundary, impact-analysis, regulatory-knowledge, portfolio-risk-review]
+mcp: [cn_market, cn_data, cn_extra, cn_research, tavily]
+tools: {code: sandboxed, write: workspace-only}
+accepts_handoffs: [risk]
+can_delegate_to: []
+routines:
+  - id: risk-review
+    title: 复盘简报
+    schedule: {cron: "30 16 * * 1-5", tz: Asia/Shanghai}
+    trading_days_only: true
+    prompt: |-
+      先用 briefing_inputs 分页读取本次截稿的全量资料（持仓、关注、短期记忆中全部证券和各自来源，所有已发布榜单，最近72小时的国内及全球新闻）。取最近三个已收盘交易日的资金及量价；周末新闻照计。按工具标注的覆盖区间说明数据缺项。
+      你在 A 股收盘后为客户检查组合风险。读取上述全部股票及所有机会榜单，对照三天内 A 股与海外新闻、政策、公司和行业公告，检查个股与行业资金流出、量价背离、重要负面事件，以及客户多只股票对同一风险的暴露。特别检查盘前最乐观的理由今天有没有反证。引用原始披露，区分公司已确认事项、可能受行业拖累和市场传闻。
+      从“今天我最担心您忽略哪件事”开始。按影响和紧迫性排序，给出股票、已知事实、风险会怎样传导、实际持仓敞口或关注身份、优先核实事项。列出集中度、共同暴露、流动性或现金安排中最值得处理的一处，写明何时升级或解除提醒。组合回撤与损失只在持仓历史、净值或情景假设足以支持时给数字。无新增重大风险时也交付简报，简要交代覆盖面与仍在观察的事项。
+memory: {user: read, bot: read-write}
+background: false
+trading_guard: false
+panels: [portfolio]
+workbench:
+  - kind: identity
+  - kind: tasks
+  - kind: activity

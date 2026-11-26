@@ -377,3 +377,61 @@
 .model-provider .settings__row-text {
   flex: none;
 }
+
+.runtime-processes > section { padding-block: 14px; }
+.runtime-processes > section + section { border-top: 1px solid var(--color-line); }
+.runtime-processes h3 { margin: 0 0 10px; font-size: var(--text-sm); font-weight: 600; }
+.runtime-processes__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 208px), 1fr));
+  gap: 8px;
+}
+.runtime-card { position: relative; min-width: 0; }
+.runtime-card__face {
+  color: inherit;
+  background: color-mix(in srgb, currentColor 4%, transparent);
+  border: 0;
+  border-radius: 9px;
+  display: flex;
+  text-align: left;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 12px;
+  font: inherit;
+}
+.runtime-card__face:hover, .runtime-card__face:focus-visible {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+.runtime-card__icon { display: grid; place-items: center; width: 27px; flex: 0 0 27px; }
+.runtime-card__content { display: grid; gap: 2px; min-width: 0; }
+.runtime-card__name { font-size: var(--text-sm); overflow-wrap: anywhere; }
+.runtime-card__state { font-size: var(--text-xs); color: var(--color-text-muted); }
+.runtime-card__state::before {
+  content: '';
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  margin-inline-end: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.runtime-card__state--running { color: var(--color-down); }
+.runtime-card__state--inactive, .runtime-card__state--error { color: var(--color-up); }
+.runtime-card__tooltip {
+  position: absolute;
+  inset-inline: 0;
+  top: calc(100% + 4px);
+  z-index: 8;
+  visibility: hidden;
+  background: var(--color-bg, Canvas);
+  color: var(--color-text, CanvasText);
+  border: 1px solid var(--color-line-strong);
+  border-radius: 8px;
+  padding: 8px 10px;
+  font-size: var(--text-xs);
+  overflow-wrap: anywhere;
+  box-shadow: 0 4px 12px #0002;
+}
+.runtime-card:hover .runtime-card__tooltip, .runtime-card:focus-within .runtime-card__tooltip { visibility: visible; }

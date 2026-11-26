@@ -1,4 +1,4 @@
-# cn-watch: read-only local watch engine over stdio MCP (health, state, alerts, rules).
+# chives-radar: read-only local watch engine over stdio MCP (health, state, alerts, rules).
 - insert:
     - id: fin-cn-watch
       name: '@deepseek-ai/dsh-mcp-client'

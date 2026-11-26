@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Chives 2.0 本机启动器：start | stop | restart | status | logs
-# 起数据网关（packages/cn-market-gateway，127.0.0.1:8868）、策略服务（packages/strategy-hub，127.0.0.1:8869）、Chives Server（apps/server，127.0.0.1:8880）与 Web（apps/web，Vite 127.0.0.1:8888）；
-# 加 --engines 时按需起三个引擎（cn-watch 8865、market-watch 8866、chives-hub 8867，各自的脚本负责）。
+# 起数据网关（packages/chives-data，127.0.0.1:8868）、策略服务（packages/chives-strategy，127.0.0.1:8869）、Chives Server（apps/server，127.0.0.1:8880）与 Web（apps/web，Vite 127.0.0.1:8888）；
+# 加 --engines 时按需起三个引擎（chives-radar 8865、chives-compass 8866、chives-signals 8867，各自的脚本负责）。
 # 运行产物在 runtime/chives/。全新安装使用 user-data/ 和 public-data/。
 # 不读取任何密钥：DSH_FINANCE_HOME / DSH_FINANCE_OVERLAY 只作为路径传给服务端。
 set -u
@@ -13,9 +13,9 @@ export npm_config_cache="${npm_config_cache:-$ROOT/runtime/npm-cache}"
 SERVER_PORT="${CHIVES_PORT:-8880}"
 WEB_PORT="${CHIVES_WEB_PORT:-8888}"
 GATEWAY_PORT="${CN_MARKET_PORT:-8868}"
-GATEWAY_DIR="$ROOT/packages/cn-market-gateway"
+GATEWAY_DIR="$ROOT/packages/chives-data"
 STRATEGY_PORT="${STRATEGY_HUB_PORT:-8869}"
-STRATEGY_DIR="$ROOT/packages/strategy-hub"
+STRATEGY_DIR="$ROOT/packages/chives-strategy"
 default_user_dir="$ROOT/user-data"
 default_mechanical_dir="$ROOT/public-data/mechanical-cache"
 if [[ -d "$ROOT/data" && ! -d "$default_user_dir" ]] &&
@@ -86,30 +86,68 @@ engines() { # start|stop|status
   done
 }
 
+start_service() {
+  local name="$1" port="$2" dir="$3" command="$4"
+  shift 4
+  [ -x "$command" ] || { echo "$name 缺少启动命令 $command" >&2; return 1; }
+  if ! alive "$name" && up "http://127.0.0.1:$port/health"; then
+    echo "$name 端口 $port 已由其他进程提供健康接口"
+    return 0
+  fi
+  start_one "$name" "$dir" "$command" "$@"
+  for _ in $(seq 1 30); do
+    if up "http://127.0.0.1:$port/health"; then echo "$name 就绪 http://127.0.0.1:$port"; return 0; fi
+    alive "$name" || break
+    sleep 0.5
+  done
+  echo "$name 未就绪，见 $RUN/$name.log" >&2
+  return 1
+}
+
+start_engine() {
+  case "$1" in
+    gateway) start_service gateway "$GATEWAY_PORT" "$GATEWAY_DIR" "$GATEWAY_DIR/.venv/bin/chives-data" serve --host 127.0.0.1 --port "$GATEWAY_PORT" ;;
+    strategy) start_service strategy "$STRATEGY_PORT" "$STRATEGY_DIR" "$STRATEGY_DIR/.venv/bin/python" -m chives_strategy --port "$STRATEGY_PORT" ;;
+    watch-engine|market-watch|chives-hub) "$ROOT/scripts/$1.sh" start ;;
+    *) return 64 ;;
+  esac
+}
+
 case "${1:-status}" in
+  recover-engine)
+    service="${2:-}"
+    case "$service" in
+      gateway) pid_file="$RUN/gateway.pid"; expected='/bin/chives-data serve ' ;;
+      strategy) pid_file="$RUN/strategy.pid"; expected=' -m chives_strategy ' ;;
+      watch-engine) pid_file="$ROOT/runtime/watch/engine.pid"; expected=' -m chives_radar ' ;;
+      market-watch) pid_file="$ROOT/runtime/market/engine.pid"; expected=' -m chives_compass ' ;;
+      chives-hub) pid_file="$ROOT/runtime/hub/hub.pid"; expected=' -m chives_signals ' ;;
+      *) echo "未知后台引擎" >&2; exit 64 ;;
+    esac
+    if [[ -f "$pid_file" ]]; then
+      service_pid="$(cat "$pid_file")"
+      if ! [[ "$service_pid" =~ ^[1-9][0-9]*$ ]]; then
+        echo "$service PID 文件无效：$pid_file" >&2
+        exit 1
+      fi
+      if kill -0 "$service_pid" 2>/dev/null &&
+         ! ps -p "$service_pid" -o command= | grep -Fq -- "$expected"; then
+        echo "$service PID 已由其他进程使用：$service_pid" >&2
+        exit 1
+      fi
+    fi
+    case "$service" in
+      gateway|strategy)
+        if alive "$service"; then stop_one "$service"; fi
+        start_engine "$service" ;;
+      *) "$ROOT/scripts/$service.sh" restart ;;
+    esac ;;
   start)
     [ -d "$ROOT/node_modules" ] || { echo "先在仓库根运行 pnpm install"; exit 2; }
     (cd "$ROOT" && pnpm --filter @chives/chives-mcp build >"$RUN/build.log" 2>&1) || { echo "chives-mcp 构建失败，见 $RUN/build.log"; exit 2; }
     if ! alive server && up "http://127.0.0.1:$SERVER_PORT/api/health"; then echo "端口 $SERVER_PORT 已被占用，未启动"; exit 1; fi
-    # The data gateway first: bots mount its MCP forwarder (cn_market) when their process starts.
-    if [ -x "$GATEWAY_DIR/.venv/bin/cn-market-gateway" ]; then
-      if ! alive gateway && up "http://127.0.0.1:$GATEWAY_PORT/health"; then echo "端口 $GATEWAY_PORT 已被占用，数据网关未启动"
-      else
-        start_one gateway "$GATEWAY_DIR" "$GATEWAY_DIR/.venv/bin/cn-market-gateway" serve --host 127.0.0.1 --port "$GATEWAY_PORT"
-        for _ in $(seq 1 30); do up "http://127.0.0.1:$GATEWAY_PORT/health" && break; sleep 0.5; done
-        up "http://127.0.0.1:$GATEWAY_PORT/health" && echo "gateway 就绪 http://127.0.0.1:$GATEWAY_PORT" || echo "gateway 未就绪，见 $RUN/gateway.log"
-      fi
-    else
-      echo "数据网关未安装（$GATEWAY_DIR/.venv 不存在），bot 的行情与研究数据将不可用"
-    fi
-    # Strategy service (rule layer 2): reads the local daily store and engine output only.
-    if [ -x "$STRATEGY_DIR/.venv/bin/python" ]; then
-      start_one strategy "$STRATEGY_DIR" "$STRATEGY_DIR/.venv/bin/python" -m strategy_hub --port "$STRATEGY_PORT"
-      for _ in $(seq 1 20); do up "http://127.0.0.1:$STRATEGY_PORT/health" && break; sleep 0.5; done
-      up "http://127.0.0.1:$STRATEGY_PORT/health" && echo "strategy 就绪 http://127.0.0.1:$STRATEGY_PORT" || echo "strategy 未就绪（首次启动可能在补算），见 $RUN/strategy.log"
-    else
-      echo "策略服务未安装（$STRATEGY_DIR/.venv 不存在），策略面板与主升浪 bot 不可用"
-    fi
+    start_engine gateway || true
+    start_engine strategy || true
     start_one server "$ROOT/apps/server" "$ROOT/apps/server/node_modules/.bin/tsx" src/main.ts
     start_one web "$ROOT/apps/web" "$ROOT/apps/web/node_modules/.bin/vite" --host 127.0.0.1 --port "$WEB_PORT" --strictPort
     for _ in $(seq 1 40); do up "http://127.0.0.1:$SERVER_PORT/api/health" && up "http://127.0.0.1:$WEB_PORT/" && break; sleep 0.5; done

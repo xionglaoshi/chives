@@ -40,7 +40,7 @@ export function buildExport(input: ExportInput): Record<string, unknown> {
       const override = overrides.get(bot.id);
       return {
         id: bot.id,
-        name: override?.displayName ?? bot.name,
+        name: bot.name,
         role: bot.role,
         avatar: {
           emblem: override?.avatarEmblem ?? bot.avatar.emblem,
@@ -63,7 +63,7 @@ export function buildExport(input: ExportInput): Record<string, unknown> {
     ),
     routines: store.routines.list().map((routine) => ({
       ...toRoutineDto(routine),
-      botName: overrides.get(routine.botId)?.displayName ?? registry.get(routine.botId)?.name ?? routine.botId,
+      botName: registry.nameFor(routine.botId),
     })),
     settings: {
       proactive: readProactiveSettings(store),

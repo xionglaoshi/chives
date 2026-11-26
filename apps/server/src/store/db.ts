@@ -1,3 +1,4 @@
+import { retiredBotIds } from '../bots/ceo-migration.js';
 /** SQLite connection, pragmas, and ordered schema migrations. */
 
 import { mkdirSync } from 'node:fs';
@@ -268,7 +269,7 @@ export const MIGRATIONS: readonly Migration[] = [
     db.exec('CREATE INDEX IF NOT EXISTS tasks_error ON tasks (error_code, ended_at)');
   },
   (db) => {
-    // T139: a watch is a bot-owned plan rule mirrored to cn-watch. Plan ids are
+    // T139: a watch is a bot-owned plan rule mirrored to chives-radar. Plan ids are
     // always `chives-<id>`; plans with any other prefix are never touched.
     db.exec(`
       CREATE TABLE IF NOT EXISTS watches (
@@ -353,6 +354,86 @@ export const MIGRATIONS: readonly Migration[] = [
     db.exec('CREATE INDEX IF NOT EXISTS watch_events_watch ON watch_events (watch_id, id)');
     db.exec('CREATE INDEX IF NOT EXISTS watch_events_bot ON watch_events (bot_id, id)');
   },
+  (db) => {
+    const previous = 'operator';
+    const current = 'ceo';
+    const botColumns = [
+      ['tasks', 'bot_id'], ['messages', 'bot_id'], ['deliverables', 'bot_id'],
+      ['search_documents', 'timeline_bot_id'], ['routines', 'bot_id'],
+      ['watches', 'bot_id'], ['notifications', 'bot_id'], ['watch_events', 'bot_id'],
+    ];
+    for (const [table, column] of botColumns) {
+      db.prepare(`UPDATE ${table} SET ${column} = ? WHERE ${column} = ?`).run(current, previous);
+    }
+    db.prepare('UPDATE bots SET id = ?, display_name = ? WHERE id = ?').run(current, '总经理', previous);
+    db.prepare("UPDATE routines SET id = replace(id, 'manifest:operator:', 'manifest:ceo:') WHERE id LIKE 'manifest:operator:%'").run();
+    db.prepare(`UPDATE messages SET meta = replace(replace(meta, '"operator"', '"ceo"'), '"manifest:operator:', '"manifest:ceo:')
+      WHERE instr(meta, '"operator"') > 0 OR instr(meta, '"manifest:operator:') > 0`).run();
+    for (const {key, value} of db.prepare('SELECT key, value FROM settings').all()) {
+      const next = String(key).replace(/(^|[.:/])operator(?=$|[.:/])/g, '$1ceo');
+      const renameIds = next !== key || next === 'bots.hired.v1' || next === 'sidebar.botOrder';
+      const updated = renameIds ? String(value).replaceAll('"operator"', '"ceo"') : value;
+      if (next !== key || updated !== value) {
+        db.prepare('UPDATE settings SET key = ?, value = ? WHERE key = ?').run(next, updated!, key!);
+      }
+    }
+  },
+  db => db.exec(`
+    CREATE TABLE desk_handoffs (
+      id TEXT PRIMARY KEY, source_task TEXT NOT NULL, source_bot TEXT NOT NULL,
+      source_message TEXT NOT NULL, target TEXT NOT NULL, intent TEXT NOT NULL,
+      original TEXT NOT NULL, brief TEXT NOT NULL, status TEXT NOT NULL,
+      target_task TEXT NOT NULL UNIQUE, outcome TEXT, created_at TEXT NOT NULL, context TEXT NOT NULL DEFAULT '', task_link TEXT,
+      UNIQUE(source_message,target,intent)
+    );
+    CREATE INDEX desk_handoffs_status ON desk_handoffs(status,created_at);
+    CREATE TABLE desk_news (scope TEXT NOT NULL, observed_at INTEGER NOT NULL, items TEXT NOT NULL,
+      PRIMARY KEY(scope,observed_at));
+    CREATE TABLE desk_flow_closes (day TEXT NOT NULL,scope TEXT NOT NULL,kind TEXT NOT NULL,observed_at TEXT NOT NULL,rows TEXT NOT NULL,
+      PRIMARY KEY(day,scope,kind));
+    CREATE TABLE desk_position_state (code TEXT PRIMARY KEY, quantity REAL NOT NULL);
+    CREATE TABLE desk_position_changes (id INTEGER PRIMARY KEY, code TEXT NOT NULL, direction TEXT NOT NULL, observed_at TEXT NOT NULL);
+    CREATE TABLE technical_watches (code TEXT PRIMARY KEY, title TEXT NOT NULL, held INTEGER NOT NULL DEFAULT 0,
+      manual INTEGER NOT NULL DEFAULT 0, enabled INTEGER NOT NULL DEFAULT 1, removed INTEGER NOT NULL DEFAULT 0,
+      created_at TEXT NOT NULL, checked_at TEXT, state TEXT NOT NULL DEFAULT '待首份行情', bar_time TEXT);
+    CREATE TABLE technical_ticks(code TEXT PRIMARY KEY, stamp TEXT NOT NULL, ratio REAL, change_pct REAL);
+    CREATE TABLE technical_events (code TEXT NOT NULL, bar_time TEXT NOT NULL, direction TEXT NOT NULL, task_id TEXT UNIQUE NOT NULL, title TEXT NOT NULL,
+      summary TEXT NOT NULL, created_at TEXT NOT NULL, delivered INTEGER NOT NULL DEFAULT 0,
+      PRIMARY KEY(code,bar_time,direction));
+  `),
+  db => {
+    const owners = [
+      ['bots', 'id'], ['tasks', 'bot_id'], ['messages', 'bot_id'], ['deliverables', 'bot_id'],
+      ['search_documents', 'timeline_bot_id'], ['routines', 'bot_id'], ['watches', 'bot_id'],
+      ['notifications', 'bot_id'], ['watch_events', 'bot_id'],
+      ['desk_handoffs', 'source_bot'], ['desk_handoffs', 'target'],
+    ];
+    for (const [from, to] of Object.entries(retiredBotIds)) {
+      for (const [table, column] of owners) {
+        db.prepare(`UPDATE ${table} SET ${column}=? WHERE ${column}=?`).run(to, from);
+      }
+      const oldRoutine = 'manifest:' + from + ':';
+      const newRoutine = 'manifest:' + to + ':';
+      db.prepare('UPDATE routines SET id=replace(id,?,?) WHERE id LIKE ?').run(oldRoutine,newRoutine,oldRoutine+'%');
+      const oldLink = '#/bot/' + from;
+      const newLink = '#/bot/' + to;
+      db.prepare(`UPDATE messages SET meta=replace(replace(replace(meta,?,?),?,?),?,?) WHERE meta IS NOT NULL`).run(JSON.stringify(from),JSON.stringify(to),oldRoutine,newRoutine,oldLink,newLink);
+      const oldPath = '/bots/' + from + '/';
+      const newPath = '/bots/' + to + '/';
+      db.prepare('UPDATE deliverables SET path=replace(path,?,?) WHERE instr(path,?)>0').run(oldPath,newPath,oldPath);
+      db.prepare('UPDATE messages SET meta=replace(meta,?,?) WHERE instr(meta,?)>0').run(oldPath,newPath,oldPath);
+      for (const {key,value} of db.prepare('SELECT key,value FROM settings').all()) {
+        const renamedKey = String(key).replace(new RegExp('(^|[.:/])'+from+'(?=$|[.:/])','g'),'$1'+to);
+        let renamedValue = String(value).replaceAll(oldRoutine,newRoutine);
+        if (renamedKey!==key || key==='bots.hired.v1' || key==='sidebar.botOrder') {
+          renamedValue=renamedValue.replaceAll(JSON.stringify(from),JSON.stringify(to));
+        }
+        if (renamedKey!==key || renamedValue!==value) {
+          db.prepare('UPDATE settings SET key=?,value=? WHERE key=?').run(renamedKey,renamedValue,String(key));
+        }
+      }
+    }
+  },
 ];
 
 function ensureVersionTable(db: DatabaseSync): void {
@@ -411,13 +492,14 @@ export function openDatabase(dataDir: string, options: OpenDatabaseOptions = {})
 
 /** Runs `fn` inside `BEGIN IMMEDIATE`; rolls back if it throws. */
 export function transaction<T>(db: DatabaseSync, fn: () => T): T {
-  db.exec('BEGIN IMMEDIATE');
+  const nested=db.isTransaction;
+  db.exec(nested?'SAVEPOINT chives_nested':'BEGIN IMMEDIATE');
   try {
     const result = fn();
-    db.exec('COMMIT');
+    db.exec(nested?'RELEASE chives_nested':'COMMIT');
     return result;
   } catch (error) {
-    db.exec('ROLLBACK');
+    db.exec(nested?'ROLLBACK TO chives_nested; RELEASE chives_nested':'ROLLBACK');
     throw error;
   }
 }

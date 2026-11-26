@@ -34,13 +34,15 @@ export const WATCH_TOOL_NAMES = [
   'watch_plan_list',
 ] as const;
 
-export const WATCH_DISABLED_MESSAGE = '这个 bot 没有盯盘能力';
+export const WATCH_DISABLED_MESSAGE = '请找盯盘交易员办理盯盘。';
 
 export function hasWatchFeature(features: readonly string[]): boolean {
   return features.includes('watches');
 }
 
 export function isToolEnabled(name: string, features: readonly string[]): boolean {
+  if (features.includes('coordinator') && ['routine_create','routine_delete'].includes(name)) return false;
+  if (features.includes('no-delegates') && ['delegate','delegate_wait'].includes(name)) return false;
   if ((WATCH_TOOL_NAMES as readonly string[]).includes(name)) return hasWatchFeature(features);
   return true;
 }
@@ -223,7 +225,7 @@ export const CHIVES_TOOLS: readonly Tool[] = [
   {
     name: 'watch_plan_create',
     description: [
-      '创建一条属于本 bot 的盯盘计划，创建即生效（不需要用户确认）：到条件时 cn-watch 会唤醒本 bot 开一个分析任务。',
+      '创建一条属于本 bot 的盯盘计划，创建即生效（不需要用户确认）：到条件时 chives-radar 会唤醒本 bot 开一个分析任务。',
       '只做分析，绝不下单；模拟盘下单仍走原有审批。',
       'when 是 1-6 条个股条件，类型：price_cross、price_in_range、pct_change、open_pct、volume_ratio；',
       'market 是可选的大盘条件，类型：index_pct、regime，必须全部成立；give_up 是 0-6 条放弃条件（个股类型）。',
@@ -262,13 +264,14 @@ export const CHIVES_TOOLS: readonly Tool[] = [
   {
     name: 'watch_plan_update',
     description: [
-      '修改本 bot 自己的一条 active 盯盘，传 id 与要改的字段即可；到期时间从修改时刻按 expires_in_days 重算。',
+      '只传 id 和 enabled 可暂停或恢复。修改本 bot 自己的一条 active 盯盘，传 id 与要改的字段即可；到期时间从修改时刻按 expires_in_days 重算。',
       '返回修改前后差异的人话描述。不能改别的 bot 的盯盘；已触发/过期/取消的盯盘不能改。不下单。',
     ].join(''),
     inputSchema: {
       ...JSON_OBJECT,
       properties: {
         id: { type: 'string', description: 'watch_plan_list 返回的 id' },
+        enabled: { type: 'boolean', description: 'false 暂停，true 恢复；不与其他变更混用' },
         code: { type: 'string', description: '新代码' },
         label: { type: 'string', description: '新名称，最多 40 字' },
         when: { type: 'array', maxItems: 6, description: '新的个股条件（整体替换）' },
@@ -562,6 +565,11 @@ export async function callTool(
     case 'watch_plan_update': {
       const id = requiredString(input, 'id');
       if (id === undefined) return invalid('id must be a non-empty string');
+      if (input.enabled !== undefined) {
+        if (typeof input.enabled !== 'boolean' || Object.keys(input).length !== 2)
+          return invalid('提交 id 和 enabled 暂停或恢复盯盘');
+        return { value: await client.watchPlanUpdate({ id, enabled: input.enabled }), isError: false };
+      }
       const patch: {
         id: string;
         code?: string;

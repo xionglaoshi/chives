@@ -82,7 +82,7 @@ export function Watchlist({onConversation}:{onConversation:()=>void}) {
     </label>{matches.map(([code,name])=><button key={code} disabled={busy} onClick={()=>void act('add',code)}>{name} · {code}</button>)}
     {keyword&&!matches.length&&<small>未找到匹配的沪深北证券。</small>}</div>}
     {notice&&<p role="status">{notice}</p>}
-    {entries===null?<p>正在读取关注列表…</p>:entries.length===0?<p>还没有关注的股票。可直接添加，也可请总调度筛选。</p>:
+    {entries===null?<p>正在读取关注列表…</p>:entries.length===0?<p>还没有关注的股票。可直接添加，也可请总经理筛选。</p>:
     <div className="watchlist-grid">
       <div className="watchlist-heading"><span>股票</span><span>行情</span><span>AI估算的合理股价</span><span>后市AI预测</span><span>测算与操作</span></div>
       {entries.map(entry=>{

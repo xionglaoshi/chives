@@ -5,7 +5,8 @@
       "expert",
       "equity-analyst",
       "research",
-      "zhushenglang"
+      "zhushenglang",
+      "trader"
     ]
   },
   "factor_values": {
@@ -14,21 +15,25 @@
       "expert",
       "equity-analyst",
       "research",
-      "zhushenglang"
+      "zhushenglang",
+      "trader"
     ]
   },
   "filing_evidence": {
     "label": "公告原件与披露范围",
     "bots": [
       "equity-analyst",
-      "research"
+      "research",
+      "analyst",
+      "cro"
     ]
   },
   "cash_quality": {
     "label": "利润兑现与期后回款",
     "bots": [
       "equity-analyst",
-      "research"
+      "research",
+      "analyst"
     ]
   },
   "evidence_page": {
@@ -38,7 +43,10 @@
       "equity-analyst",
       "research",
       "report-builder",
-      "zhushenglang"
+      "zhushenglang",
+      "analyst",
+      "cro",
+      "cio"
     ]
   },
   "research_snapshot": {
@@ -48,7 +56,8 @@
       "equity-analyst",
       "research",
       "report-builder",
-      "zhushenglang"
+      "zhushenglang",
+      "analyst"
     ]
   },
   "financial_ratio": {
@@ -56,19 +65,22 @@
     "bots": [
       "equity-analyst",
       "research",
-      "expert"
+      "expert",
+      "analyst",
+      "cro"
     ]
   },
   "estimate_equity_value": {
     "label": "A 股个股估值测算器",
-    "bots": ["operator", "equity-analyst", "research", "expert"]
+    "bots": ["ceo", "equity-analyst", "research", "expert", "analyst"]
   },
   "valuation_scenarios": {
     "label": "EPS × PE 情景估值",
     "bots": [
       "equity-analyst",
       "research",
-      "expert"
+      "expert",
+      "analyst"
     ]
   },
   "discounted_cashflow": {
@@ -76,7 +88,8 @@
     "bots": [
       "equity-analyst",
       "research",
-      "expert"
+      "expert",
+      "analyst"
     ]
   },
   "price_history": {
@@ -84,7 +97,10 @@
     "bots": [
       "equity-analyst",
       "research",
-      "zhushenglang"
+      "zhushenglang",
+      "analyst",
+      "trader",
+      "cro"
     ]
   },
   "screen_stocks": {
@@ -93,7 +109,8 @@
       "equity-analyst",
       "research",
       "expert",
-      "zhushenglang"
+      "zhushenglang",
+      "cio"
     ]
   },
   "equity_review": {
@@ -101,7 +118,8 @@
     "bots": [
       "equity-analyst",
       "research",
-      "expert"
+      "expert",
+      "analyst"
     ]
   },
   "ma_backtest": {
@@ -109,48 +127,55 @@
     "bots": [
       "equity-analyst",
       "research",
-      "zhushenglang"
+      "zhushenglang",
+      "trader"
     ]
   },
   "research_report_lookup": {
     "label": "机构研报与原文",
     "bots": [
       "equity-analyst",
-      "research"
+      "research",
+      "analyst"
     ]
   },
   "special_financials": {
     "label": "特殊财务字段",
     "bots": [
       "equity-analyst",
-      "research"
+      "research",
+      "analyst"
     ]
   },
   "fund_ranking": {
     "label": "基金业绩排名",
     "bots": [
       "research",
-      "expert"
+      "expert",
+      "cio"
     ]
   },
   "fund_holdings": {
     "label": "基金披露持仓",
     "bots": [
       "research",
-      "expert"
+      "expert",
+      "cio"
     ]
   },
   "fund_holdings_changes": {
     "label": "基金持仓变动",
     "bots": [
       "research",
-      "expert"
+      "expert",
+      "cio"
     ]
   },
   "fund_study_job": {
     "label": "基金持仓批量研究",
     "bots": [
-      "research"
+      "research",
+      "cio"
     ]
   }
 }

@@ -17,23 +17,23 @@ const runningTask: TaskDto = {
 };
 
 describe('floating ChatHeader', () => {
-  it('centers a name pill that opens the operator conversation and shows the running dot and timer', () => {
+  it('centers a name pill that opens the ceo conversation and shows the running dot and timer', () => {
     const onOpenOperator = vi.fn();
     render(
       <ChatHeader
-        operator={makeBot({ name: '总调度', status: 'working' })}
+        ceo={makeBot({ name: '总经理', status: 'working' })}
         runningTask={runningTask}
         turnStartedAt="2026-11-17T08:00:00.000Z"
         onOpenOperator={onOpenOperator}
       />
     );
-    const pill = screen.getByRole('button', { name: '与总调度对话' });
+    const pill = screen.getByRole('button', { name: '与总经理对话' });
     expect(pill.closest('header')?.className).toContain('chat-header');
     expect(pill.querySelector('.chat-header__pill-dot')).not.toBeNull();
     expect(pill.querySelector('.chat-header__pill-time')).not.toBeNull();
     fireEvent.click(pill);
     expect(onOpenOperator).toHaveBeenCalledTimes(1);
-    expect(screen.getAllByText('总调度').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('总经理').length).toBeGreaterThan(0);
   });
 
   it('keeps the bell, search and panel buttons in the floating action group', () => {
@@ -41,7 +41,7 @@ describe('floating ChatHeader', () => {
     const onTogglePanel = vi.fn();
     render(
       <ChatHeader
-        operator={makeBot({ name: '总调度', panels: ['market', 'watches'], watchCount: 2 })}
+        ceo={makeBot({ name: '总经理', panels: ['market', 'watches'], watchCount: 2 })}
         runningTask={null}
         onSearch={onSearch}
         onOpenOperator={() => undefined}
@@ -56,10 +56,10 @@ describe('floating ChatHeader', () => {
     expect(onTogglePanel).toHaveBeenCalledWith('watches');
   });
 
-  it('opens the operator conversation even while the roster is loading', () => {
+  it('opens the ceo conversation even while the roster is loading', () => {
     const open = vi.fn();
-    render(<ChatHeader operator={undefined} runningTask={null} onOpenOperator={open}/>);
-    fireEvent.click(screen.getByRole('button', {name:'与总调度对话'}));
+    render(<ChatHeader ceo={undefined} runningTask={null} onOpenOperator={open}/>);
+    fireEvent.click(screen.getByRole('button', {name:'与总经理对话'}));
     expect(open).toHaveBeenCalledOnce();
   });
 });

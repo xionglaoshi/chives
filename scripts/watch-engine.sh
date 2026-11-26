@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # 盯盘引擎的常驻启动器：start | stop | restart | status | check | logs
 # 配置 config/watch.yaml；进程日志在 runtime/watch/，盯盘状态在用户数据目录。
-# 只启动本仓库的 cn-watch，不读取任何密钥，不写仓库外的位置。
+# 只启动本仓库的 chives-radar，不读取任何密钥，不写仓库外的位置。
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PKG="$ROOT/packages/cn-watch"
+PKG="$ROOT/packages/chives-radar"
 PY="$PKG/.venv/bin/python"
 CFG="${WATCH_CONFIG:-$ROOT/config/watch.yaml}"
 RUN="$ROOT/runtime/watch"
@@ -13,13 +13,13 @@ PID="$RUN/engine.pid"
 LOG="$RUN/engine.log"
 PORT="$(sed -n 's/^api:.*port: *\([0-9]*\).*/\1/p' "$CFG" 2>/dev/null | head -1)"; PORT="${PORT:-8865}"
 
-alive() { [ -f "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null && ps -p "$(cat "$PID")" -o command= | grep -q "cn_watch"; }
+alive() { [ -f "$PID" ] && kill -0 "$(cat "$PID")" 2>/dev/null && ps -p "$(cat "$PID")" -o command= | grep -Eq -- ' -m (chives_radar|cn_watch) '; }
 health() { curl -s --max-time 2 "http://127.0.0.1:$PORT/health"; }
 
 case "${1:-status}" in
   check)
-    [ -x "$PY" ] || { echo "缺少 $PY（先在 packages/cn-watch 里建 venv）"; exit 2; }
-    cd "$PKG" && "$PY" -m cn_watch --config "$CFG" --check-config ;;
+    [ -x "$PY" ] || { echo "缺少 $PY（先在 packages/chives-radar 里建 venv）"; exit 2; }
+    cd "$PKG" && "$PY" -m chives_radar --config "$CFG" --check-config ;;
   start)
     if alive; then echo "已在运行 (pid $(cat "$PID"))"; exit 0; fi
     if curl -s --max-time 1 -o /dev/null "http://127.0.0.1:$PORT/health"; then echo "端口 $PORT 已被占用（不是本脚本启动的引擎），未启动"; exit 1; fi
@@ -40,7 +40,7 @@ case "${1:-status}" in
       touch "$RUN/.user-state-migrated" || exit 1
     fi
     rm -f "$PID"
-    ( cd "$PKG" && exec nohup "$PY" -m cn_watch --config "$CFG" --out-dir "$STATE" >>"$LOG" 2>&1 ) &
+    ( cd "$PKG" && exec nohup "$PY" -m chives_radar --config "$CFG" --out-dir "$STATE" >>"$LOG" 2>&1 ) &
     echo $! >"$PID"
     for _ in $(seq 1 20); do sleep 0.5; health >/dev/null && break; done
     if alive && health >/dev/null; then echo "已启动 (pid $(cat "$PID"), 127.0.0.1:$PORT)"; else echo "启动失败，见 $LOG"; tail -5 "$LOG"; exit 1; fi ;;

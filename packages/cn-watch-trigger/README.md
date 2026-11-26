@@ -1,6 +1,6 @@
 # cn-watch-trigger
 
-`cn-watch-trigger` 是 `cn-watch` 盯盘引擎的**告警触发分析守护进程**：轮询引擎的只读 `GET /alerts?after_id=&limit=`，按规则筛选、限流、去重，对选中的告警用 `dsh --profile headless --json` 跑一次**只读**分析，把结果写成 Markdown 并追加一条 JSONL 记录。计划规则（`rule_type:"plan"`）的告警总是记 `skipped`/`plan_alert`，交给 hub 的触发队列，避免两条队列重复分析。它不碰面板、不改引擎、不接任何下单工具。
+`cn-watch-trigger` 是 `chives-radar` 盯盘引擎的**告警触发分析守护进程**：轮询引擎的只读 `GET /alerts?after_id=&limit=`，按规则筛选、限流、去重，对选中的告警用 `dsh --profile headless --json` 跑一次**只读**分析，把结果写成 Markdown 并追加一条 JSONL 记录。计划规则（`rule_type:"plan"`）的告警总是记 `skipped`/`plan_alert`，交给 hub 的触发队列，避免两条队列重复分析。它不碰面板、不改引擎、不接任何下单工具。
 
 ## 为什么只读
 

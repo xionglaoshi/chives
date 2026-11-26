@@ -6,11 +6,11 @@
       config:
         serverName: strategy
         transport: stdio
-        command: /Users/xiong/.chives/packages/strategy-hub/.venv/bin/python
+        command: /Users/xiong/.chives/packages/chives-strategy/.venv/bin/python
         args:
           - -m
-          - strategy_hub.mcp_server
-        cwd: /Users/xiong/.chives/packages/strategy-hub
+          - chives_strategy.mcp_server
+        cwd: /Users/xiong/.chives/packages/chives-strategy
         env:
           CHIVES_STRATEGY_URL: http://127.0.0.1:8869
           CHIVES_STRATEGIES: !!js (process.env.CHIVES_STRATEGIES || '')

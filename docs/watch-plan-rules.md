@@ -1,11 +1,11 @@
-# cn-watch 计划规则（Plan rules）契约 v1（验收者维护；实现者以它为准）
+# chives-radar 计划规则（Plan rules）契约 v1（验收者维护；实现者以它为准）
 
-**决策（用户，2026-11-04）**：盘中只有**一套**评估逻辑——盯盘引擎 cn-watch。作战卡不再由 hub 自己评估状态，而是作为 cn-watch 的一种**计划规则**：hub 保存卡片的业务属性（复盘关联、仓位计算、确认/锁定策略、判断文字），确认后把"计划规则"下发给 cn-watch；cn-watch 评估、产出状态跃迁告警；hub 只订阅结果。以后盘中能力一律增强 cn-watch。
+**决策（用户，2026-11-04）**：盘中只有**一套**评估逻辑——盯盘引擎 chives-radar。作战卡不再由 hub 自己评估状态，而是作为 chives-radar 的一种**计划规则**：hub 保存卡片的业务属性（复盘关联、仓位计算、确认/锁定策略、判断文字），确认后把"计划规则"下发给 chives-radar；chives-radar 评估、产出状态跃迁告警；hub 只订阅结果。以后盘中能力一律增强 chives-radar。
 
 计划规则与现有的"单指标规则"（pct_change / vwap_deviation / limit_proximity / price_cross / volume_surge）并存：后者是"某个指标越线就告警"，前者是"一组条件的组合判断 + 状态机"。
 
 ## 通用约定
-- 写接口沿用 cn-watch 现有约束：仅回环、POST + JSON、大小上限、`actor` 头审计；业务错误返回 `{ok:false, code, message, field?}`（HTTP 400）。
+- 写接口沿用 chives-radar 现有约束：仅回环、POST + JSON、大小上限、`actor` 头审计；业务错误返回 `{ok:false, code, message, field?}`（HTTP 400）。
 - 计划规则**绝不触发交易**，只产生状态与告警。
 
 ## 数据模型
@@ -32,7 +32,7 @@ Cond（type 白名单；其它一律 400 invalid_condition）:
   {type:"open_pct", op:">=|<=", value}                  // 开盘价相对昨收 %，09:25 后可评估
   {type:"volume_ratio", op:">=|<=", value}              // 行情源的量比字段；取不到则 unknown
 ```
-`regime` 的取值：`strong`（market-watch regime `risk_on`）、`neutral`、`weak`（`risk_off`）。
+`regime` 的取值：`strong`（chives-compass regime `risk_on`）、`neutral`、`weak`（`risk_off`）。
 
 ## 端点
 | 方法 路径 | 说明 |
@@ -56,7 +56,7 @@ PlanState：
 - **滞回**：从 `execute` 或 `await_confirm` 退回较低状态（`observe`/`await_confirm`）需要**连续 3 次评估**都不满足才生效；升级（进入 `execute`/`abandon`/`exit`/`await_confirm`）立即生效。`abandon`/`exit` 是终态之一：进入后保持，直到 `held` 或条件使其回到非终态且连续 3 次评估支持。
 - **去噪**：同一 (plan, to_state) 5 分钟内不重复产生告警。
 - 启动/重启后第一次评估只恢复状态，不产生告警（避免重复告警）。
-- 市场上下文（regime、指数涨跌幅、行业板块涨幅/排名）来自 market-watch（回环，默认 `http://127.0.0.1:8866`，可配置，**只读**）：每 5 秒取一次 `/overview`、`/sectors`；数据超过 30 秒未更新或取不到 → 相应条件 unknown。收盘/非交易时段：不评估、不产生告警（状态保持），`GET /plans` 照常返回最后状态。
+- 市场上下文（regime、指数涨跌幅、行业板块涨幅/排名）来自 chives-compass（回环，默认 `http://127.0.0.1:8866`，可配置，**只读**）：每 5 秒取一次 `/overview`、`/sectors`；数据超过 30 秒未更新或取不到 → 相应条件 unknown。收盘/非交易时段：不评估、不产生告警（状态保持），`GET /plans` 照常返回最后状态。
 
 ## 告警（沿用 `/alerts` 通道）
 状态跃迁到 `execute`/`abandon`/`exit`/`await_confirm` 时产生一条告警：`rule_id:"plan:<id>"`, `rule_type:"plan"`, `code`, `price`, `severity`（execute/abandon/exit=L2，await_confirm=L1）, `detail:{plan_id, from, to, reason, label}`；沿用现有的去重键与存储。**深度分析触发器（cn-watch-trigger）必须跳过 `rule_type=="plan"` 的告警**（盘中快速判断由 hub 的触发队列与独立运行器负责，避免两条队列重复处理）。

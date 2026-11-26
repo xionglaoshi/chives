@@ -7,9 +7,9 @@
       config:
         serverName: cn_market
         transport: stdio
-        command: /Users/xiong/.chives/packages/cn-market-gateway/.venv/bin/cn-market-mcp
+        command: /Users/xiong/.chives/packages/chives-data/.venv/bin/cn-market-mcp
         args:
           - --port
           - "8868"
-        cwd: /Users/xiong/.chives/packages/cn-market-gateway
+        cwd: /Users/xiong/.chives/packages/chives-data
         failOnStartupError: true

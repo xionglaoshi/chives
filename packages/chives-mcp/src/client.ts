@@ -180,6 +180,7 @@ export class ChivesClient {
 
   watchPlanUpdate(input: {
     id: string;
+    enabled?: boolean;
     code?: string;
     label?: string;
     when?: Record<string, unknown>[];
@@ -192,6 +193,7 @@ export class ChivesClient {
   }): Promise<unknown> {
     return this.post('/api/internal/watch-plans/update', {
       id: input.id,
+      ...(input.enabled === undefined ? {} : { enabled: input.enabled }),
       ...(input.code === undefined ? {} : { code: input.code }),
       ...(input.label === undefined ? {} : { label: input.label }),
       ...(input.when === undefined ? {} : { when: input.when }),

@@ -1,4 +1,4 @@
-/** Local validation for bot-owned watch plans; mirrors cn-watch's Plan schema. */
+/** Local validation for bot-owned watch plans; mirrors chives-radar's Plan schema. */
 
 import { shanghaiDayKey } from '../time.js';
 import type { JsonRecord } from '../store/index.js';
@@ -88,7 +88,7 @@ function inferSuffix(digits: string): string {
   return '569'.includes(digits[0] ?? '') ? 'SH' : 'SZ';
 }
 
-/** Rejects Beijing exchange and index families exactly like cn-watch. */
+/** Rejects Beijing exchange and index families exactly like chives-radar. */
 export function normalizeWatchCode(value: unknown): string {
   let raw: string;
   if (typeof value === 'number' && Number.isInteger(value) && value >= 0 && value <= 999999) {
@@ -159,7 +159,7 @@ function onlyKeys(raw: Record<string, unknown>, allowed: readonly string[], wher
   }
 }
 
-/** Normalizes one condition into the exact object cn-watch's validator accepts. */
+/** Normalizes one condition into the exact object chives-radar's validator accepts. */
 export function validateCondition(
   value: unknown,
   group: 'stock' | 'market',

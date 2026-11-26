@@ -1,6 +1,6 @@
-# chives-hub API 契约（v1，验收者维护，后端与前端都以它为准）
+# chives-signals API 契约（v1，验收者维护，后端与前端都以它为准）
 
-`chives-hub` 是新增的本机中枢服务（127.0.0.1:**8867**，仅回环）。它**汇聚**个股告警（cn-watch 8865）与板块/市场告警（market-watch 8866），把它们加工成**信号卡（Signal）**；保存并评估**计划条件（Plan）**；提供**持仓视图（Portfolio，私有）**并每个交易日落一份**收益快照**。浏览器只经 `watch-panel` Host 半的同源代理访问；智能体通过后续的 `hub-mcp` 访问计划与信号。
+`chives-signals` 是新增的本机中枢服务（127.0.0.1:**8867**，仅回环）。它**汇聚**个股告警（chives-radar 8865）与板块/市场告警（chives-compass 8866），把它们加工成**信号卡（Signal）**；保存并评估**计划条件（Plan）**；提供**持仓视图（Portfolio，私有）**并每个交易日落一份**收益快照**。浏览器只经 `watch-panel` Host 半的同源代理访问；智能体通过后续的 `hub-mcp` 访问计划与信号。
 
 ## 通用约定
 - JSON/UTF-8；时间 ISO8601 带 `+08:00`；业务错误 HTTP 200 + `{"ok":false,"error":{"code","message"}}`；非法路径 404；写接口只接受 `POST` + `application/json`，且**只改信号状态与计划**，绝不触发任何交易。
@@ -48,11 +48,11 @@
   stop|null, rationale (≤200 字), source:{analysis_id|null, label}, proposed_by:"agent|user",
   created_at, expires_at (≤ 30 天，默认 5 个交易日), triggered_at|null, last_price|null }
 ```
-- **评估**：每 3 秒读取 cn-watch `/state` 的现价（自选之外的代码由 hub 用腾讯快照批量取，≤80 只，限频同 cn-watch）；`active` 计划满足条件即生成一条 `plan_entry`/`plan_giveup`/`plan_other` 信号并置 `triggered`（同一计划只触发一次，除非 `extend` 重新武装）；过期未触发置 `expired` 并生成一条 `info` 信号；**计划最多 30 个活跃**。
+- **评估**：每 3 秒读取 chives-radar `/state` 的现价（自选之外的代码由 hub 用腾讯快照批量取，≤80 只，限频同 chives-radar）；`active` 计划满足条件即生成一条 `plan_entry`/`plan_giveup`/`plan_other` 信号并置 `triggered`（同一计划只触发一次，除非 `extend` 重新武装）；过期未触发置 `expired` 并生成一条 `info` 信号；**计划最多 30 个活跃**。
 - **安全**：计划只产生提醒，**不下单**；`rationale` 等文本字段按 profile-mcp 的清洗与敏感信息/指令式文本拒绝规则处理；资金账号形态的数字串一律拒绝。
 
 ## 信号来源与加工（确定性，不调模型）
-- 个股告警（cn-watch `/alerts`）、板块/市场告警（market-watch `/alerts`，R1–R6）、计划触发、计划过期。
+- 个股告警（chives-radar `/alerts`）、板块/市场告警（chives-compass `/alerts`，R1–R6）、计划触发、计划过期。
 - 告警分析（`runtime/watch/analyses/analyses.jsonl` 与 `analysis-<id>.md`）到达后，hub 把分析里的**结论段**（以"**结论：**"开头的段落；缺失则取首段）、**方向**（正文含"偏多/偏空/中性/误报"之一，否则 neutral）与**要点**填进信号的 `conclusion/direction/brief`；`skipped/dry_run/cooldown` 的告警不单独成卡，计入 `merged_count` 或"已处理"计数。
 - `kind` 映射：个股规则触发 → `risk` 或 `opportunity`（按方向与规则类型：涨跌停临近、放量下跌→risk；放量上冲、穿越上沿→opportunity）；板块 R3/R4/R5 → `sector`；R1/R2 → `risk`（object=market）；计划触发 → `plan_*`。
 - 去噪：同 `(object, rule_id)` 在 30 分钟内合并；分析结论含"误报"→ `info`；同一类误报当日累计只展示一张折叠卡。
@@ -139,7 +139,7 @@ GET  /reviews?limit=20&kind=     → 列表（精简字段）；GET /reviews/{da
 **数据包 `GET /review-data`**（hub 聚合，供 20:00 复盘与 08:30 盘前使用；不含需要智能体用工具去查的公告/龙虎榜/宏观）：
 ```
 {ok, as_of, trading_day:bool, date, next_trading_day, data_cutoff:生成数据包时的实际 HH:MM（不伪造固定截点）, 
- env:{regime:"strong|neutral|weak", rule_label, evidence:[...]},          // 来自 market-watch /overview.regime，映射 risk_on→strong、neutral、risk_off→weak
+ env:{regime:"strong|neutral|weak", rule_label, evidence:[...]},          // 来自 chives-compass /overview.regime，映射 risk_on→strong、neutral、risk_off→weak
  market:{indexes:[...6个精简], breadth, amount_yuan, amount_vs_prev},
  pool:{counts:{zt,zb,dt}, seal_ratio_pct, max_streak, ladder:[{streak,count,top:[≤3]}], by_industry:[≤10], history:[最近10日 /pool/history 精简], yesterday:{avg_open_pct,avg_close_pct,win_ratio_pct}},
  themes:[≤10 概念榜], sectors:[≤10 行业榜], flows:[≤5 资金流 top],
@@ -192,7 +192,7 @@ GET  /guidance?date= → 当日指引卡列表
 - **触发来源**：卡状态跃迁到 `execute`/`abandon`/`exit`；环境标签变化（`regime`，仅当存在 active 卡时）；应急触发。`await_confirm`/`observe` 的跃迁只出信号、不出 trigger。去抖同上。
 - **上下文包**（触发瞬间组装并冻结，≤12KB，**含持仓信息所以只经本机 hub-mcp/运行器读，不进日志**）：`{trigger, card:{全文}, review:{date, env_label, evidence, mainline, thesis_from_candidates}|null, snapshot:{quote:{price, change_pct, vwap_dev_pct, limit_distance_pct}, sector:{code,name,rank,change_pct}|null, market:{regime, breadth, amount_yuan}}, holdings_relation:{held:bool, weight_pct|null, single_cap_pct|null, total_room_pct|null}, discipline:{paused, mood_today}, thresholds:{仅已采纳项}, today:{trigger_count, fast_judgements_used}}`，取不到的块给 `null` 并在 `missing` 列出。
 - **盘中指引卡**（确定性，不调模型）：交易日 09:30、10:00、11:30、13:00、14:30 各一条 `kind:"guidance"` 信号，`context:{type:"guidance", slot, data_time, market_state:{label,basis}, theme_state:"延续|分歧|走弱|未知"(由主线行业排名/涨停家数变化规则判定), cards:[{id,code,name,state}], current_action:"观察|等待确认|按预案执行|放弃|按计划退出|无预案", next_check, risk_bound}`；无 active 卡时当日不生成。
-- **应急**（确定性）：已采纳的 `emergency_index_drop_pct`（任一核心指数盘中跌幅达线）、`emergency_limit_down_count`（跌停家数达线）、持仓股跌停/停牌（取 cn-watch 状态）→ 一条 L3 `emergency` 信号（`decide=true`），正文为文档的应急触发链（暂停新增风险→核实行情/成交/公告→查组合敞口与现金→按既定规则处理→记录），同类应急当日同一原因只出一次；阈值未采纳则**不触发**（不使用任何内置默认值）。
+- **应急**（确定性）：已采纳的 `emergency_index_drop_pct`（任一核心指数盘中跌幅达线）、`emergency_limit_down_count`（跌停家数达线）、持仓股跌停/停牌（取 chives-radar 状态）→ 一条 L3 `emergency` 信号（`decide=true`），正文为文档的应急触发链（暂停新增风险→核实行情/成交/公告→查组合敞口与现金→按既定规则处理→记录），同类应急当日同一原因只出一次；阈值未采纳则**不触发**（不使用任何内置默认值）。
 - 每日限额：判断回写只记录；快速判断的次数与队列由运行器侧（T107）控制，hub 只在上下文包里带 `today.fast_judgements_used`（运行器回写时递增，上限由设置之外的运行器配置决定）。
 
 ## 兼容性与隐私
@@ -230,7 +230,7 @@ GET  /guidance?date= → 当日指引卡列表
 
 
 
-## 作战卡评估已委托给 cn-watch（2026-11-04 晚，T110/T111 之后生效）
-- 卡片的 `state/last_price/conds/history` 由 cn-watch 的计划规则评估后镜像到 hub（契约见 `docs/watch-plan-rules.md`）；hub 不再自己评估条件。对外的 `/cards` `/triggers` `/signals` 形状不变，**新增**：Card 的 `conds:{market:[true|false|null],sector:[…],stock:[…],giveup:[…]}`（逐条是否成立，null=取不到数据）、`engine:{ok, error|null, synced_at|null}`；`GET /cards` 顶层增加 `engine:{ok, reason?}`。
-- 上文"状态机"一节描述的优先级、unknown、滞回、去抖语义**由 cn-watch 实现**，语义不变。
+## 作战卡评估已委托给 chives-radar（2026-11-04 晚，T110/T111 之后生效）
+- 卡片的 `state/last_price/conds/history` 由 chives-radar 的计划规则评估后镜像到 hub（契约见 `docs/watch-plan-rules.md`）；hub 不再自己评估条件。对外的 `/cards` `/triggers` `/signals` 形状不变，**新增**：Card 的 `conds:{market:[true|false|null],sector:[…],stock:[…],giveup:[…]}`（逐条是否成立，null=取不到数据）、`engine:{ok, error|null, synced_at|null}`；`GET /cards` 顶层增加 `engine:{ok, reason?}`。
+- 上文"状态机"一节描述的优先级、unknown、滞回、去抖语义**由 chives-radar 实现**，语义不变。
 - 09:25 锁定、`tighten_stop`、`set_state`（降级）、sizing、候选统计、触发/上下文包/判断回写仍由 hub 负责。

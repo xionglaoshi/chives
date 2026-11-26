@@ -133,6 +133,12 @@ export class RoutineRepository {
     return rows.map(toRoutine);
   }
 
+  edit(id: string, input: Pick<RoutineRecord, 'title' | 'schedule' | 'prompt' | 'tradingDaysOnly' | 'nextRunAt'>): RoutineRecord | undefined {
+    this.db.prepare(`UPDATE routines SET title = ?, schedule = ?, prompt = ?, trading_days_only = ?, next_run_at = ? WHERE id = ?`)
+      .run(input.title, JSON.stringify(input.schedule), input.prompt, input.tradingDaysOnly ? 1 : 0, input.nextRunAt, id);
+    return this.get(id);
+  }
+
   setEnabled(id: string, enabled: boolean): RoutineRecord | undefined {
     this.db.prepare('UPDATE routines SET enabled = ? WHERE id = ?').run(enabled ? 1 : 0, id);
     return this.get(id);

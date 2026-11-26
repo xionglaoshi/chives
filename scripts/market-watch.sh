@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# market-watch 引擎启停器：start | stop | restart | status | check | logs
-# 配置默认 packages/market-watch/config.yaml（不存在时从 config.example.yaml 复制）。
-# 运行产物（pid、日志、sqlite）在 runtime/market/。只启动本仓库的 market-watch，
+# chives-compass 引擎启停器：start | stop | restart | status | check | logs
+# 配置默认 packages/chives-compass/config.yaml（不存在时从 config.example.yaml 复制）。
+# 运行产物（pid、日志、sqlite）在 runtime/market/。只启动本仓库的 chives-compass，
 # 不读取任何密钥，不写仓库外的位置。
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PKG="$ROOT/packages/market-watch"
+PKG="$ROOT/packages/chives-compass"
 PY="$PKG/.venv/bin/python"
 CFG="${MARKET_WATCH_CONFIG:-$PKG/config.yaml}"
 case "$CFG" in /*) ;; *) CFG="$(cd "$(dirname "$CFG")" 2>/dev/null && pwd)/$(basename "$CFG")" ;; esac
@@ -24,8 +24,8 @@ health() { curl -sf --max-time 2 "http://127.0.0.1:$PORT/health"; }
 
 case "${1:-status}" in
   check)
-    [ -x "$PY" ] || { echo "缺少 $PY（先在 packages/market-watch 里建 venv 并安装 pytest）"; exit 2; }
-    cd "$PKG" && PYTHONPATH="$PKG/src" "$PY" -m market_watch --config "$CFG" --check-config ;;
+    [ -x "$PY" ] || { echo "缺少 $PY（先在 packages/chives-compass 里建 venv 并安装 pytest）"; exit 2; }
+    cd "$PKG" && PYTHONPATH="$PKG/src" "$PY" -m chives_compass --config "$CFG" --check-config ;;
   start)
     if alive; then echo "已在运行 (pid $(cat "$PID"))"; exit 0; fi
     if curl -sf --max-time 1 -o /dev/null "http://127.0.0.1:$PORT/health"; then
@@ -56,7 +56,7 @@ PYTHON
     fi
     touch "$RUN/.mechanical-cache-migrated" || exit 1
     rm -f "$PID"
-    ( cd "$PKG" && PYTHONPATH="$PKG/src" exec nohup "$PY" -m market_watch --config "$CFG" --out-dir "$RUN" --db-path "$CACHE" >>"$LOG" 2>&1 ) &
+    ( cd "$PKG" && PYTHONPATH="$PKG/src" exec nohup "$PY" -m chives_compass --config "$CFG" --out-dir "$RUN" --db-path "$CACHE" >>"$LOG" 2>&1 ) &
     echo $! >"$PID"
     for _ in $(seq 1 120); do sleep 0.5; health >/dev/null && break; done
     if alive && health >/dev/null; then

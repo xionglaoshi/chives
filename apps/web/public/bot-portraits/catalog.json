@@ -1,0 +1,337 @@
+[
+  {
+    "id": "man-01",
+    "name": "汤姆",
+    "group": "man"
+  },
+  {
+    "id": "man-02",
+    "name": "杰瑞",
+    "group": "man"
+  },
+  {
+    "id": "man-03",
+    "name": "查理",
+    "group": "man"
+  },
+  {
+    "id": "man-04",
+    "name": "马克",
+    "group": "man"
+  },
+  {
+    "id": "man-05",
+    "name": "亨利",
+    "group": "man"
+  },
+  {
+    "id": "man-06",
+    "name": "里奥",
+    "group": "man"
+  },
+  {
+    "id": "man-07",
+    "name": "奥斯卡",
+    "group": "man"
+  },
+  {
+    "id": "man-08",
+    "name": "山姆",
+    "group": "man"
+  },
+  {
+    "id": "man-09",
+    "name": "诺亚",
+    "group": "man"
+  },
+  {
+    "id": "man-10",
+    "name": "艾伦",
+    "group": "man"
+  },
+  {
+    "id": "man-11",
+    "name": "乔伊",
+    "group": "man"
+  },
+  {
+    "id": "man-12",
+    "name": "瑞恩",
+    "group": "man"
+  },
+  {
+    "id": "man-13",
+    "name": "卢卡",
+    "group": "man"
+  },
+  {
+    "id": "man-14",
+    "name": "尼克",
+    "group": "man"
+  },
+  {
+    "id": "man-15",
+    "name": "亚瑟",
+    "group": "man"
+  },
+  {
+    "id": "man-16",
+    "name": "安迪",
+    "group": "man"
+  },
+  {
+    "id": "man-17",
+    "name": "彼得",
+    "group": "man"
+  },
+  {
+    "id": "man-18",
+    "name": "罗伊",
+    "group": "man"
+  },
+  {
+    "id": "man-19",
+    "name": "麦克",
+    "group": "man"
+  },
+  {
+    "id": "man-20",
+    "name": "卡尔",
+    "group": "man"
+  },
+  {
+    "id": "woman-01",
+    "name": "露娜",
+    "group": "woman"
+  },
+  {
+    "id": "woman-02",
+    "name": "艾玛",
+    "group": "woman"
+  },
+  {
+    "id": "woman-03",
+    "name": "米娅",
+    "group": "woman"
+  },
+  {
+    "id": "woman-04",
+    "name": "索菲",
+    "group": "woman"
+  },
+  {
+    "id": "woman-05",
+    "name": "莉莉",
+    "group": "woman"
+  },
+  {
+    "id": "woman-06",
+    "name": "安娜",
+    "group": "woman"
+  },
+  {
+    "id": "woman-07",
+    "name": "诺拉",
+    "group": "woman"
+  },
+  {
+    "id": "woman-08",
+    "name": "露西",
+    "group": "woman"
+  },
+  {
+    "id": "woman-09",
+    "name": "艾薇",
+    "group": "woman"
+  },
+  {
+    "id": "woman-10",
+    "name": "佐伊",
+    "group": "woman"
+  },
+  {
+    "id": "woman-11",
+    "name": "艾拉",
+    "group": "woman"
+  },
+  {
+    "id": "woman-12",
+    "name": "贝拉",
+    "group": "woman"
+  },
+  {
+    "id": "woman-13",
+    "name": "妮娜",
+    "group": "woman"
+  },
+  {
+    "id": "woman-14",
+    "name": "艾米",
+    "group": "woman"
+  },
+  {
+    "id": "woman-15",
+    "name": "梅芙",
+    "group": "woman"
+  },
+  {
+    "id": "woman-16",
+    "name": "伊芙",
+    "group": "woman"
+  },
+  {
+    "id": "woman-17",
+    "name": "莱拉",
+    "group": "woman"
+  },
+  {
+    "id": "woman-18",
+    "name": "黛西",
+    "group": "woman"
+  },
+  {
+    "id": "woman-19",
+    "name": "丽塔",
+    "group": "woman"
+  },
+  {
+    "id": "woman-20",
+    "name": "菲比",
+    "group": "woman"
+  },
+  {
+    "id": "investor-ackman",
+    "name": "小阿克曼",
+    "group": "man"
+  },
+  {
+    "id": "investor-asness",
+    "name": "小阿斯内斯",
+    "group": "man"
+  },
+  {
+    "id": "investor-baruch",
+    "name": "小巴鲁克",
+    "group": "man"
+  },
+  {
+    "id": "investor-black",
+    "name": "小布莱克",
+    "group": "man"
+  },
+  {
+    "id": "investor-bogle",
+    "name": "小博格尔",
+    "group": "man"
+  },
+  {
+    "id": "investor-buffett",
+    "name": "小巴菲特",
+    "group": "man"
+  },
+  {
+    "id": "investor-dalio",
+    "name": "小达利欧",
+    "group": "man"
+  },
+  {
+    "id": "investor-dodd",
+    "name": "小多德",
+    "group": "man"
+  },
+  {
+    "id": "investor-duan-yongping",
+    "name": "小段永平",
+    "group": "man"
+  },
+  {
+    "id": "investor-fama",
+    "name": "小法马",
+    "group": "man"
+  },
+  {
+    "id": "investor-feng-liu",
+    "name": "小冯柳",
+    "group": "man"
+  },
+  {
+    "id": "investor-graham",
+    "name": "小格雷厄姆",
+    "group": "man"
+  },
+  {
+    "id": "investor-jones",
+    "name": "小琼斯",
+    "group": "man"
+  },
+  {
+    "id": "investor-klarman",
+    "name": "小卡拉曼",
+    "group": "man"
+  },
+  {
+    "id": "investor-livermore",
+    "name": "小利弗莫尔",
+    "group": "man"
+  },
+  {
+    "id": "investor-marks",
+    "name": "小马克斯",
+    "group": "man"
+  },
+  {
+    "id": "investor-mobius",
+    "name": "小墨比尔斯",
+    "group": "man"
+  },
+  {
+    "id": "investor-munger",
+    "name": "小芒格",
+    "group": "man"
+  },
+  {
+    "id": "investor-neuberger",
+    "name": "小纽伯格",
+    "group": "man"
+  },
+  {
+    "id": "investor-qiu-guolu",
+    "name": "小邱国鹭",
+    "group": "man"
+  },
+  {
+    "id": "investor-rogers",
+    "name": "小罗杰斯",
+    "group": "man"
+  },
+  {
+    "id": "investor-shiller",
+    "name": "小席勒",
+    "group": "man"
+  },
+  {
+    "id": "investor-siegel",
+    "name": "小西格尔",
+    "group": "man"
+  },
+  {
+    "id": "investor-simons",
+    "name": "小西蒙斯",
+    "group": "man"
+  },
+  {
+    "id": "investor-taleb",
+    "name": "小塔勒布",
+    "group": "man"
+  },
+  {
+    "id": "investor-wood",
+    "name": "小伍德",
+    "group": "woman"
+  },
+  {
+    "id": "investor-xu",
+    "name": "小徐翔",
+    "group": "man"
+  }
+]

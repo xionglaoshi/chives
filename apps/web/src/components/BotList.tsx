@@ -3,12 +3,18 @@ import type { KeyboardEvent, ReactElement } from 'react';
 
 import type { BotSummary } from '@chives/server/protocol';
 
-import { BotAvatar } from '../brand/BotAvatar';
+import { botPortraitUrl } from './BotPortraitPicker';
 import { BOT_STATUS_TONES, botStatusLabel } from '../utils/bots';
-import { Pin } from './SidebarPins';
 import './BotList.css';
 
 const STATUS_TONES = BOT_STATUS_TONES;
+const SIDEBAR_DESCRIPTIONS: Readonly<Partial<Record<string, string>>> = {
+  ceo: '回答您的一切疑问',
+  cio: '发现新的投资机会',
+  cro: '揭示风险、控制回撤',
+  trader: '实时汇报个股交易动态',
+  analyst: '深入研究个股价值',
+};
 
 function sidebarStatusLabel(bot: BotSummary): string {
   return bot.status === 'working' ? '思考' : botStatusLabel(bot);
@@ -25,46 +31,53 @@ export interface BotRowProps {
   onSelect: (botId: string) => void;
   onKeyDown: (event: KeyboardEvent<HTMLButtonElement>, botId: string) => void;
   onMove?: ((source:string,target:string)=>void) | undefined;
-  onPin?: ((id:string)=>void) | undefined;
   buttonRef: (element: HTMLButtonElement | null) => void;
 }
 
-export function BotRow({ bot, selected, onSelect, onKeyDown, buttonRef, onMove, onPin }: BotRowProps): ReactElement {
+export function BotRow({ bot, selected, onSelect, onKeyDown, buttonRef, onMove }: BotRowProps): ReactElement {
+  const canMove = Boolean(onMove) && bot.id !== 'ceo';
+  const suppressClick = useRef(false);
+  const jobTitle = bot.name;
   const statusLabel = sidebarStatusLabel(bot);
   const idle = bot.status === 'idle' && !(bot.waitingDelegations ?? 0);
   const count = approvalCount(bot);
-  const watchCount = bot.watchCount ?? 0;
   const unread = bot.unreadNotifications ?? 0;
   const classes = ['bot-row', `bot-row--${bot.status}`, `bot-row--${bot.background ? 'background' : 'foreground'}`];
   if (selected) classes.push('bot-row--selected');
 
   return (
     <li className="bot-list__item" data-dot-id={bot.id}
-      draggable={Boolean(onMove) && bot.id!=='operator'}
+      draggable={canMove}
+      onPointerDown={() => { suppressClick.current = false; }}
       onDragStart={e=>{e.dataTransfer.setData('text/chives-dot',bot.id);e.dataTransfer.effectAllowed='move';}}
-      onDragOver={e=>{if(bot.id!=='operator' && e.dataTransfer.types.includes('text/chives-dot')) e.preventDefault();}}
+      onDragOver={e=>{if(bot.id!=='ceo' && e.dataTransfer.types.includes('text/chives-dot')) e.preventDefault();}}
       onDrop={e=>{e.preventDefault(); const id=e.dataTransfer.getData('text/chives-dot');if(id) onMove?.(id,bot.id);}}>
       <button
         ref={buttonRef}
         type="button"
         className={classes.join(' ')}
-        onClick={() => onSelect(bot.id)}
+        onClick={() => { if (!suppressClick.current) onSelect(bot.id); suppressClick.current = false; }}
         onKeyDown={(event) => onKeyDown(event, bot.id)}
         aria-current={selected ? 'page' : undefined}
-        aria-label={`${bot.name}，${statusLabel}${count > 0 ? `，${count} 项待你批准` : ''}${
-          watchCount > 0 ? `，${watchCount} 条盯盘` : ''
-        }${unread > 0 ? `，${unread} 条未读通知` : ''}`}
-        title={bot.name}
+        aria-label={`${jobTitle}，${statusLabel}${count > 0 ? `，${count} 项待你批准` : ''}${unread > 0 ? `，${unread} 条未读通知` : ''}`}
+        title={canMove ? jobTitle + ' · 拖动排序，或按 Alt 加上下方向键' : jobTitle}
       >
-        <BotAvatar
-          emblem={bot.avatar.emblem}
-          tone={bot.avatar.tone}
-          size={18}
-        />
         <span className="bot-row__body">
           <span className="bot-row__line">
             <span className="bot-row__identity">
-              <span className="bot-row__name">{bot.name}</span>
+              <span className="bot-row__name"
+                onPointerDown={event => {
+                  if (canMove && event.pointerType === 'touch') event.currentTarget.setPointerCapture(event.pointerId);
+                }}
+                onPointerUp={event => {
+                  if (!canMove || event.pointerType !== 'touch' ||
+                      !event.currentTarget.hasPointerCapture(event.pointerId)) return;
+                  const target = document.elementFromPoint(event.clientX, event.clientY)
+                    ?.closest<HTMLElement>('[data-dot-id]')?.dataset.dotId;
+                  if (target === bot.id) return;
+                  suppressClick.current = true;
+                  if (target && target !== 'ceo') onMove?.(bot.id, target);
+                }}>{jobTitle}</span>
               {unread > 0 && <span className="bot-row__unread" aria-hidden="true">（{unread}）</span>}
             </span>
             <span className={`bot-row__status bot-row__status--${STATUS_TONES[bot.status]}`}>
@@ -73,8 +86,7 @@ export function BotRow({ bot, selected, onSelect, onKeyDown, buttonRef, onMove, 
             </span>
           </span>
           <span className="bot-row__role">
-            {bot.role}
-            {watchCount > 0 ? <span className="bot-row__watch">盯盘 {watchCount}</span> : null}
+            {SIDEBAR_DESCRIPTIONS[bot.id] ?? bot.role}
           </span>
         </span>
         {count > 0 ? (
@@ -83,16 +95,6 @@ export function BotRow({ bot, selected, onSelect, onKeyDown, buttonRef, onMove, 
           </span>
         ) : null}
       </button>
-      <div className="bot-row-actions">
-      {onMove && bot.id!=='operator' && <span className="dot-grip" title="拖动调整顺序，键盘可按 Alt 加上下方向键" aria-hidden="true"
-        onPointerDown={e=>{if(e.pointerType!=='mouse') e.currentTarget.setPointerCapture(e.pointerId);}}
-        onPointerUp={e=>{
-          if(e.pointerType==='mouse') return;
-          const target=document.elementFromPoint(e.clientX,e.clientY)?.closest<HTMLElement>('[data-dot-id]')?.dataset.dotId;
-          if(target) onMove(bot.id,target);
-        }}>⠿</span>}
-      {onPin && !bot.permanent && <Pin name={bot.name} pinned onClick={() => onPin(bot.id)}/>}
-      </div>
     </li>
   );
 }
@@ -103,9 +105,9 @@ export interface BotListProps {
   onSelect: (botId: string) => void;
 }
 
-export function BotList({ bots, selectedId, onSelect, onMove, onPin }: BotListProps & {onPin?:(id:string)=>void;onMove?:(source:string,target:string)=>void}): ReactElement {
+export function BotList({ bots, selectedId, onSelect, onMove }: BotListProps & {onMove?:(source:string,target:string)=>void}): ReactElement {
   const refs = useRef(new Map<string, HTMLButtonElement>());
-  const ordered = [...bots.filter(bot=>bot.id==='operator'),...bots.filter(bot=>bot.id!=='operator')];
+  const ordered = [...bots.filter(bot=>bot.id==='ceo'),...bots.filter(bot=>bot.id!=='ceo')];
 
   const move = (botId: string, offset: number): void => {
     const index = ordered.findIndex((bot) => bot.id === botId);
@@ -120,7 +122,7 @@ export function BotList({ bots, selectedId, onSelect, onMove, onPin }: BotListPr
     if (event.altKey && (event.key==='ArrowUp' || event.key==='ArrowDown')) {
       event.preventDefault();
       const target=ordered[ordered.findIndex(bot=>bot.id===botId)+(event.key==='ArrowUp' ? -1 : 1)];
-      if (onMove && target && target.id!=='operator' && botId!=='operator') onMove(botId,target.id);
+      if (onMove && target && target.id!=='ceo' && botId!=='ceo') onMove(botId,target.id);
       return;
     }
     if (event.key === 'ArrowDown') {
@@ -148,7 +150,7 @@ export function BotList({ bots, selectedId, onSelect, onMove, onPin }: BotListPr
 
   return <div className="bot-list">
     <h2 className="bot-list__heading">已在岗Bot</h2>
-    <ul className="bot-list__list">{ordered.map(bot=><BotRow key={bot.id} bot={bot} onPin={onPin}
+    <ul className="bot-list__list">{ordered.map(bot=><BotRow key={bot.id} bot={bot}
       selected={bot.id===selectedId} onSelect={onSelect} onKeyDown={handleKeyDown} onMove={onMove}
       buttonRef={el=>{if (el) refs.current.set(bot.id,el); else refs.current.delete(bot.id);}}/>)}</ul>
   </div>;
@@ -165,6 +167,7 @@ export function BotRail({ bots, selectedId, onSelect }: BotRailProps): ReactElem
   return (
     <ul className="bot-rail" aria-label="Bot 列表（头像栏）">
       {bots.map((bot) => {
+        const jobTitle = bot.name;
         const count = approvalCount(bot);
         const selected = bot.id === selectedId;
         return (
@@ -176,12 +179,12 @@ export function BotRail({ bots, selectedId, onSelect }: BotRailProps): ReactElem
               }`}
               onClick={() => onSelect(bot.id)}
               aria-current={selected ? 'page' : undefined}
-              aria-label={`${bot.name}，${sidebarStatusLabel(bot)}${
+              aria-label={`${jobTitle}，${sidebarStatusLabel(bot)}${
                 count > 0 ? `，${count} 项待你批准` : ''
               }`}
-              title={bot.name}
+              title={jobTitle}
             >
-              <BotAvatar emblem={bot.avatar.emblem} tone={bot.avatar.tone} size={18} />
+              <img className="bot-rail__portrait" src={botPortraitUrl(bot.portraitId ?? 'man-01')} alt="" width={24} height={24} />
               <span
                 className={`bot-rail__status bot-rail__status--${STATUS_TONES[bot.status]}`}
                 aria-hidden="true"

@@ -106,13 +106,30 @@ export function TaskProgress({ task, tools }: TaskProgressProps): ReactElement {
 
   return (
     <div className="task-progress" aria-label="工作过程">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
         strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-        <rect x="5" y="4" width="14" height="17" rx="2"/>
-        <path d="M9 4V3h6v1M9 9h6M9 13h6M9 17h4"/>
+        {running ? (
+          <>
+            <rect x="2" y="10" width="14" height="11" rx="3"/>
+            <path d="M9 10V7m-6 9H1m16 0h-1m-9 2h4"/>
+            <circle cx="6" cy="14" r=".85" fill="currentColor" stroke="none"/>
+            <circle cx="12" cy="14" r=".85" fill="currentColor" stroke="none"/>
+            <path d="M14 8l1-2h-1a2.5 2.5 0 0 1 0-5h6a2.5 2.5 0 0 1 0 5h-3z"/>
+            <g className="task-progress__thought" fill="currentColor" stroke="none">
+              <circle cx="14.5" cy="3.5" r=".75"/>
+              <circle cx="17" cy="3.5" r=".75"/>
+              <circle cx="19.5" cy="3.5" r=".75"/>
+            </g>
+          </>
+        ) : (
+          <>
+            <rect x="5" y="4" width="14" height="17" rx="2"/>
+            <path d="M9 4V3h6v1M9 9h6M9 13h6M9 17h4"/>
+          </>
+        )}
       </svg>
       <span>
-        {running && '我正在结合您的用户画像、持仓情况及近期记忆等，基于我能查询到的各类数据认真思考……'}
+        {running && '我正在结合您的用户画像、持仓情况及近期记忆，查询Chives数据库……'}
         <span className="task-progress__summary">
           思考了 {seconds} 秒 · {tools.length} 步{running ? '' : ` · ${TASK_LABELS[task.status]}`}
         </span>

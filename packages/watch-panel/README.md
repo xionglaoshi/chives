@@ -1,6 +1,6 @@
 # watch-panel
 
-dsh 的 A 股**盯盘页**（T100）与**「我的」页**（T101）。Host 半在**已认证**的 `/api` 下注册路由：`/api/watch/*` 转发给本机的 [cn-watch](../cn-watch/README.md) 引擎并读取本地告警分析文件；`/api/market/*` 按 [`docs/market-watch-api.md`](../../docs/market-watch-api.md) 的 v1.4 契约转发给本机的 `market-watch` 引擎；`/api/hub/*` 按 [`docs/hub-api.md`](../../docs/hub-api.md) 转发给本机的 `chives-hub`：12 条公开读路由（信号列表/详情、计划列表、分时迷你线 `/spark`，以及 v1.1 的 `settings`/`discipline`/`reviews`/`review`/`cards`/`card`/`candidates-stats`/`guidance`）、2 条**私有只读**路由（`portfolio-overview`、`portfolio-history`）与 5 条受限写路由（信号状态、计划确认、设置、纪律、作战卡）。私有持仓读与 v1.1 的 `settings`/`discipline`/`reviews`/`review`/`cards`/`card`/`candidates-stats`/`guidance` 的响应（含 400/502）一律 `Cache-Control: no-store`；hub v1.1 的 `/review-data`、`POST /reviews`、`POST /cards`、`/settings/*/suggest`、`/triggers*` **不开放**。Client 半只向 `main` 注册 `chives-workbench`（盯盘页），**不注册 `sidebar.panellist`、也不注册「我的」页**；「我的」页与两个侧栏入口由 [chives-ui](../chives-ui/README.md) 提供，本包只提供它依赖的 Host 代理。
+dsh 的 A 股**盯盘页**（T100）与**「我的」页**（T101）。Host 半在**已认证**的 `/api` 下注册路由：`/api/watch/*` 转发给本机的 [chives-radar](../chives-radar/README.md) 引擎并读取本地告警分析文件；`/api/market/*` 按 [`docs/market-watch-api.md`](../../docs/market-watch-api.md) 的 v1.4 契约转发给本机的 `chives-compass` 引擎；`/api/hub/*` 按 [`docs/hub-api.md`](../../docs/hub-api.md) 转发给本机的 `chives-signals`：12 条公开读路由（信号列表/详情、计划列表、分时迷你线 `/spark`，以及 v1.1 的 `settings`/`discipline`/`reviews`/`review`/`cards`/`card`/`candidates-stats`/`guidance`）、2 条**私有只读**路由（`portfolio-overview`、`portfolio-history`）与 5 条受限写路由（信号状态、计划确认、设置、纪律、作战卡）。私有持仓读与 v1.1 的 `settings`/`discipline`/`reviews`/`review`/`cards`/`card`/`candidates-stats`/`guidance` 的响应（含 400/502）一律 `Cache-Control: no-store`；hub v1.1 的 `/review-data`、`POST /reviews`、`POST /cards`、`/settings/*/suggest`、`/triggers*` **不开放**。Client 半只向 `main` 注册 `chives-workbench`（盯盘页），**不注册 `sidebar.panellist`、也不注册「我的」页**；「我的」页与两个侧栏入口由 [chives-ui](../chives-ui/README.md) 提供，本包只提供它依赖的 Host 代理。
 
 - 目标 dsh 版本：`0.2.1-rc.5`（`@deepseek-ai/dsh-*` 与 react/typescript/tsdown 全部精确钉死，**不要改成 `^` 或 `latest`**）。
 - 没有运行时依赖，也不引入新的 devDependency。
@@ -35,9 +35,9 @@ dsh plugin --profile <profile> add "link:$PWD"
 
 | 变量 | 缺省 | 说明 |
 |---|---|---|
-| `WATCH_PANEL_ENGINE` | `http://127.0.0.1:8765` | cn-watch 引擎地址。**主机名必须是回环地址**（`127.0.0.1`、`localhost`、`[::1]`），否则 Host 半在 `apply` 时抛错、拒绝加载。 |
-| `WATCH_PANEL_MARKET_ENGINE` | `http://127.0.0.1:8766` | `market-watch` 引擎地址。同样只接受回环主机名。 |
-| `WATCH_PANEL_HUB_ENGINE` | `http://127.0.0.1:8767` | `chives-hub` 地址。同样只接受回环主机名；`/api/hub/*` 只连这个回环服务，**只代理固定的 19 条路由**（含两条 `/portfolio/*` 私有读、一条 `/spark` 公开读与 v1.1 白名单读/写；不生成通用 `/portfolio/*`、`/triggers*` 或开放代理）。 |
+| `WATCH_PANEL_ENGINE` | `http://127.0.0.1:8765` | chives-radar 引擎地址。**主机名必须是回环地址**（`127.0.0.1`、`localhost`、`[::1]`），否则 Host 半在 `apply` 时抛错、拒绝加载。 |
+| `WATCH_PANEL_MARKET_ENGINE` | `http://127.0.0.1:8766` | `chives-compass` 引擎地址。同样只接受回环主机名。 |
+| `WATCH_PANEL_HUB_ENGINE` | `http://127.0.0.1:8767` | `chives-signals` 地址。同样只接受回环主机名；`/api/hub/*` 只连这个回环服务，**只代理固定的 19 条路由**（含两条 `/portfolio/*` 私有读、一条 `/spark` 公开读与 v1.1 白名单读/写；不生成通用 `/portfolio/*`、`/triggers*` 或开放代理）。 |
 | `WATCH_PANEL_ANALYSES_DIR` | `<仓库根>/runtime/watch/analyses` | 告警分析目录。必须是**绝对路径**，否则 Host 半在 `apply` 时抛错、拒绝加载。缺省值由 `import.meta.url` 从本包位置解析，源码与 `lib/` 两种布局都指向同一个仓库根。 |
 
 浏览器永远看不到这两个地址：页面只请求同源的 `/api/watch/*` 与 `/api/market/*`，Host 半自己拼接上游。
@@ -46,7 +46,7 @@ dsh plugin --profile <profile> add "link:$PWD"
 
 ```text
 浏览器（同源 fetch，自动带 dsh 的认证 cookie）
-  GET /api/watch/health | /state | /alerts | /rules | /rules/history   ← cn-watch 代理
+  GET /api/watch/health | /state | /alerts | /rules | /rules/history   ← chives-radar 代理
   GET /api/watch/analyses | /analysis                                   ← 本地分析文件
   GET /api/market/health | /overview | /sectors[?level=sw1|industry] | /alerts | /rules
   GET /api/market/movers?kind=&limit=&include_st=&include_new=&include_bj= ← 榜单
@@ -126,12 +126,12 @@ watch-panel Host 半
     仅 set_state 带 abandon|exit；多余字段一律拒绝
   · 上游路径只用校验后的 code 拼接，绝不转发原始查询串
   · 出站只发 GET + accept=application/json，不带任何浏览器请求头（cookie/authorization 等）
-  · cn-watch 3 秒超时；market-watch 5 秒超时、响应上限 2 MB
+  · chives-radar 3 秒超时；chives-compass 5 秒超时、响应上限 2 MB
   · 上游不可达/超时 → 502 {"ok":false,"error":{"code":"engine_unreachable",...}}
   · 响应头只回 content-type: application/json; charset=utf-8（set-cookie 等一律丢弃）
         │
         ▼
-cn-watch（127.0.0.1:8765，个股/ETF）      market-watch（127.0.0.1:8766，大盘/板块/情绪）
+chives-radar（127.0.0.1:8765，个股/ETF）      chives-compass（127.0.0.1:8766，大盘/板块/情绪）
 ```
 
 ## 界面（盯盘页）
@@ -145,7 +145,7 @@ cn-watch（127.0.0.1:8765，个股/ETF）      market-watch（127.0.0.1:8766，�
    - "让 Chives 重看"填入"请重新分析 <对象> 的信号：<标题>"；"稍后提醒 ▾"菜单（30 分钟后/收盘前/明天开盘）调用 `snooze`；"忽略"先淡出再调用 `ignore`，底部提示条提供"撤销"（`reopen`）。
    - `decide=true` 的信号按严重度/时间取前 3 进"待你决策"，其余落"信号"。顶部芯片"全部｜待决策｜我的票｜板块"同屏过滤（保留状态，不是页签）。
    - 抽屉：`/api/hub/signal?id=`，显示 `analysis.sections`（结论/方向/要点/详情）与 markdown 原文（React 文本节点，不解析 HTML、不执行脚本），带数据时间与来源；打开时自动 `ack`（seen）。
-   - hub 不可达：待你决策与信号区显示"信号服务未启动"空态，并在"已处理"下方提供"原始告警"折叠区，退回 cn-watch 与 market-watch 告警的合并时间线（沿用 `buildTimeline`）。
+   - hub 不可达：待你决策与信号区显示"信号服务未启动"空态，并在"已处理"下方提供"原始告警"折叠区，退回 chives-radar 与 chives-compass 告警的合并时间线（沿用 `buildTimeline`）。
 4. **行业板块**：`/api/market/sectors?level=sw1`；默认热力图，面积依据默认 **成交额(√)**（`sqrt(amount)`，压缩大小行业差距），可切"等权"；每格**一定显示名称**（最小格字号 11px、最多 3 行换行/字符断行），放不下时先隐藏涨跌幅、再隐藏成交额，二者仍在悬停浮层；最小格有 `MIN_TILE_SHARE = 1.2%` 面积下限。悬停浮层含名称、涨跌幅、成交额、占比、领涨股；保持分档配色、`is-strong` 白字与图例。右上"热力图｜排行"是同一模块内的视图开关；点格子/行打开行业抽屉。
 5. **涨跌幅榜**：`/api/market/movers`，涨幅榜与跌幅榜并排各前 8（<1280px 上下排），"成交额榜"默认折叠，展开为第三列；"含 ST / 含次新 / 含北交所"默认全关，切换立即重拉；价格变化的行做一次金色脉冲。
 6. **资金流向**：`/api/market/flows`，30 秒且仅当区块可见时轮询；并排三列"行业净流入榜｜行业净流出榜｜个股净流入榜"（各前 8），"个股净流出榜"折叠为"更多"。行：序号、名称+代码、主力净流入（亿元，▲/▼，正流入红/负流出绿）、涨跌幅；块头小字"东财主力口径·仅作辅助参考"，`/api/market/flows-northbound` 返回 `available:true` 时在块头右侧显示北向净流入，`false` 时不显示也不报错。点击行业行打开行业抽屉，个股行打开个股抽屉；取不到/陈旧时置灰并显示 `reason`。
@@ -170,9 +170,9 @@ cn-watch（127.0.0.1:8765，个股/ETF）      market-watch（127.0.0.1:8766，�
 ## 已知限制
 
 - 引擎不可达时只显示最后一次成功的数据；面板不会自己拉起引擎。
-- 面板不自行判断交易日历或新鲜度：时段直接显示引擎的 `session`（cn-watch）或 `trading_state`（market-watch），陈旧由引擎 `stale`/`health` 字段决定。
+- 面板不自行判断交易日历或新鲜度：时段直接显示引擎的 `session`（chives-radar）或 `trading_state`（chives-compass），陈旧由引擎 `stale`/`health` 字段决定。
 - **页面写接口只有五条**：`POST /api/hub/signal-action`、`POST /api/hub/plan-action`、`POST /api/hub/setting-action`、`POST /api/hub/discipline-action` 与 `POST /api/hub/card-action`，只改信号/计划/设置/纪律/作战卡状态，绝不触发交易；加自选、移除、改规则仍由智能体在对话里完成。
-- market-watch 的 `/sectors/{code}` 与 `/members` 在 Host 上对应 `/api/market/sector?code=` 与 `/api/market/sector-members?code=`；Host 只校验 `^BK[0-9]{4}$`、不保存行业清单，未知行业由引擎返回 `unknown_sector`。
+- chives-compass 的 `/sectors/{code}` 与 `/members` 在 Host 上对应 `/api/market/sector?code=` 与 `/api/market/sector-members?code=`；Host 只校验 `^BK[0-9]{4}$`、不保存行业清单，未知行业由引擎返回 `unknown_sector`。
 - 休市时引擎返回最后有效值并带 `state_note`（`stale:false`）；界面显示该说明，只有 `stale:true` 才标"数据陈旧"。
 - 板块列表接口没有 5 日/20 日收益字段；表格列先显示"—"，下钻详情拿到 `history` 后显示。
 - 行业详情/成分在打开时加载一次，刷新按钮可重载；不跟随 60 秒轮询（契约允许，本任务未要求）。
@@ -184,5 +184,5 @@ cn-watch（127.0.0.1:8765，个股/ETF）      market-watch（127.0.0.1:8766，�
 - 顶栏搜索在 dsh 的 shell 顶栏里没有 slot，本包把搜索框放在工作台脉搏带第一行；行为与提问条一致。
 - 盘前的"昨日涨停池"没有契约字段，本任务只把标题切换为"今日关注"，不伪造涨停池。
 - `chives:ask` 事件与 `setDraft` 机制来自 chives-ui；只装 watch-panel 时提问条仍会发事件，但没人消费，输入框不会被填充。
-- `market-watch` 告警的 `analysis_id` 与 cn-watch 的 `alert_id` 命名空间不同；本包按 `analysis_id` 请求 `/api/watch/analysis?id=`，若该文件不存在则显示"分析内容加载失败"，不编造正文。
+- `chives-compass` 告警的 `analysis_id` 与 chives-radar 的 `alert_id` 命名空间不同；本包按 `analysis_id` 请求 `/api/watch/analysis?id=`，若该文件不存在则显示"分析内容加载失败"，不编造正文。
 - 只在 Node 24 与本机 macOS 上验证过类型检查、构建与离线测试；真实浏览器渲染与动效由验收者做目视验收，本包不声称已验证。

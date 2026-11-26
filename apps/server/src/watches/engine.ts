@@ -1,5 +1,6 @@
-/** Minimal HTTP client for cn-watch's plan endpoints. Never writes rules or watchlists. */
+/** Minimal HTTP client for chives-radar's plan endpoints. Never writes rules or watchlists. */
 
+import type {Bar,Crossing} from './indicators.js';
 import type { JsonRecord } from '../store/index.js';
 
 export const WATCH_ENGINE_TIMEOUT_MS = 5_000;
@@ -29,7 +30,7 @@ export type EngineListResult =
   | { ok: true; plans: EnginePlanState[] }
   | { ok: false; unreachable: true; message: string };
 
-export interface CnWatchClientOptions {
+export interface ChivesRadarClientOptions {
   baseUrl: string;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
@@ -64,12 +65,12 @@ function toPlanState(value: unknown): EnginePlanState | null {
   };
 }
 
-export class CnWatchClient {
+export class ChivesRadarClient {
   readonly baseUrl: string;
   private readonly fetchImpl: typeof fetch;
   private readonly timeoutMs: number;
 
-  constructor(options: CnWatchClientOptions) {
+  constructor(options: ChivesRadarClientOptions) {
     this.baseUrl = options.baseUrl.replace(/\/+$/, '');
     this.fetchImpl = options.fetchImpl ?? fetch;
     this.timeoutMs = options.timeoutMs ?? WATCH_ENGINE_TIMEOUT_MS;
@@ -90,6 +91,14 @@ export class CnWatchClient {
     } finally {
       clearTimeout(timer);
     }
+  }
+
+  async technicalSignals(bars:Bar[]):Promise<Crossing[]> {
+    const response=await this.request('/technical/evaluate',{method:'POST',body:JSON.stringify({bars})});
+    if(!response?.ok)throw new Error('技术指标服务暂不可用');
+    const body=await response.json() as {signals?:Crossing[]};
+    if(!Array.isArray(body.signals))throw new Error('未取得指标结果');
+    return body.signals;
   }
 
   async upsert(plan: JsonRecord): Promise<EngineUpsertResult> {

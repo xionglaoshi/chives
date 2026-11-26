@@ -5,10 +5,10 @@ import { dirname, isAbsolute, join, resolve } from 'node:path';
 
 import { BotLoadError, type BotLoadIssue } from './errors.js';
 import { parseBotManifest } from './manifest.js';
-import type { BotCatalog, BotManifest } from './types.js';
+import { botHasWatches, type BotCatalog, type BotManifest } from './types.js';
 
 /** The bot users land on first. */
-export const DEFAULT_ENTRY_BOT_ID = 'operator';
+export const DEFAULT_ENTRY_BOT_ID = 'ceo';
 
 export class BotRegistry {
   private ordered: readonly BotManifest[];
@@ -16,6 +16,18 @@ export class BotRegistry {
   private personas: ReadonlyMap<string, string>;
   private sharedRules: string;
   private hired: ReadonlySet<string> | undefined;
+
+  /** Resolve a sender or task owner, including archived records from retired roles. */
+  nameFor(id: string): string {
+    const current = this.get(id);
+    if (current) return current.name;
+    switch (id) {
+      case 'operator': return '总经理';
+      case 'expert': return '投资专家';
+      case 'zhushenglang': return '主升浪研究员';
+      default: return '历史 Bot';
+    }
+  }
 
   setHired(ids: readonly string[]): void {
     this.hired = new Set(ids);
@@ -30,7 +42,7 @@ export class BotRegistry {
     personas: ReadonlyMap<string, string>,
     sharedRules: string,
   ) {
-    // Display order: the default entry (`operator`) first, then other conversational bots, background colleagues last.
+    // Display order: the default entry (`ceo`) first, then other conversational bots, background colleagues last.
     const rank = (manifest: BotManifest): number =>
       manifest.id === DEFAULT_ENTRY_BOT_ID ? 0 : manifest.background ? 2 : 1;
     this.ordered = [...manifests].sort((left, right) => rank(left) - rank(right));
@@ -198,15 +210,16 @@ export function loadBots(botsDir: string, catalog: BotCatalog): BotRegistry {
     manifests.push(manifest);
   }
 
-  const coordinator = manifests.find(bot => bot.id === DEFAULT_ENTRY_BOT_ID);
-  if (coordinator) {
-    coordinator.skills = [...catalog.skills];
-    coordinator.mcp = [...catalog.mcp];
-    if (!coordinator.trading_guard) throw new BotLoadError([{file: filesById.get(coordinator.id)!,message: '总调度员需要交易审批保护'}]);
-    coordinator.can_delegate_to = manifests.filter(bot => bot !== coordinator).map(bot => bot.id);
-  }
-
+  const owners = new Map<string, string>();
   for (const manifest of manifests) {
+    for (const intent of manifest.accepts_handoffs ?? []) {
+      const previous = owners.get(intent);
+      if (previous || (intent === 'watch' && !botHasWatches(manifest))) {
+        issues.push({file: filesById.get(manifest.id)!, message: previous
+          ? `handoff "${intent}" already belongs to ${previous}` : 'watch handoffs require the trading desk'});
+      }
+      owners.set(intent, manifest.id);
+    }
     for (const target of manifest.can_delegate_to) {
       if (target === manifest.id) {
         issues.push({

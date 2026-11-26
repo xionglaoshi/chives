@@ -11,11 +11,11 @@
       config:
         serverName: cn_market
         transport: stdio
-        command: /Users/xiong/.chives/packages/cn-market-gateway/.venv/bin/cn-market-mcp
+        command: /Users/xiong/.chives/packages/chives-data/.venv/bin/cn-market-mcp
         args:
           - --port
           - "8868"
-        cwd: /Users/xiong/.chives/packages/cn-market-gateway
+        cwd: /Users/xiong/.chives/packages/chives-data
         failOnStartupError: false
 
 # ---- cn-data ----
@@ -85,7 +85,7 @@
         failOnStartupError: false
 
 # ---- cn-watch ----
-# cn-watch: read-only local watch engine over stdio MCP (health, state, alerts, rules).
+# chives-radar: read-only local watch engine over stdio MCP (health, state, alerts, rules).
 - insert:
     - id: fin-cn-watch
       name: '@deepseek-ai/dsh-mcp-client'
@@ -244,11 +244,11 @@
       config:
         serverName: strategy
         transport: stdio
-        command: /Users/xiong/.chives/packages/strategy-hub/.venv/bin/python
+        command: /Users/xiong/.chives/packages/chives-strategy/.venv/bin/python
         args:
           - -m
-          - strategy_hub.mcp_server
-        cwd: /Users/xiong/.chives/packages/strategy-hub
+          - chives_strategy.mcp_server
+        cwd: /Users/xiong/.chives/packages/chives-strategy
         env:
           CHIVES_STRATEGY_URL: http://127.0.0.1:8869
           CHIVES_STRATEGIES: !!js (process.env.CHIVES_STRATEGIES || '')

@@ -1,6 +1,6 @@
 /** Memory facade: file store, write policy, audit log, injection, and SSE. */
 
-import { existsSync, readdirSync } from 'node:fs';
+import { existsSync, readdirSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 import type { BotMemoryItem, BotMemoryList } from '../api/protocol.js';
@@ -316,6 +316,19 @@ export class MemoryService {
     });
     this.publish(botId, 'deleted', null);
     return { ok: true };
+  }
+
+  retireForReview(botId:string,observed:MemoryRecord,reason:string,job:string){
+    const store=this.store(botId),current=store?.get(observed.slug);
+    if(!store||!current||serializeMemory(current)!==serializeMemory(observed))return;
+    const dir=join(this.dataDir,'user-archive-state','retired-memories',job,botId);
+    mkdirSync(dir,{recursive:true,mode:0o700});
+    const copy=join(dir,observed.slug+'.md'),source=serializeMemory(current);
+    if(!existsSync(copy))writeFileSync(copy,source,{flag:'wx',mode:0o600});
+    if(readFileSync(copy,'utf8')!==source)return;
+    const before=store.delete(current.slug);
+    this.recordAudit({bot:botId,action:'delete',actor:'capture',slug:current.slug,title:current.title,before,after:null,reason});
+    this.publish(botId,'deleted',null);
   }
 
   /** Fuzzy title/description match; an empty topic lists everything. */

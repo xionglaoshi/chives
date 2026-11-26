@@ -1,4 +1,4 @@
-"""Tool dispatch and argument validation for the cn-watch MCP server."""
+"""Tool dispatch and argument validation for the chives-radar MCP server."""
 
 from __future__ import annotations
 

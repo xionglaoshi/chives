@@ -4,7 +4,7 @@ from urllib.parse import urlsplit
 import re
 import json
 import requests
-from cn_market_gateway.announcement import (
+from chives_data.announcement import (
     MAX_PDF_BYTES,
     extract_pdf_text,
     pdftotext_path,

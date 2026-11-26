@@ -2,13 +2,18 @@ import type {EventBus} from '../events/index.js';
 import {MAX_NOTIFICATION_BODY,type NotificationService} from '../notifications/service.js';
 import type {Store} from '../store/index.js';
 
-export const initialBriefingTitle = '每日投研简报';
+export const initialBriefingTitle = '盘前简报';
+export const morningId = 'manifest:cio:morning-briefing';
+export const reviewId = 'manifest:cro:risk-review';
+export function morningRoutineId(store: Store) {
+  return store.settings.get<string>('desk.morningRoutineId') ?? morningId;
+}
 
 export const initialBriefingSchedule = {
-  cron: '0 9 * * 1-5', tz: 'Asia/Shanghai',
+  cron: '30 8 * * 1-5', tz: 'Asia/Shanghai',
 } as const;
 
-export function initialBriefingPrompt(additions: string) {
+export function legacyBriefingPrompt(additions: string) {
   return `生成每日投研简报，投递到 Chives Bot 消息。
 先按需读取本机用户属性、关注和持仓，使用市场日历定位上一交易日，读取该交易日的证券行情；再读取机会榜单、A股热点资讯和全球股市热点资讯。
 
@@ -25,24 +30,23 @@ ${additions ? '\n## 用户追加事项\n'+additions : ''}`;
 }
 
 
-export function subscribeInitialBriefingDelivery(bus: EventBus, store: Store, notifications: NotificationService) {
+export function subscribeInitialBriefingDelivery(bus: EventBus, store: Store, notifications: NotificationService,hired:(id:string)=>boolean=()=>true) {
   return bus.subscribe(event => {
-    if (event.type !== 'task.updated' || event.task.status !== 'done' ||
-        event.task.title !== initialBriefingTitle) return;
+    if (event.type !== 'task.updated' || event.task.status !== 'done') return;
     const task = store.tasks.get(event.task.id);
-    if (task?.origin !== 'routine' || store.notifications.countForTask(task.id) > 0) return;
+    if (task?.origin !== 'routine' || !hired(task.botId) || store.notifications.countForTask(task.id) > 0) return;
     const messages = store.messages.listByTask(task.id);
     const proactive = messages.find(message => message.kind === 'proactive');
     const routineId = proactive?.meta?.routineId;
     const routine = typeof routineId === 'string' ? store.routines.get(routineId) : undefined;
-    if (routine?.source !== 'user' || routine.title !== initialBriefingTitle) return;
+    if (!routine || ![morningRoutineId(store),reviewId].includes(routine.id)) return;
     const content = messages.findLast(message => message.role === 'bot' && message.kind === 'text')?.content.trim();
     if (!content) return;
     const characters = Array.from(content);
-    const continuation = '…\n完整简报及新闻链接见总调度会话。';
+    const continuation = '…\n完整简报及来源见对应岗位会话。';
     const body = characters.length > MAX_NOTIFICATION_BODY
       ? characters.slice(0, MAX_NOTIFICATION_BODY - Array.from(continuation).length).join('') + continuation
       : content;
-    notifications.notify({botId:task.botId,taskId:task.id,title:initialBriefingTitle,body,level:'info',localOnly:true});
+    notifications.notify({botId:task.botId,taskId:task.id,title:routine.title,body,level:'info',localOnly:true});
   });
 }

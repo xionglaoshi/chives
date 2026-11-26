@@ -1,6 +1,6 @@
 # cn-watch-mcp
 
-stdio MCP 服务，把本机 `cn-watch` 盯盘引擎的只读接口与**受限的自选股/盯盘规则写接口**暴露给智能体：
+stdio MCP 服务，把本机 `chives-radar` 盯盘引擎的只读接口与**受限的自选股/盯盘规则写接口**暴露给智能体：
 
 | 工具 | 引擎接口 | 用途 |
 |---|---|---|
@@ -57,7 +57,7 @@ cn-watch-mcp: WATCH_ENGINE must point at a loopback host (127.0.0.1, localhost, 
 ```json
 {
   "ok": true,
-  "source": "cn-watch",
+  "source": "chives-radar",
   "market": "cn",
   "as_of": "2026-11-03T10:00:00+08:00",
   "status": "ready",

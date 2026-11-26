@@ -61,8 +61,7 @@
   .mobile-nav-sheet .sidebar__brand { padding-right: 40px; }
   .mobile-nav-sheet .sidebar__wordmark { font-size: 18px; }
   .mobile-nav-sheet .desk-shortcuts button, .mobile-nav-sheet .sidebar-more > button,
-  .mobile-nav-sheet .desk-nav-item, .mobile-nav-sheet .sidebar-pin { min-height: 44px; }
-  .mobile-nav-sheet .sidebar-pin { min-width: 40px; }
+  .mobile-nav-sheet .desk-nav-item { min-height: 44px; }
   .mobile-nav-sheet .desk-nav { padding-top: max(22px, env(safe-area-inset-top, 0px)); }
   .mobile-nav-sheet .desk-nav-item { font-size: 15px; gap: 12px; }
 }

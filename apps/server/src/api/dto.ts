@@ -154,8 +154,10 @@ export function toBotSummary(
 ): BotSummary {
   return {
     id: bot.id,
-    name: override?.displayName ?? bot.name,
+    name: bot.name,
     role: bot.role,
+    ...(bot.workbench ? { workbench: bot.workbench } : {}),
+    ...(bot.capability_tags ? { capabilityTags: bot.capability_tags } : {}),
     ...(bot.headline === undefined ? {} : { headline: bot.headline }),
     avatar: {
       emblem: override?.avatarEmblem ?? bot.avatar.emblem,

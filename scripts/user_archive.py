@@ -180,7 +180,7 @@ def snapshot(user, db, fields):
                 provisional.add(key)
             else:
                 provisional.discard(key)
-        elif values[key] is None:
+        else:
             pending[key] = reason
     publish(user/"attributes/values.json", dump(values))
     questions = ["# 待确认的用户属性", "", "可按编号直接回复。暂时不清楚的项目可保留未知。", ""]
@@ -188,6 +188,9 @@ def snapshot(user, db, fields):
         if val is None:
             f = fields[key]
             questions.extend([f"## {f['id']} {f['label']}", pending.get(key,"暂无足够依据。"), "", f["scale"], ""])
+    for key, reason in pending.items():
+        if values[key] is not None:
+            questions.extend([f"## {fields[key]['id']} {fields[key]['label']}（已保留原值）", reason, ""])
     if provisional:
         questions.extend(["## 留待新版问卷替换", "",
                           "以下项目已按本人授权临时代填，当前无需补答。", ""])
@@ -210,7 +213,7 @@ def snapshot(user, db, fields):
     publish(user/"reviews/赋值对照.md","\n".join(report)+"\n")
 
     assessed = db.execute("SELECT 1 FROM batches WHERE origin='questionnaire' LIMIT 1").fetchone()
-    summary = ["# 用户索引", "", "已完成旧版问卷，未确认的属性保留未知。" if assessed else "尚未登记已完成的评测。最终答复提醒本人完成评测，当前答复基于有限资料，仅供研究参考。",""]
+    summary = ["# 用户索引", "", "已完成评测，未确认的属性保留未知。" if assessed else "尚未登记已完成的评测。最终答复提醒本人完成评测，当前答复基于有限资料，仅供研究参考。",""]
     if provisional:
         ids = "、".join(f["id"] for key,f in fields.items() if key in provisional)
         summary.append("等新版问卷再核："+ids+" 是临时代填；个性化建议、仓位提醒和实绩统计均只使用有依据的值。这些项目当前无需追问。")
@@ -224,14 +227,27 @@ def snapshot(user, db, fields):
     prefix="\n".join(summary)+"\n\n## 长期要求\n"
     for line in instructions:
         if line.startswith("- ") and len(prefix)+len(line)+len(MAP)+4<=1000:
-            prefix+=line+"\n"
+            prefix+=line.replace("](../sources/","](sources/")+"\n"
+    interview_summary=user.parent/"user-archive-state/interview-summary.md"
+    if interview_summary.is_file():
+        prefix += "\n<!-- ceo-interview -->\n"+interview_summary.read_text().strip()+"\n<!-- /ceo-interview -->\n"
     publish(user/"user-index.md",prefix+"\n"+MAP)
+    reviewed=user/"reviews/interview-result.json"
+    if reviewed.exists():
+        from customer_archive import replace_section
+        last=json.loads(reviewed.read_text())
+        gaps=[f"- {r['id']} {r['label']}：{r['reason']}" for r in last["findings"] if r["status"]=="待核实"]
+        replace_section(user/"reviews/待确认属性.md","ceo-interview","\n".join(["## 最近访谈需补证",*gaps]) if gaps else "")
+
+
+def evidence_rank(origin):
+    return {"observed": 0, "questionnaire": 2, "provisional": 3}.get(origin, 1)
 
 
 def apply(user, db, fields, packet):
     # Only the local owner/importer invokes this writer. No Bot API calls it.
     ref=packet["source_id"]
-    if not re.fullmatch(r"[A-Za-z0-9_-]{1,100}",ref) or packet["origin"] not in ("questionnaire","owner","review","provisional","operator"):
+    if not re.fullmatch(r"[A-Za-z0-9_-]{1,100}",ref) or packet["origin"] not in ("questionnaire","owner","review","provisional","ceo","operator","observed","dialogue"):
         raise ValueError("来源无效")
     stamp=packet["effective_at"]
     if datetime.fromisoformat(stamp.replace("Z","+00:00")).tzinfo is None:
@@ -255,9 +271,12 @@ def apply(user, db, fields, packet):
         old=json.loads(prior[0]) if prior else None
         if old!=item["old"] or type(old) is not type(item["old"]):
             raise ValueError(f"原值已变化：{key}")
+        if prior and item["decision"]=="applied" and evidence_rank(packet["origin"])>evidence_rank(prior[1]):
+            raise ValueError(f"已有更高等级依据，保留原判：{key}")
         if packet["origin"]=="provisional" and (old is not None or item["value"] is None or item["decision"]!="applied"):
             raise ValueError("临时代填只适用于空缺项且必须给出字典内的值")
-        if packet["origin"]=="questionnaire" and old is not None and prior[1]!="provisional":
+        reviewed_intake = ref.startswith("intake-") and packet.get("interview", {}).get("survey")=="ceo-interview.v1"
+        if packet["origin"]=="questionnaire" and old is not None and prior[1]!="provisional" and not (reviewed_intake and (item["decision"]=="pending" or old==item["value"] or prior[1]=="questionnaire")):
             raise ValueError("重复评测须提交复核")
         decision=item["decision"]
         if decision not in ("applied","pending") or (decision=="pending" and item["value"] is not None):

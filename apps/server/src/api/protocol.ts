@@ -39,7 +39,19 @@ export interface BotAvatar {
   tone: string;
 }
 
+export interface BotPortraitDto {
+  id: string;
+  name: string;
+  group: 'man' | 'woman';
+}
+
+export interface BotWorkbenchSection {
+  kind: 'identity' | 'tasks' | 'activity';
+  title?: string | undefined;
+}
+
 export interface BotSummary {
+  workbench?: BotWorkbenchSection[];
   /** Older workbenches have no employment preference. */
   hired?: boolean;
   permanent?: boolean;
@@ -48,6 +60,8 @@ export interface BotSummary {
   name: string;
   role: string;
   avatar: BotAvatar;
+  portraitId?: string;
+  capabilityTags?: string[];
   skills: string[];
   mcp: string[];
   model: string;
@@ -252,9 +266,10 @@ export interface WatchDto {
   giveUpText: string;
   repeat: boolean;
   status: WatchStatus;
+  enabled?: boolean;
   engineState: string | null;
   lastPrice: number | null;
-  /** `engine_unreachable` while cn-watch is down; cleared after reconciliation. */
+  /** `engine_unreachable` while chives-radar is down; cleared after reconciliation. */
   syncError: string | null;
   createdTaskId: string | null;
   updatedTaskId: string | null;
@@ -284,9 +299,25 @@ export interface WatchDetailDto {
 
 export type NotificationLevelDto = 'info' | 'important' | 'urgent';
 
+export interface BotActivity {
+  id: string;
+  kind: 'reply' | 'notification';
+  title: string;
+  taskId: string;
+  messageId: string | null;
+  createdAt: string;
+  readAt: string | null;
+}
+
+export interface BotActivityPage {
+  entries: BotActivity[];
+  next: { createdAt: string; id: string } | null;
+}
+
 export interface NotificationDto {
   id: string;
   botId: string;
+  botName?: string;
   taskId: string;
   title: string;
   body: string;
@@ -375,15 +406,27 @@ export interface AppearanceSettingsDto {
   changeColor: ChangeColorMode;
 }
 
+export type ProcessHealth = 'running' | 'not_started' | 'error';
+
+export interface SystemProcessDto {
+  id: string;
+  name: string;
+  description: string;
+  process: ProcessHealth;
+}
+
 export interface RuntimeBotDto {
   id: string;
   name: string;
-  process: 'running' | 'not_started' | 'error';
+  process: ProcessHealth | 'inactive';
+  role: string;
+  emblem: string;
 }
 
 export interface EngineHealthDto {
   port: number;
   healthy: boolean;
+  process?: ProcessHealth;
 }
 
 export interface RuntimeSettingsDto {
@@ -392,6 +435,7 @@ export interface RuntimeSettingsDto {
     version: string | null;
     connected: boolean;
   };
+  systems: SystemProcessDto[];
   bots: RuntimeBotDto[];
   engines: EngineHealthDto[];
 }
@@ -425,6 +469,26 @@ export interface ActiveRoutineDto extends RoutineDto {
   botAvatar?: BotAvatar;
   botName: string;
 }
+
+export type ManagedTaskDto =
+  | {kind:'archive';id:string;botId:string;botName:string;botAvatar:BotAvatar;title:string;enabled:boolean;canEnable:boolean;conditionText:string;state:string;through:string|null;createdAt:string}
+  | {kind:'technical';id:string;code:string;botId:string;botName:string;botAvatar:BotAvatar;title:string;enabled:boolean;
+      canEnable:boolean;conditionText:string;state:string;checkedAt:string|null;sources:string[];pending:string;createdAt:string}
+  | (ActiveRoutineDto & { kind: 'routine'; canEnable: boolean })
+  | (WatchDto & {
+      kind: 'watch';
+      botName: string;
+      botAvatar: BotAvatar;
+      title: string;
+      enabled: boolean;
+      canEnable: boolean;
+      rules: {
+        when: Record<string, unknown>[];
+        giveUp: Record<string, unknown>[];
+        market: Record<string, unknown>[];
+        match: 'any' | 'all';
+      };
+    });
 
 export interface WorkspaceFileDto {
   /** Path relative to the bot workspace, with `/` separators. */

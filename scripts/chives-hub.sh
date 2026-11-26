@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# chives-hub 启停器：start | stop | restart | status | check | logs
-# 配置默认 packages/chives-hub/config.yaml（不存在时用 config.example.yaml）。
-# 运行产物（pid、日志、sqlite）在 runtime/hub/。只启动本仓库的 chives-hub，
+# chives-signals 启停器：start | stop | restart | status | check | logs
+# 配置默认 packages/chives-signals/config.yaml（不存在时用 config.example.yaml）。
+# 运行产物（pid、日志、sqlite）在 runtime/hub/。只启动本仓库的 chives-signals，
 # 不读取任何密钥，不写仓库外的位置。
 set -u
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-PKG="$ROOT/packages/chives-hub"
+PKG="$ROOT/packages/chives-signals"
 PY="$PKG/.venv/bin/python"
 CFG="${CHIVES_HUB_CONFIG:-$PKG/config.yaml}"
 case "$CFG" in /*) ;; *) CFG="$(cd "$(dirname "$CFG")" 2>/dev/null && pwd)/$(basename "$CFG")" ;; esac
@@ -24,8 +24,8 @@ health() { curl -sf --max-time 2 "http://127.0.0.1:$PORT/health"; }
 
 case "${1:-status}" in
   check)
-    [ -x "$PY" ] || { echo "缺少 $PY（先在 packages/chives-hub 里建 venv 并安装 pytest）"; exit 2; }
-    cd "$PKG" && PYTHONPATH="$PKG/src" "$PY" -m chives_hub --config "$CFG" --check-config ;;
+    [ -x "$PY" ] || { echo "缺少 $PY（先在 packages/chives-signals 里建 venv 并安装 pytest）"; exit 2; }
+    cd "$PKG" && PYTHONPATH="$PKG/src" "$PY" -m chives_signals --config "$CFG" --check-config ;;
   start)
     if alive; then echo "已在运行 (pid $(cat "$PID"))"; exit 0; fi
     if curl -sf --max-time 1 -o /dev/null "http://127.0.0.1:$PORT/health"; then
@@ -34,7 +34,7 @@ case "${1:-status}" in
     "$0" check >/dev/null || { echo "配置校验失败："; "$0" check; exit 2; }
     # 依赖服务只提示，不阻塞（上游不可达时 /health 会标注，已有信号照常提供）。
     curl -sf --max-time 1 -o /dev/null "http://127.0.0.1:8865/health" \
-      || echo "警告：cn-watch (127.0.0.1:8865) 未响应，个股告警暂不可用" >&2
+      || echo "警告：chives-radar (127.0.0.1:8865) 未响应，个股告警暂不可用" >&2
     curl -sf --max-time 1 -o /dev/null "http://127.0.0.1:8866/health" \
       || echo "警告：market-watch (127.0.0.1:8866) 未响应，板块告警暂不可用" >&2
     # 持仓文件按 DSH_HOME 解析（与 dsh 实例一致）；默认使用 Chives 的本地内核目录，只用于定位 finance-portfolio.json。
@@ -58,7 +58,7 @@ PYTHON
     fi
     touch "$RUN/.user-state-migrated" || exit 1
     rm -f "$PID"
-    ( cd "$PKG" && PYTHONPATH="$PKG/src" exec nohup "$PY" -m chives_hub --config "$CFG" --out-dir "$RUN" --db-path "$STATE" >>"$LOG" 2>&1 ) &
+    ( cd "$PKG" && PYTHONPATH="$PKG/src" exec nohup "$PY" -m chives_signals --config "$CFG" --out-dir "$RUN" --db-path "$STATE" >>"$LOG" 2>&1 ) &
     echo $! >"$PID"
     for _ in $(seq 1 120); do sleep 0.5; health >/dev/null && break; done
     if alive && health >/dev/null; then

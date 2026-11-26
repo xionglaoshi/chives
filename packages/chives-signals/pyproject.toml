@@ -1,0 +1,25 @@
+[build-system]
+requires = ['hatchling']
+build-backend = 'hatchling.build'
+
+[project]
+name = 'chives-signals'
+version = '0.1.0'
+description = 'Deterministic local hub for signals, plans and a private portfolio view.'
+readme = 'README.md'
+requires-python = '>=3.12'
+license = { text = 'MIT' }
+authors = [{ name = 'dsh-finance' }]
+dependencies = []
+
+[project.optional-dependencies]
+test = ['pytest>=8.0']
+
+[project.scripts]
+chives-signals = 'chives_signals.__main__:main'
+
+[tool.hatch.build.targets.wheel]
+packages = ['src/chives_signals']
+
+[tool.hatch.build.targets.sdist]
+include = ['src/chives_signals', 'tests', 'README.md', 'config.example.yaml', 'pytest.ini']

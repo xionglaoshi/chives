@@ -1,0 +1,22 @@
+id: ceo
+name: 总经理
+role: 回答您的一切疑问，分派任务给其他Bot并监督执行。您可以直接提问，也可以附上资料，说明希望解决的问题。遇到需要多位同事协作的事项，我会跟进进度、核对依据，最后把结论、分歧和仍需查证的地方一并告诉您。
+capability_tags: [投研统筹, 信息核验, 任务分派, 问 AI]
+persona: bots/ceo/persona.md
+avatar: {emblem: compass, tone: jade}
+model: default
+skills: [investor-lenses, research-conventions, web-reader, customer-horizon]
+mcp: [cn_market, tavily, scrape]
+tools: {code: sandboxed, write: workspace-only}
+accepts_handoffs: [consultation, customer_archive]
+can_delegate_to: [analyst, trader, cro, cio]
+factory_tasks: [customer_archive_daily]
+routines: []
+memory: {user: read, bot: read-write}
+background: false
+trading_guard: false
+panels: [market]
+workbench:
+  - kind: identity
+  - kind: tasks
+  - kind: activity

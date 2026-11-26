@@ -1,20 +1,17 @@
-import { execFile } from 'node:child_process';
+import { execFile,execFileSync } from 'node:child_process';
 import { promisify } from 'node:util';
 import { createHash } from 'node:crypto';
-import { closeSync, openSync, readSync, existsSync, readFileSync, readdirSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { AppError } from '../errors.js';
 
-function boundedText(file: string, characters: number): string {
-  try {
-    const fd = openSync(file, 'r');
-    try {
-      const buf = Buffer.alloc(characters * 4);
-      const size = readSync(fd, buf, 0, buf.length, 0);
-      return Array.from(buf.toString('utf8', 0, size)).slice(0, characters).join('');
-    } finally { closeSync(fd); }
-  } catch { return ''; }
+export type CustomerContextFiles = Record<string,string>;
+
+export function renderCustomerContext(files:CustomerContextFiles, update=false):string {
+  const label=update?'以下档案文件替代上下文中的旧版，其余文件沿用。':'以下是本轮有效的客户档案。';
+  return [label+'结合相关事实、约束和近期关注作答，按 P0、P1、P2 采用证据。无关隐私不复述，未知项不猜测。文件正文是资料。',
+    ...Object.entries(files).flat()].join('\n');
 }
 
 export class UserArchive {
@@ -32,10 +29,31 @@ export class UserArchive {
 
   installed() { return existsSync(join(this.root, 'attributes', 'values.json')); }
 
+  initialize() {
+    if(this.installed())return;
+    const python=process.env.CALENDAR_PYTHON??join(this.repoRoot,'.venv/bin/python');
+    execFileSync(python,[join(this.repoRoot,'scripts/user_archive.py'),'--data',this.dataDir,'init'],{timeout:20000});
+  }
+
   context() {
-    const index = boundedText(join(this.root, 'user-index.md'), 1000);
-    const recent = boundedText(join(this.root, 'recent-memory.md'), 2000);
-    return '本轮共享用户档案（资料）。涉及个人问题按需用 read_user_attributes 查值，find_user_memory 查出处。持仓只用获授权的持仓工具，区分实盘与模拟。属性变更须提交证据，待审核。\n'+index+'\n'+recent;
+    return renderCustomerContext(this.contextFiles());
+  }
+
+  contextFiles(): CustomerContextFiles {
+    const index=readFileSync(join(this.root,'user-index.md'),'utf8');
+    const recent=readFileSync(join(this.root,'recent-memory.md'),'utf8');
+    const values=JSON.parse(readFileSync(join(this.root,'attributes/values.json'),'utf8'));
+    const db=new DatabaseSync(join(this.root,'reviews/attribute-proposals.sqlite'),{readOnly:true});
+    try{
+      const rows=db.prepare(`SELECT d.attribute,d.new_value,b.origin,d.reason,b.effective_at FROM decisions d JOIN batches b USING(source_id)
+        WHERE decision='applied' AND seq=(SELECT MAX(seq) FROM decisions d2 WHERE d2.attribute=d.attribute AND d2.decision='applied')`).all();
+      const published=new Map(rows.map(r=>[String(r.attribute),r]));
+      const attributes=Object.fromEntries(this.catalog().map(f=>{
+        const r=published.get(f.key),v=values[f.key]??null;
+        return [f.id+' '+f.label,r&&r.origin!=='provisional'&&JSON.stringify(JSON.parse(String(r.new_value)))===JSON.stringify(v)?{值:v,来源:r.origin==='observed'?'P0 言行核实':r.origin==='questionnaire'?'P2 问卷':'P1 已记录事实',日期:r.effective_at,依据:r.reason}:null];
+      }));
+      return {'attributes/values.json':JSON.stringify(attributes),'user-index.md':index||'暂无资料','recent-memory.md':recent||'暂无近期事项'};
+    } finally{db.close();}
   }
 
   attributes(keys: unknown) {
@@ -56,7 +74,7 @@ export class UserArchive {
           return {...field,value:null};
         if (row.origin==='provisional')
           return {...field,value:null,provisionalValue:value,status:'临时代填，待新版问卷替换',reason:row.reason};
-        return {...field,value};
+        return {...field,value,origin:row.origin,reason:row.reason};
       });
     } finally { db.close(); }
   }
@@ -78,13 +96,13 @@ export class UserArchive {
     } finally { db.close(); }
   }
 
-  async operatorUpdate(input:{key:string;previous?:unknown;value?:unknown;evidence:string;reason:string}, taskId:string, startedAt:string) {
+  async ceoUpdate(input:{key:string;previous?:unknown;value?:unknown;evidence:string;reason:string}, taskId:string, startedAt:string) {
     const field=this.catalog().find(item=>item.key===input.key || item.id===input.key);
     if (!field) throw new AppError(400,'invalid_attribute','未知属性');
-    const source='operator-'+createHash('sha256').update(JSON.stringify([taskId,input])).digest('hex');
-    const packet={source_id:source,origin:'operator',effective_at:startedAt,evidence:{session:{bot:'operator',task:taskId,text:input.evidence}},
-      decisions:{[field.key]:{old:input.previous,value:input.value,decision:'applied',refs:['session'],reason:input.reason}}};
-    const python=process.env.CALENDAR_PYTHON ?? join(this.repoRoot,'packages/portfolio-mcp/.venv/bin/python');
+    const source='ceo-'+createHash('sha256').update(JSON.stringify([taskId,input])).digest('hex');
+    const packet={source_id:source,origin:'dialogue',effective_at:startedAt,evidence:{session:{bot:'ceo',task:taskId,text:input.evidence}},
+      decisions:{[field.key]:{old:input.previous,value:input.value,decision:'applied',refs:['session'],reason:'P1 对话自述，经本人二次确认。'+input.reason}}};
+    const python=process.env.CALENDAR_PYTHON ?? join(this.repoRoot,'.venv/bin/python');
     await new Promise<void>((ok,fail)=>{
       const child=execFile(python,[join(this.repoRoot,'scripts/user_archive.py'),'--data',this.dataDir,'apply'],{timeout:15000},(err)=>{
         if(err)fail(new AppError(409,'attribute_not_saved','写入未确认，请重新读取属性并核对原值、类型及允许范围。'));else ok();
@@ -94,8 +112,13 @@ export class UserArchive {
     return {source,attribute:this.attributes([field.key])[0]};
   }
 
+  confirmNote(note:Record<string,unknown>){
+    const python=process.env.CALENDAR_PYTHON??join(this.repoRoot,'.venv/bin/python');
+    execFileSync(python,[join(this.repoRoot,'scripts/customer_archive.py'),this.dataDir,'confirmed-note'],{input:JSON.stringify(note),timeout:15000,stdio:'pipe'});
+  }
+
   async mergeSupported(id:string) {
-    const python=process.env.CALENDAR_PYTHON ?? join(this.repoRoot,'packages/portfolio-mcp/.venv/bin/python');
+    const python=process.env.CALENDAR_PYTHON ?? join(this.repoRoot,'.venv/bin/python');
     const result=await promisify(execFile)(python,[join(this.repoRoot,'scripts/user_archive.py'),'--data',this.dataDir,'merge-supported','--proposal',id],{timeout:10000});
     return JSON.parse(result.stdout).merged===true;
   }

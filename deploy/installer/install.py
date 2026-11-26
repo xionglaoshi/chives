@@ -232,15 +232,15 @@ def service_specs(release, node, python, user):
     packages = release / "packages"
     apps = release / "apps"
     specs = {
-        "gateway": (packages / "cn-market-gateway", [python, "-m", "cn_market_gateway", "serve", "--host", "127.0.0.1", "--port", "8868"]),
-        "strategy": (packages / "strategy-hub", [python, "-m", "strategy_hub", "--host", "127.0.0.1", "--port", "8869"]),
+        "gateway": (packages / "chives-data", [python, "-m", "chives_data", "serve", "--host", "127.0.0.1", "--port", "8868"]),
+        "strategy": (packages / "chives-strategy", [python, "-m", "chives_strategy", "--host", "127.0.0.1", "--port", "8869"]),
         "server": (apps / "server", [node, apps / "server/node_modules/tsx/dist/cli.mjs", "src/main.ts"]),
         "web": (apps / "web", [node, apps / "web/node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", "8888", "--strictPort"]),
     }
     for name, package, module, config in (
-        ("watch", "cn-watch", "cn_watch", release / "config/watch.yaml"),
-        ("market", "market-watch", "market_watch", packages / "market-watch/config.example.yaml"),
-        ("hub", "chives-hub", "chives_hub", packages / "chives-hub/config.example.yaml"),
+        ("watch", "chives-radar", "chives_radar", release / "config/watch.yaml"),
+        ("market", "chives-compass", "chives_compass", packages / "chives-compass/config.example.yaml"),
+        ("hub", "chives-signals", "chives_signals", packages / "chives-signals/config.example.yaml"),
     ):
         output = user / "watch-engine" if name == "watch" else release / "runtime" / name
         args = [python, "-m", module, "--config", config, "--out-dir", output]
@@ -252,20 +252,44 @@ def service_specs(release, node, python, user):
     return specs
 
 
+def stop_component(child):
+    if WINDOWS:
+        subprocess.run(["taskkill", "/pid", str(child.pid), "/t", "/f"],
+                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        try:
+            os.killpg(child.pid, signal.SIGTERM)
+        except ProcessLookupError:
+            pass
+    try:
+        child.wait(timeout=5)
+    except subprocess.TimeoutExpired:
+        child.kill()
+        child.wait()
+
+
 def supervise(root, release):
     node, python, env = runtime(root, release)
     logs = root / "logs"
     shutdown = root / "stop"
-    children = []
+    specs = service_specs(release, node, python, Path(env["CHIVES_DATA_DIR"]))
+    children = {}
+    failures = dict.fromkeys(specs, 0)
+
+    def start_component(name):
+        cwd, args = specs[name]
+        with (logs / f"{name}.log").open("ab") as stream:
+            children[name] = subprocess.Popen(
+                [str(arg) for arg in args], cwd=cwd, env=env,
+                stdin=subprocess.DEVNULL, stdout=stream, stderr=stream,
+                start_new_session=not WINDOWS,
+            )
+
     try:
-        for name, (cwd, args) in service_specs(release, node, python, Path(env["CHIVES_DATA_DIR"])).items():
-            with (logs / f"{name}.log").open("wb") as stream:
-                child = subprocess.Popen([str(arg) for arg in args], cwd=cwd, env=env,
-                                         stdin=subprocess.DEVNULL, stdout=stream, stderr=stream,
-                                         start_new_session=not WINDOWS)
-                children.append(child)
+        for name in specs:
+            start_component(name)
             for _ in range(120):
-                if child.poll() is not None or shutdown.exists():
+                if children[name].poll() is not None or shutdown.exists():
                     raise RuntimeError(f"{name} 启动失败，请检查 {logs / (name + '.log')}")
                 if healthy(name):
                     break
@@ -274,24 +298,36 @@ def supervise(root, release):
                 raise RuntimeError(f"{name} 健康检查超时")
         (root / "ready").write_text(release.name)
         while not shutdown.exists():
-            if any(child.poll() is not None for child in children):
-                raise RuntimeError("Chives 有组件意外退出")
-            time.sleep(1)
+            for name in specs:
+                if shutdown.exists():
+                    break
+                child = children.get(name)
+                exit_code = child.poll() if child is not None else None
+                if child is not None and exit_code is None and healthy(name):
+                    failures[name] = 0
+                    continue
+                failures[name] += 1
+                if child is not None and exit_code is None and failures[name] < 3:
+                    continue
+                with (logs / f"{name}.log").open("a", encoding="utf-8") as stream:
+                    stream.write(f"Chives supervisor restarting {name} (exit={exit_code}).\n")
+                if child is not None:
+                    stop_component(child)
+                    del children[name]
+                try:
+                    start_component(name)
+                except OSError as error:
+                    with (logs / f"{name}.log").open("a", encoding="utf-8") as stream:
+                        stream.write(f"Chives supervisor could not start {name}: {error}\n")
+                failures[name] = 0
+            for _ in range(30):
+                if shutdown.exists():
+                    break
+                time.sleep(1)
     finally:
         (root / "ready").unlink(missing_ok=True)
-        for child in reversed(children):
-            if WINDOWS:
-                subprocess.run(["taskkill", "/pid", str(child.pid), "/t", "/f"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            else:
-                try:
-                    os.killpg(child.pid, signal.SIGTERM)
-                except ProcessLookupError:
-                    pass
-        for child in children:
-            try:
-                child.wait(timeout=5)
-            except subprocess.TimeoutExpired:
-                child.kill()
+        for child in reversed(list(children.values())):
+            stop_component(child)
         (root / "running").unlink(missing_ok=True)
 
 

@@ -1,7 +1,7 @@
 import re
 from datetime import date, timedelta
 from cn_daily_store import DailyStore
-from cn_market_gateway.service import GatewayService
+from chives_data.service import GatewayService
 from .storage import library
 
 gateway = GatewayService(include_bar_reference=True)

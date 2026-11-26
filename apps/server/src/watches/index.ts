@@ -1,6 +1,6 @@
-export { CnWatchClient } from './engine.js';
+export { ChivesRadarClient } from './engine.js';
 export type {
-  CnWatchClientOptions,
+  ChivesRadarClientOptions,
   EngineListResult,
   EnginePlanState,
   EngineRemoveResult,

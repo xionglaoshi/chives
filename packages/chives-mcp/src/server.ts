@@ -44,7 +44,7 @@ export function createChivesMcpServer(
       const content = [
         {
           type: 'text' as const,
-          text: JSON.stringify({ error: 'forbidden', message: WATCH_DISABLED_MESSAGE }),
+          text: JSON.stringify({ error: 'forbidden', message: name.startsWith('watch_plan_') ? WATCH_DISABLED_MESSAGE : '该岗位未获此项工具授权。' }),
         },
       ];
       return { content, isError: true };

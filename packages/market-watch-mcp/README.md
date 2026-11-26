@@ -1,6 +1,6 @@
 # market-watch-mcp
 
-stdio MCP 服务，把本机 `market-watch` 引擎（默认 `127.0.0.1:8766`）的**只读 GET** 接口暴露给智能体：大盘、行业、概念、涨停池、涨跌榜、资金流、告警。上游契约：`docs/market-watch-api.md`。包内只发 GET，不含任何写方法。
+stdio MCP 服务，把本机 `chives-compass` 引擎（默认 `127.0.0.1:8766`）的**只读 GET** 接口暴露给智能体：大盘、行业、概念、涨停池、涨跌榜、资金流、告警。上游契约：`docs/market-watch-api.md`。包内只发 GET，不含任何写方法。
 
 | 工具 | 引擎接口 | 参数（非法值返回 `invalid_argument`，不请求引擎） |
 |---|---|---|

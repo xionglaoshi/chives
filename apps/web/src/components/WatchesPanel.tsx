@@ -25,6 +25,7 @@ const TRIGGER_REASON: Record<string, string> = {
 };
 
 function engineText(watch: WatchDto): string {
+  if (watch.status === 'active' && watch.enabled === false) return '已暂停';
   if (watch.status === 'triggered') return '已触发';
   return watch.engineState === null ? '等待中' : (ENGINE_TEXT[watch.engineState] ?? '等待中');
 }

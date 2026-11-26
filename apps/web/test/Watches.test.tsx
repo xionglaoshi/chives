@@ -85,7 +85,7 @@ describe('watch UI', () => {
     render(
       <ChatHeader
         onOpenOperator={() => undefined}
-        operator={makeBot({
+        ceo={makeBot({
           id: 'expert',
           name: '投资专家',
           watchCount: 2,
@@ -115,7 +115,7 @@ describe('watch UI', () => {
     render(
       <ChatHeader
         onOpenOperator={() => undefined}
-        operator={makeBot({ id: 'expert', name: '投资专家', panels: ['watches'], watchCount: 0 })}
+        ceo={makeBot({ id: 'expert', name: '投资专家', panels: ['watches'], watchCount: 0 })}
         runningTask={null}
       />
     );
@@ -126,7 +126,7 @@ describe('watch UI', () => {
     render(
       <ChatHeader
         onOpenOperator={() => undefined}
-        operator={makeBot({ id: 'expert', name: '投资专家' })}
+        ceo={makeBot({ id: 'expert', name: '投资专家' })}
         runningTask={null}
         notifications={[notice]}
         unreadCount={1}

@@ -43,7 +43,7 @@ export function botHash(botId: string): string {
 
 export function defaultBotId(bots: BotSummary[]): string | null {
   return (
-    bots.find((bot) => bot.permanent ?? (bot.id === 'operator'))?.id ??
+    bots.find((bot) => bot.permanent ?? (bot.id === 'ceo'))?.id ??
     bots.find((bot) => !bot.background)?.id ??
     bots[0]?.id ??
     null

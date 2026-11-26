@@ -46,6 +46,8 @@ export interface DshPatchOptions {
   repoRoot?: string;
   /** Mount the verbatim-streaming side-channel plugin. Defaults to true. */
   streaming?: boolean;
+  attachmentsRead?:boolean;
+  workspaceWrite?:boolean;
 }
 
 export interface DshSpawnOptions extends DshPatchOptions {
@@ -105,7 +107,7 @@ export function buildDshPatch(bot: BotManifest, options: DshPatchOptions): strin
 
   if (options.dataDir !== undefined) {
     entries.push({insert:[{id:'chives-staff-boundary',name:join(repoRoot,'overlays/staff-boundary.plugin.mjs'),
-      config:{workspace:botWorkspace(options.dataDir, bot.id)}}]});
+      config:{workspace:botWorkspace(options.dataDir, bot.id),readOnly:bot.id==='ceo'||options.workspaceWrite===false,attachmentsRead:options.attachmentsRead!==false}}]});
     entries.push({
       id: 'skill-filesystem',
       config: {
@@ -254,7 +256,9 @@ export function buildMcpServers(
         : raw;
       if (value !== '') envPairs.push({ name, value });
     }
-    if (serverName === 'strategy' && bot.id !== 'operator' && options.strategies !== undefined) {
+    if (serverName === 'cn_market' && ['ceo','trader','analyst','cro','cio'].includes(bot.id))
+      envPairs.push({name:'CHIVES_MARKET_DESK',value:bot.id});
+    if (serverName === 'strategy' && bot.id !== 'ceo' && options.strategies !== undefined) {
       const kept = envPairs.filter((entry) => entry.name !== 'CHIVES_STRATEGIES');
       envPairs.length = 0;
       envPairs.push(...kept, { name: 'CHIVES_STRATEGIES', value: options.strategies.join(',') });

@@ -152,7 +152,7 @@ runner:
 
 ## 生成配置与只读 overlay
 
-`scripts/build-fastjudge-config.py` 只加载 `cn-data`、`cn-watch` 两个只读 overlay，**不含**
+`scripts/build-fastjudge-config.py` 只加载 `cn-data`、`chives-radar` 两个只读 overlay，**不含**
 `hub`、`paper-broker`、`trading-guard`、`portfolio`、`x`、`scrape`。persona 使用
 `presets/finance/{prefix,suffix}.md`；`DSH_HOME` 默认与盯盘触发器一致，可用 `DSH_FINANCE_HOME` 覆盖。
 生成器只写文件，不启动 runner、不调用模型。

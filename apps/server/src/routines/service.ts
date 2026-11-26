@@ -1,3 +1,4 @@
+import {legacyBriefingPrompt, morningId, reviewId} from './initial-briefing.js';
 /** Manifest sync plus the wall-clock scheduler that turns due routines into tasks. */
 
 import { randomUUID } from 'node:crypto';
@@ -7,6 +8,7 @@ import { join } from 'node:path';
 import type { BotManifest, BotRegistry } from '../bots/index.js';
 import type { Orchestrator } from '../orchestrator.js';
 import { readProactiveSettings } from '../proactive-settings.js';
+import { transaction } from '../store/db.js';
 import type { RoutineRecord, RoutineSchedule, Store } from '../store/index.js';
 import { shanghaiDayKey } from '../time.js';
 import { describeCron, nextCronRun, validateCron } from './cron.js';
@@ -125,6 +127,34 @@ export class RoutineService {
     const now = this.now().toISOString();
     for (const bot of this.registry.list()) {
       for (const routine of bot.routines) {
+        const canonical = routineIdFor(bot.id, routine.id);
+        if ([morningId, reviewId].includes(canonical) && !this.registry.isHired(bot.id)) continue;
+        let id = canonical;
+        let prompt = routine.prompt;
+        if (canonical === morningId) {
+          let bound = this.store.settings.get<string>('desk.morningRoutineId');
+          if (!bound) {
+            const legacy = this.list(bot.id).find(row => row.source === 'user' &&
+              (row.prompt.startsWith('生成每日投研简报，投递到 Chives Bot 消息。') ||
+               row.title === '每日投研简报' && row.schedule.kind === 'cron' && row.schedule.expression === '0 9 * * 1-5'));
+            bound = legacy?.id ?? canonical;
+            if (legacy) {
+              const original = legacyBriefingPrompt('').trim();
+              const custom = legacy.prompt.startsWith(original) ? legacy.prompt.slice(original.length).trim() : '';
+              if (custom) this.store.settings.set('desk.morningAdditions', custom);
+              const edited = !legacy.prompt.startsWith(original) || legacy.title !== '每日投研简报' ||
+                legacy.schedule.kind !== 'cron' || legacy.schedule.expression !== '0 9 * * 1-5' ||
+                legacy.schedule.tz !== 'Asia/Shanghai' || legacy.tradingDaysOnly;
+              if (edited) this.store.settings.set('routine.override:'+bound,'edited');
+              this.store.db.prepare("UPDATE routines SET source='manifest' WHERE id=?").run(bound);
+            }
+            this.store.settings.set('desk.morningRoutineId',bound);
+          }
+          id = bound;
+          const additions = this.store.settings.get<string>('desk.morningAdditions');
+          if (additions) prompt += '\n'+additions;
+        }
+        if (this.store.settings.get(`routine.override:${id}`)) continue;
         let schedule: RoutineSchedule;
         try {
           schedule = parseSchedule(routine.schedule);
@@ -134,12 +164,12 @@ export class RoutineService {
         }
         const next = computeNextRun(schedule, this.now());
         this.store.routines.upsertManifest({
-          id: routineIdFor(bot.id, routine.id),
+          id,
           botId: bot.id,
           source: 'manifest',
           title: routine.title,
           schedule,
-          prompt: routine.prompt,
+          prompt,
           tradingDaysOnly: routine.trading_days_only === true,
           enabled: routine.enabled !== false,
           createdAt: now,
@@ -212,6 +242,7 @@ export class RoutineService {
       });
       this.store.routines.markRun(routine.id, now.toISOString(), nextIso);
     } catch (error) {
+      if (error instanceof Error && 'code' in error && error.code === 'bot_busy') return;
       this.log(`routine ${routine.id} could not start`, error);
       this.store.routines.setNextRun(routine.id, nextIso);
     }
@@ -261,6 +292,38 @@ export class RoutineService {
       return this.store.routines.setNextRun(id, next === null ? null : next.toISOString());
     }
     return updated;
+  }
+
+  editManaged(id: string, patch: Record<string, unknown>): RoutineRecord | undefined {
+    const current = this.get(id);
+    if (!current) return;
+    const title = patch.title === undefined ? current.title : patch.title;
+    if (typeof title !== 'string' || !title.trim() || [...title.trim()].length > MAX_TITLE_CHARS) {
+      throw new RoutineValidationError(`任务名称须为 1–${MAX_TITLE_CHARS} 字。`);
+    }
+    const prompt = patch.prompt === undefined ? current.prompt : patch.prompt;
+    if (typeof prompt !== 'string' || !prompt.trim() || prompt.trim().length > MAX_PROMPT_CHARS) {
+      throw new RoutineValidationError(`任务指令须为 1–${MAX_PROMPT_CHARS} 字。`);
+    }
+    const tradingDaysOnly = patch.tradingDaysOnly === undefined ? current.tradingDaysOnly : patch.tradingDaysOnly;
+    if (typeof tradingDaysOnly !== 'boolean') throw new RoutineValidationError('仅交易日必须为开或关。');
+    const schedule = patch.schedule === undefined ? current.schedule : parseSchedule(patch.schedule);
+    const nextRunAt = JSON.stringify(schedule) === JSON.stringify(current.schedule)
+      ? current.nextRunAt : computeNextRun(schedule, this.now())?.toISOString() ?? null;
+    return transaction(this.store.db, () => {
+      const result = this.store.routines.edit(id, { title: title.trim(), prompt: prompt.trim(), schedule, tradingDaysOnly, nextRunAt });
+      if (result?.source === 'manifest') this.store.settings.set(`routine.override:${id}`, 'edited');
+      return result;
+    });
+  }
+
+  deleteManaged(id: string): boolean {
+    const routine = this.get(id);
+    if (!routine) return false;
+    return transaction(this.store.db, () => {
+      if (routine.source === 'manifest') this.store.settings.set(`routine.override:${id}`, 'deleted');
+      return this.store.routines.delete(id);
+    });
   }
 
   delete(id: string): boolean {

@@ -11,13 +11,15 @@ export type AppRoute =
   | { name: 'workspace'; tool: WorkbenchTool }
   | { name: 'overview' }
   | { name: 'settings' }
-  | { name: 'profile'; botId: string }
+  | { name: 'profile'; botId: string; view?: 'data' | 'tools' }
   | { name: 'conversation'; botId: string | null };
+
+export const retiredRoutes: Record<string, string> = { operator: 'ceo', emma: 'cio', noah: 'cro', jerry: 'trader', luna: 'analyst' };
 
 function decode(value: string): string | null {
   try {
     const decoded = decodeURIComponent(value);
-    return decoded === '' ? null : decoded;
+    return decoded === '' ? null : Object.hasOwn(retiredRoutes,decoded) ? retiredRoutes[decoded]! : decoded;
   } catch {
     return null;
   }
@@ -31,7 +33,8 @@ export function readRoute(hash: string): AppRoute {
   if (hash === '#/bots' || hash === '#/bots/') return { name: 'overview' };
   if (hash === '#/settings' || hash === '#/settings/' || hash.startsWith('#/settings?tab=')) return { name: 'settings' };
   if (!hash.startsWith('#/bot/')) return { name: 'conversation', botId: null };
-  const rest = hash.slice('#/bot/'.length);
+  const [rest = '', query = ''] = hash.slice('#/bot/'.length).split('?', 2);
+  const view = new URLSearchParams(query).get('view');
   const slash = rest.indexOf('/');
   if (slash < 0) {
     return { name: 'conversation', botId: decode(rest) };
@@ -39,7 +42,7 @@ export function readRoute(hash: string): AppRoute {
   const botId = decode(rest.slice(0, slash));
   if (botId === null) return { name: 'conversation', botId: null };
   return rest.slice(slash) === '/profile'
-    ? { name: 'profile', botId }
+    ? { name: 'profile', botId, ...(view === 'data' || view === 'tools' ? {view} : {}) }
     : { name: 'conversation', botId };
 }
 
@@ -47,7 +50,7 @@ export function routeHash(route: AppRoute): string {
   if (route.name === 'workspace') return '#/workspace/'+route.tool;
   if (route.name === 'overview') return '#/bots';
   if (route.name === 'settings') return '#/settings';
-  if (route.name === 'profile') return `#/bot/${encodeURIComponent(route.botId)}/profile`;
+  if (route.name === 'profile') return `#/bot/${encodeURIComponent(route.botId)}/profile${route.view ? '?view=' + route.view : ''}`;
   return route.botId === null ? '#/' : `#/bot/${encodeURIComponent(route.botId)}`;
 }
 

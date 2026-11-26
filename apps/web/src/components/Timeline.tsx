@@ -444,6 +444,9 @@ function MessageRow({
         role="note"
       >
         <span>{message.content}</span>
+        {typeof message.meta?.handoffHref === 'string' && /^#\/(bots$|bot\/[a-z0-9_-]+\?task=[\w-]+$)/.test(message.meta.handoffHref) &&
+          <a href={message.meta.handoffHref}>{message.meta.handoffHref==='#/bots'?'去聘用':'查看承接会话'}</a>}
+        {typeof message.meta?.managedTaskHref==='string' && /^#\/settings\?tab=tasks&kind=(technical|watch)&task=[\w.-]+$/.test(message.meta.managedTaskHref) && <a href={message.meta.managedTaskHref}>查看盯盘任务</a>}
         {retryable ? (
           <button
             type="button"

@@ -49,7 +49,7 @@ const holdingsSchema = z.object({live_coverage:z.string().optional(),accounts:z.
 export async function runStyleReportTurn(options: {
   text: string; attachment: MessageAttachmentDto; workspace: string; dataDir: string;
   attachmentsAllowed: boolean; userAllowed: boolean; portfolioAllowed: boolean;
-  history: () => unknown[]; provider: ModelProviderStore; model: string; sink: HarnessSink;
+  profile?:string|undefined; history: () => unknown[]; provider: ModelProviderStore; model: string; sink: HarnessSink;
 }) {
   const {text, attachment, workspace, dataDir, sink} = options;
   const match = reportName.exec(attachment.name);
@@ -63,6 +63,7 @@ export async function runStyleReportTurn(options: {
   if (!report?.trim()) throw new AppError(400,'report_missing','本轮报告附件无法读取。');
 
   const input: Record<string, unknown> = {request:text, attachment:report};
+  if(options.profile && !sample)input.customerArchive=options.profile;
   if (!sample) {
     const user = join(dataDir,'user');
     if (options.userAllowed) {
@@ -83,7 +84,7 @@ export async function runStyleReportTurn(options: {
         input[file] = readReceipt(sink,'user/'+file,()=>readFileSync(join(user,file),'utf8').slice(0,limit).trim(),
           value=>value ? '已重新读取，提供 '+value.length+' 字符。' : '文件为空。');
       }
-      input.attributes = readReceipt(sink,'user/attributes/values.json',()=>readJson(join(user,'attributes/values.json')),
+      if(!options.profile)input.attributes = readReceipt(sink,'user/attributes/values.json',()=>readJson(join(user,'attributes/values.json')),
         ()=>'已读取当期用户属性。');
     }
     if (options.userAllowed && options.portfolioAllowed) {

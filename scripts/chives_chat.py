@@ -11,7 +11,7 @@ import time
 import unicodedata
 from urllib.parse import quote
 
-DEFAULT_BOT = "operator"
+DEFAULT_BOT = "ceo"
 # Model and tool output is untrusted terminal text. Preserve normal line breaks.
 CONTROL = re.compile(r"[\x00-\x08\x0b-\x1f\x7f-\x9f]")
 NETWORK_ERRORS = (OSError, http.client.HTTPException)
@@ -137,7 +137,7 @@ def menu(bots):
     for i, bot in enumerate(bots, 1):
         default = " · 默认" if bot["id"] == DEFAULT_BOT else ""
         print(colored(f"{i:2}. {bot['name']}", stream=sys.stdout) +
-              f"  {clean(bot['id'])}{default}", flush=True)
+              default, flush=True)
         if sys.stdout.isatty():
             print("    " + colored(fit(bot["role"], width() - 5), "muted", sys.stdout))
     while True:
@@ -290,7 +290,7 @@ def run(args, start_service, stop_service=None):
     command = args[0]
     parser = argparse.ArgumentParser(prog="chives " + command)
     if command == "ask":
-        parser.add_argument("--bot", default=DEFAULT_BOT, help="Bot 名称或标识，默认总调度")
+        parser.add_argument("--bot", default=DEFAULT_BOT, help="Bot 名称或标识，默认总经理")
         parser.add_argument("question", nargs="*", help="要提问的内容")
     options = parser.parse_args(args[1:])
     if command == "ask":

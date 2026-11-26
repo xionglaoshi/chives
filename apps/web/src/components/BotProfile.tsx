@@ -1,5 +1,3 @@
-import { BotAssets } from "./BotAssets";
-import "./KernelSettings.css";
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactElement } from 'react';
 
@@ -25,10 +23,8 @@ import {
   fetchWatch,
   revealBotDirectory,
   runRoutine,
-  updateBot,
   updateMemory,
   updateRoutine,
-  type BotPatch
 } from '../api/client';
 import { BotAvatar } from '../brand/BotAvatar';
 import { formatFileSize } from '../utils/deliverables';
@@ -38,13 +34,12 @@ import {
   shortenWorkspacePath,
   visibleMcp
 } from '../utils/botProfile';
-import { AvatarEditDialog } from './AvatarEditDialog';
 import './BotProfile.css';
 
 export interface BotProfileProps {
+  view?: 'data' | 'tools' | undefined;
   bot: BotSummary;
   onOpenConversation: (botId: string) => void;
-  onBotUpdated: (bot: BotSummary) => void;
   onOpenDeliverable: (deliverable: DeliverableDto, trigger: HTMLElement) => void;
   onOpenWorkspaceMap?: (botId: string) => void;
   activeDeliverableId: string | null;
@@ -233,9 +228,9 @@ function formatRoutineTime(iso: string): string {
 }
 
 export function BotProfile({
+  view,
   bot,
   onOpenConversation,
-  onBotUpdated,
   onOpenDeliverable,
   onOpenWorkspaceMap,
   activeDeliverableId,
@@ -248,7 +243,6 @@ export function BotProfile({
   const [filesError, setFilesError] = useState<string | null>(null);
   const [revealNotice, setRevealNotice] = useState<string | null>(null);
   const [toggledGroups, setToggledGroups] = useState<Record<string, boolean>>({});
-  const [editing, setEditing] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
   const [showAllMemories, setShowAllMemories] = useState(false);
   const [editingMemorySlug, setEditingMemorySlug] = useState<string | null>(null);
@@ -269,7 +263,6 @@ export function BotProfile({
     setFilesError(null);
     setRevealNotice(null);
     setToggledGroups({});
-    setEditing(false);
     setShowAllMemories(false);
     setEditingMemorySlug(null);
     setMemoryDraft(null);
@@ -313,20 +306,6 @@ export function BotProfile({
         setRevealNotice(cause instanceof Error ? cause.message : '无法在访达中打开');
       });
   }, [bot.id]);
-
-  const handleSave = useCallback(
-    (patch: BotPatch): Promise<BotSummary> => updateBot(bot.id, patch),
-    [bot.id]
-  );
-
-  const handleSaved = useCallback(
-    (saved: BotSummary): void => {
-      setEditing(false);
-      onBotUpdated(saved);
-      setProfile((current) => (current === null ? current : { ...current, bot: saved }));
-    },
-    [onBotUpdated]
-  );
 
   const applyMemoryItems = useCallback((items: BotMemoryItem[], count: number): void => {
     setProfile((current) =>
@@ -495,6 +474,7 @@ export function BotProfile({
 
   return (
     <div className="bot-profile">
+      {view && <a className="bot-profile__back" href="#/bots">← 返回 Bot 市场</a>}
       <header className="bot-profile__header">
         <BotAvatar
           emblem={bot.avatar.emblem}
@@ -503,13 +483,15 @@ export function BotProfile({
           name={headerName}
         />
         <div className="bot-profile__identity">
-          <h1 className="bot-profile__name">{headerName}</h1>
+          <h1 className="bot-profile__name">{headerName}{view === 'data' ? ' · Bot 数据' : view === 'tools' ? ' · 工具管理' : ''}</h1>
+          {!view && <>
           <div className="bot-profile__role">{profile?.role ?? bot.role}</div>
           {profile?.personaSummary !== undefined ? (
             <p className="bot-profile__persona">{profile.personaSummary}</p>
           ) : null}
+          </>}
         </div>
-        <div className="bot-profile__header-actions">
+        {!view && <div className="bot-profile__header-actions">
           <button
             type="button"
             className="bot-profile__button bot-profile__button--primary"
@@ -517,18 +499,9 @@ export function BotProfile({
           >
             {bot.hired === false ? '查看历史对话' : '去对话'}
           </button>
-          <button
-            type="button"
-            className="bot-profile__button"
-            onClick={() => setEditing(true)}
-            disabled={profile === null}
-          >
-            编辑头像与称呼
-          </button>
-        </div>
+        </div>}
       </header>
-      <p className="bot-profile__model-link">请在<a href="#/settings?tab=models">模型设置</a>中配置 Bot 模型。</p>
-      <BotAssets key={bot.id} id={bot.id} onSave={() => setReloadToken(n => n + 1)} />
+      {view === 'tools' && <p className="bot-profile__model-link">这里可以查看此 Bot 的技能、工具和权限，配置由开发者维护。</p>}
 
       {profileError !== null ? (
         <div className="bot-profile__error" role="alert">
@@ -543,8 +516,8 @@ export function BotProfile({
         </div>
       ) : null}
 
-      <div className="bot-profile__columns">
-        <div className="bot-profile__column">
+      <div className={view ? "bot-profile__columns bot-profile__columns--single" : "bot-profile__columns"}>
+        {view !== 'data' && <div className="bot-profile__column">
           <section className="bot-profile__section" aria-labelledby="profile-skills">
             <div className="bot-profile__section-head">
               <h2 className="bot-profile__section-title" id="profile-skills">
@@ -577,7 +550,7 @@ export function BotProfile({
                 数据与工具
               </h2>
               <span className="bot-profile__section-meta">
-                {profile === null ? '正在读取…' : `${tools.length} 组 · 全部只读数据`}
+                {profile === null ? '正在读取…' : `${tools.length} 组`}
               </span>
             </div>
             {tools.map((server) => {
@@ -611,10 +584,10 @@ export function BotProfile({
                   ))}
             </dl>
           </section>
-        </div>
+        </div>}
 
-        <div className="bot-profile__column">
-          <section className="bot-profile__section" aria-labelledby="profile-routines">
+        {view !== 'tools' && <div className="bot-profile__column">
+          {!view && <><section className="bot-profile__section" aria-labelledby="profile-routines">
             <div className="bot-profile__section-head">
               <h2 className="bot-profile__section-title" id="profile-routines">
                 主动任务
@@ -693,7 +666,7 @@ export function BotProfile({
                 盯盘任务
               </h2>
               <span className="bot-profile__section-meta">
-                {(profile?.watches ?? []).filter((watch) => watch.status === 'active').length} 条生效中
+                {(profile?.watches ?? []).filter((watch) => watch.status === 'active' && watch.enabled !== false).length} 条生效中
               </span>
             </div>
             {watchNotice === null ? null : (
@@ -731,6 +704,7 @@ export function BotProfile({
             )}
           </section>
 
+          </>}
           <section className="bot-profile__section" aria-labelledby="profile-memory">
             <div className="bot-profile__section-head">
               <h2 className="bot-profile__section-title" id="profile-memory">
@@ -1023,18 +997,9 @@ export function BotProfile({
               </div>
             )}
           </section>
-        </div>
+        </div>}
       </div>
 
-      {editing && profile !== null ? (
-        <AvatarEditDialog
-          bot={bot}
-          defaults={profile.defaults}
-          onClose={() => setEditing(false)}
-          onSave={handleSave}
-          onSaved={handleSaved}
-        />
-      ) : null}
     </div>
   );
 }
@@ -1083,7 +1048,7 @@ function ProfileWatchItem({
         <summary>
           <span className="bot-profile__watch-condition">{watch.conditionText}</span>
           <span className={`bot-profile__watch-state bot-profile__watch-state--${watch.status}`}>
-            {WATCH_STATUS_TEXT[watch.status]}
+            {watch.status === 'active' && watch.enabled === false ? '已暂停' : WATCH_STATUS_TEXT[watch.status]}
           </span>
         </summary>
         <div className="bot-profile__watch-meta">

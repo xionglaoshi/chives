@@ -77,8 +77,7 @@ function NotificationList({bots, notifications, onOpenNotification, close}: Pick
                 {notification.readAt === null && <span className="chat-header__notification-unread">未读</span>}
               </span>
               <span className="chat-header__notification-title">
-                {bots.find((entry) => entry.id === notification.botId)?.name ??
-                  notification.botId}
+                {notification.botName ?? bots.find((entry) => entry.id === notification.botId)?.name ?? '历史 Bot'}
                 {' · '}
                 {notification.title}
               </span>

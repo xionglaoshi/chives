@@ -9,9 +9,11 @@ import { statusFailure } from './failures.js';
 import type { MessageRecord, TaskRecord } from './store/index.js';
 
 export const ENGINE_NAMES: Readonly<Record<number, string>> = {
-  8865: 'cn-watch',
-  8866: 'market-watch',
-  8867: 'chives-hub',
+  8865: 'chives-radar',
+  8866: 'chives-compass',
+  8867: 'chives-signals',
+  8868: 'chives-data',
+  8869: 'chives-strategy',
 };
 
 export interface StatusInput {

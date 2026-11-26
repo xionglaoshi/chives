@@ -1,0 +1,30 @@
+id: cio
+name: 投研总监
+role: 发现新的投资机会。您可以问我市场最近在关注什么，也可以给我一组条件，请我帮您筛选。我会结合宏观政策、海内外市场和各类榜单，梳理值得进一步研究的行业和个股，并说明入选理由、主要风险和下一步该验证什么。
+portrait_id: woman-02
+capability_tags: [宏观研究, 海外市场, 行业机会, 条件选股]
+persona: bots/cio/persona.md
+avatar: {emblem: compass, tone: jade}
+model: default
+skills: [morning-note, sector-overview, idea-generation, impact-analysis, fund-disclosures, dividend-analysis]
+mcp: [cn_market, cn_data, cn_extra, cn_research, market_watch, tavily, scrape]
+tools: {code: sandboxed, write: workspace-only}
+accepts_handoffs: [opportunities]
+can_delegate_to: []
+routines:
+  - id: morning-briefing
+    title: 盘前简报
+    schedule: {cron: "30 8 * * 1-5", tz: Asia/Shanghai}
+    trading_days_only: true
+    prompt: |-
+      先用 briefing_inputs 分页读取本次截稿的全量资料（持仓、关注、短期记忆中全部证券和各自来源，所有已发布榜单，最近72小时的国内及全球新闻）。取最近三个已收盘交易日的资金及量价；周末新闻照计。按工具标注的覆盖区间说明数据缺项。
+      你为客户准备今天开盘前的机会简报。按截稿时点取上述全部股票和全部已发布机会榜单，阅读 A 股与全球财经新闻热榜、隔夜海外市场、新发布的政策及原文、板块与个股资金流向、最新可取得的机构持仓披露。基于三天对比，找出今天比昨天多知道了什么。重点留意热点何时开始传导到订单、利润、现金回报或可持续分红。
+      开头先告诉客户今天最值得关注的一条变化。按“新增机会、持续验证、已降温”挑选有实质变化的行业和代表股，说明这些股票近期表现如何、回报可能来自哪里、现在的价格已计入多少预期、与客户持仓或兴趣有何关系，以及下一件能验证判断的事。把“机构在某个披露期新增持仓”和“某口径下的资金净流入”各自列明日期和来源。输入覆盖全量，正文精选有理由的候选。缺乏证据时可以当天没有新增推荐。
+memory: {user: read, bot: read-write}
+background: false
+trading_guard: false
+panels: [market]
+workbench:
+  - kind: identity
+  - kind: tasks
+  - kind: activity

@@ -5,7 +5,7 @@ build-backend = 'hatchling.build'
 [project]
 name = 'cn-watch-trigger'
 version = '0.1.0'
-description = 'Read-only alert-triggered analysis runner for the cn-watch engine.'
+description = 'Read-only alert-triggered analysis runner for the chives-radar engine.'
 readme = 'README.md'
 requires-python = '>=3.12'
 license = { text = 'MIT' }

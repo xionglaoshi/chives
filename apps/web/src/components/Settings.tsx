@@ -27,6 +27,7 @@ import {
   saveProactiveSettings,
 } from '../api/client';
 import { KernelManager } from './KernelManager';
+import { RuntimeProcesses } from './RuntimeProcesses';
 import {ModelsDesk} from './ModelsDesk';
 import {ChannelSettings} from './ChannelSettings';
 import {Row,ProfileCard,UserHistory,DisplayPrefs,Behavior,Backup,Updates,HelpDesk} from './DeskPanels';
@@ -36,12 +37,6 @@ import './SettingsDesk.css';
 import { applyAppearance, DEFAULT_APPEARANCE, watchSystemTheme } from '../theme/appearance';
 import { formatFileSize } from '../utils/deliverables';
 import './Settings.css';
-
-const ENGINE_NAMES: Record<number, string> = {
-  8865: 'cn-watch（个股盯盘）',
-  8866: 'market-watch（大盘与板块）',
-  8867: 'chives-hub（信号中枢）'
-};
 
 function errorText(error: unknown): string {
   return error instanceof Error ? error.message : '未知错误';
@@ -69,7 +64,7 @@ export interface SettingsProps {
 }
 
 export function Settings({ onOpenProfile,onAskExpert,initializeModel=false,onModelInitialized }: SettingsProps): ReactElement {
-  const fromHash=()=>window.location.hash.split('?tab=')[1]??'account';
+  const fromHash=()=>new URLSearchParams(window.location.hash.split('?')[1]).get('tab') ?? 'account';
   const [page,select]=useState(fromHash),[prefs,setPrefs]=useState<Preferences|null>(null),[deskError,deskErr]=useState('');
   useEffect(()=>{const update=()=>select(fromHash());window.addEventListener('hashchange',update);
     void desk<Preferences>('prefs').then(v=>{setPrefs(v);applyDesk(v);}).catch(e=>deskErr(e.message));
@@ -99,9 +94,6 @@ export function Settings({ onOpenProfile,onAskExpert,initializeModel=false,onMod
     void fetchProactiveSettings(signal)
       .then(setProactive)
       .catch(report(setProactiveError));
-    void fetchRuntimeSettings(signal)
-      .then(setRuntime)
-      .catch(report(setRuntimeError));
     void fetchAppearance(signal)
       .then((value) => {
         setAppearance(value);
@@ -113,6 +105,29 @@ export function Settings({ onOpenProfile,onAskExpert,initializeModel=false,onMod
       .catch(report(setDataError));
     return () => controller.abort();
   }, []);
+
+  useEffect(() => {
+    if (page !== 'kernels') return;
+    const controller = new AbortController();
+    let pending = false;
+    const refresh = async () => {
+      if (pending) return;
+      pending = true;
+      try {
+        const value = await fetchRuntimeSettings(controller.signal);
+        if (!controller.signal.aborted) {
+          setRuntime(value);
+          setRuntimeError(null);
+        }
+      } catch (error) {
+        if (!controller.signal.aborted) setRuntimeError(errorText(error));
+      } finally { pending = false; }
+    };
+    void refresh();
+    const timer = window.setInterval(() => void refresh(), 10_000);
+    return () => { window.clearInterval(timer); controller.abort(); };
+  }, [page]);
+
 
   useEffect(() => {
     applyAppearance(appearance);
@@ -184,13 +199,17 @@ export function Settings({ onOpenProfile,onAskExpert,initializeModel=false,onMod
     {page==='capabilities'&&<CapabilitiesDesk onOpenProfile={onOpenProfile}/>}
     {page==='models'&&<ModelsDesk initialize={initializeModel} onInitialized={onModelInitialized}/>}
     {page==='help'&&<HelpDesk/>}
-    {page==='updates'&&prefs&&<Updates auto={prefs.autoUpdateOnCheck} save={save}/>}
+    {page==='updates'&&prefs&&<><Updates auto={prefs.autoUpdateOnCheck} save={save}/><KernelManager/></>}
     {(page==='chat'||page==='permissions')&&prefs&&<Behavior p={prefs} save={save} page={page}/>}
     {page==='permissions'&&<>
       <Row title="允许Bot开启自动分析" hint="行情、盯盘或定时任务可自动调用模型，每日不限次数。关闭后仍可手动发起分析。">
         <input id="settings-auto-analysis" aria-label="允许Bot开启自动分析" type="checkbox" role="switch"
           checked={proactive?.autoAnalysis ?? false} disabled={proactive === null}
           onChange={event=>void saveProactive({autoAnalysis:event.currentTarget.checked})}/>
+      </Row>
+      <Row title="观察模式" hint="记录行情触发，暂停自动分析和定时运行。关闭后按原计划继续。">
+        <input type="checkbox" role="switch" aria-label="观察模式" checked={proactive?.observeOnly??false}
+          disabled={!proactive} onChange={event=>void saveProactive({observeOnly:event.currentTarget.checked})}/>
       </Row>
       {proactiveError&&<p role="alert">{proactiveError}</p>}
     </>}
@@ -270,58 +289,8 @@ export function Settings({ onOpenProfile,onAskExpert,initializeModel=false,onMod
 
         </section>}
 
-    {page==='tasks'&&<TaskManagement proactive={proactive} error={proactiveError}
-      onObserve={observeOnly=>saveProactive({observeOnly})} onOpenProfile={onOpenProfile}/>}
-        {page==='kernels'&&<><KernelManager/><section className="settings__section" aria-labelledby="settings-runtime">
-          <h2 className="settings__section-title" id="settings-runtime">
-            模型与运行环境
-          </h2>
-          {runtimeError === null ? null : (
-            <div className="settings__status settings__status--error" role="alert">
-              {runtimeError}
-            </div>
-          )}
-
-          <div className="settings__row settings__row--stack">
-            <div className="settings__row-text">
-              <span className="settings__row-label">Bot 进程</span>
-              <div className="settings__chips">
-                {(runtime?.bots ?? []).map((bot) => (
-                  <span className={`settings__chip settings__chip--${bot.process}`} key={bot.id}>
-                    {bot.name} ·{' '}
-                    {bot.process === 'running' ? '运行中' : bot.process === 'error' ? '出错' : '未启动'}
-                  </span>
-                ))}
-                {runtime !== null && runtime.bots.length === 0 ? (
-                  <span className="settings__row-hint">没有可用的 Bot</span>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          <div className="settings__row settings__row--stack">
-            <div className="settings__row-text">
-              <span className="settings__row-label">数据引擎</span>
-              <div className="settings__chips">
-                {(runtime?.engines ?? []).map((engine) => (
-                  <span
-                    className={`settings__chip settings__chip--${engine.healthy ? 'running' : 'not_started'}`}
-                    key={engine.port}
-                  >
-                    {ENGINE_NAMES[engine.port] ?? engine.port} · {engine.healthy ? '正常' : '未运行'}
-                  </span>
-                ))}
-              </div>
-              {runtime !== null && runtime.engines.some((engine) => !engine.healthy) ? (
-                <span className="settings__row-hint">
-                  有引擎未运行。在仓库根目录运行 <code>scripts/chives.sh start --engines</code>{' '}
-                  后刷新。
-                </span>
-              ) : null}
-            </div>
-          </div>
-
-        </section></>}
+    {page==='tasks'&&<TaskManagement/>}
+        {page==='kernels'&&<><KernelManager/><RuntimeProcesses runtime={runtime} error={runtimeError}/></>}
         {page==='appearance'&&<section className="settings__section" aria-labelledby="settings-appearance">
           <h2 className="settings__section-title" id="settings-appearance">
             外观与数据

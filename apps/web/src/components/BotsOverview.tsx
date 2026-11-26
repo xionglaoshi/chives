@@ -1,18 +1,10 @@
-import { useState, type ReactElement } from 'react';
+import { useEffect, useRef, useState, type ReactElement } from 'react';
 import { desk } from './deskApi';
 
 import type { BotSummary } from '@chives/server/protocol';
 
-import { BotAvatar } from '../brand/BotAvatar';
-import { mcpNames, shortenWorkspacePath, skillSummary } from '../utils/botProfile';
-import { BOT_STATUS_TONES, botStatusLabel } from '../utils/bots';
+import { BotPortraitPicker, botPortraitUrl } from './BotPortraitPicker';
 import './BotsOverview.css';
-
-function memorySummary(bot: BotSummary): string {
-  const count = bot.memoryCount ?? 0;
-  if (count === 0) return '还没有记忆';
-  return `${count} 条`;
-}
 
 export interface BotsOverviewProps {
   bots: BotSummary[];
@@ -20,8 +12,8 @@ export interface BotsOverviewProps {
   error: string | null;
   onRetry: () => void;
   onEmploymentSaved?: (changes: ReadonlyMap<string, boolean>) => void;
-  onOpenConversation: (botId: string) => void;
-  onOpenProfile: (botId: string) => void;
+  onPortraitSaved: (bot: BotSummary) => void;
+  onOpenProfile: (botId: string, view: 'data' | 'tools') => void;
 }
 
 export function BotsOverview({
@@ -30,22 +22,39 @@ export function BotsOverview({
   error,
   onRetry,
   onEmploymentSaved,
-  onOpenConversation,
+  onPortraitSaved,
   onOpenProfile
 }: BotsOverviewProps): ReactElement {
+  const [portraitBot, setPortraitBot] = useState<BotSummary | null>(null);
   const [saving, setSaving] = useState<string | null>(null);
   const [notice, setNotice] = useState('');
-  async function changeHire(bot: BotSummary) {
-    if (saving !== null || (bot.permanent ?? (bot.id === 'operator'))) return;
+  const [employmentBot, setEmploymentBot] = useState<BotSummary | null>(null);
+  const [confirmHire, setConfirmHire] = useState<boolean | null>(null);
+  const employmentDialog = useRef<HTMLDialogElement>(null);
+
+  useEffect(() => {
+    const dialog = employmentDialog.current;
+    if (employmentBot && !dialog?.open) dialog?.showModal();
+  }, [employmentBot]);
+
+  function closeEmployment() {
+    employmentDialog.current?.close();
+    setEmploymentBot(null);
+    setConfirmHire(null);
+  }
+
+  async function changeHire(bot: BotSummary, hire: boolean) {
+    if (saving !== null || (bot.permanent ?? (bot.id === 'ceo'))) return;
+    if ((bot.hired !== false) === hire) return;
     setSaving(bot.id);
+    closeEmployment();
     setNotice('');
-    const hire = bot.hired === false;
     const expected = Object.fromEntries(bots.map(b => [b.id, b.hired !== false]));
     const hiredIds = bots.filter(b => b.id === bot.id ? hire : b.hired !== false).map(b => b.id);
     try {
       const roster = await desk<{id:string; hired:boolean}[]>('employment','PUT',{expected,hiredIds});
       onEmploymentSaved?.(new Map(roster.map(b => [b.id,b.hired])));
-      setNotice((hire ? '已聘用' : '已解聘') + bot.name);
+      setNotice((hire ? '已聘用' : '已解雇') + bot.name);
     } catch (error) {
       setNotice(error instanceof Error ? error.message : '名册未保存，请重试。');
       onRetry();
@@ -53,41 +62,21 @@ export function BotsOverview({
       setSaving(null);
     }
   }
-  const working = bots.filter(
-    (bot) => bot.status === 'working' || bot.status === 'starting'
-  ).length;
-  const pending = bots.reduce((total, bot) => total + bot.pendingApprovals, 0);
-  const names = new Map(bots.map((bot) => [bot.id, bot.name]));
+  const hiredCount = bots.filter(bot => bot.hired !== false).length;
 
   return (
     <div className="bots-overview">
       <header className="bots-overview__header">
-        <div className="bots-overview__intro">
-          <h1 className="bots-overview__title">Bot市场</h1>
-          <p className="bots-overview__subtitle">
-            聘用需要的 Bot，它们会出现在终端和网页的对话名册中。
-          </p>
-        </div>
-        <div className="bots-overview__stats" aria-label="Bot 概览统计">
-          <span>
-            <strong>{bots.filter(bot => bot.hired !== false).length} / {bots.length}</strong> 位已聘用
-          </span>
-          <span>
-            <strong className="bots-overview__stat--gold">{working}</strong> 个工作中
-          </span>
-          <span>
-            <strong className="bots-overview__stat--gold">{pending}</strong> 项待批准
-          </span>
-        </div>
+        <h1 className="bots-overview__title">Bot市场</h1>
+        {(!loading || bots.length > 0) && (error === null || bots.length > 0) && (
+          <div className="bots-overview__stats" role="group" aria-label="Bot 在岗概览">
+            <span>共 <strong>{bots.length}</strong> 位</span>
+            <span className="bots-overview__on-duty"><strong>{hiredCount}</strong> 位在岗</span>
+          </div>
+        )}
       </header>
 
       {notice && <p role="status">{notice}</p>}
-      {!loading && bots.length > 0 && working === 0 && pending === 0 ? (
-        <p className="bots-overview__quiet" role="status">
-          现在没有 Bot 在运行。需要时从下面进入对话。
-        </p>
-      ) : null}
-
       {loading && bots.length === 0 ? (
         <div className="bots-overview__skeleton" role="status" aria-label="Bot 列表加载中">
           {Array.from({ length: 4 }, (_, index) => (
@@ -109,94 +98,85 @@ export function BotsOverview({
 
       <div className="bots-overview__grid">
         {bots.map((bot) => {
-          const permanent = bot.permanent ?? (bot.id === 'operator');
-          const delegates = bot.canDelegateTo.map((id) => names.get(id) ?? id);
-          const tools = mcpNames(bot.mcp);
-          const statusLabel = botStatusLabel(bot);
+          const jobTitle = bot.name;
           return (
             <article
               className={`bots-overview__card${
                 bot.background ? ' bots-overview__card--background' : ''
               }`}
               key={bot.id}
-              aria-label={`${bot.name} 资料卡`}
+              aria-label={`${jobTitle} 资料卡`}
             >
-              <div className="bots-overview__card-head">
-                <BotAvatar
-                  emblem={bot.avatar.emblem}
-                  tone={bot.avatar.tone}
-                  size={18}
-                  name={bot.name}
-                />
-                <div className="bots-overview__identity">
-                  <h2 className="bots-overview__name">{bot.name}</h2>
-                  <div className="bots-overview__role">{bot.role}</div>
+              <div className="bots-overview__dossier">
+                <div className="bots-overview__portrait">
+                  <img src={botPortraitUrl(bot.portraitId ?? 'man-01')}
+                    alt={`${jobTitle}的头像`} width={540} height={675}/>
+                  <button type="button" aria-label={`更换${jobTitle}的头像`}
+                    aria-haspopup="dialog" title="更换头像" onClick={() => setPortraitBot(bot)}>
+                    <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                      <circle cx="8" cy="8" r="8" fill="#fff" />
+                      <circle cx="8" cy="5.5" r="2.5" fill="#000" />
+                      <path d="M3.5 12.5a4.5 4 0 0 1 9 0z" fill="#000" />
+                    </svg>
+                  </button>
                 </div>
-                <span
-                  className={`bots-overview__status bots-overview__status--${
-                    BOT_STATUS_TONES[bot.status]
-                  }`}
-                >
-                  {bot.hired === false ? '待聘' : '已聘用 · ' + statusLabel}
-                </span>
+                <div className="bots-overview__identity">
+                  <div className="bots-overview__identity-heading">
+                    <h2 className="bots-overview__name">{jobTitle}</h2>
+                    {bot.permanent ? <span className="bots-overview__employment is-hired" title="始终启用">常驻</span> : <button type="button"
+                      className={`bots-overview__employment ${bot.hired === false ? 'is-unhired' : 'is-hired'}`}
+                      aria-label={`${jobTitle} · ${bot.hired === false ? '未聘用' : '已聘用'}`}
+                      aria-haspopup="dialog" disabled={saving !== null} onClick={() => setEmploymentBot(bot)}>
+                      {bot.hired === false ? '未聘用' : '已聘用'}
+                    </button>}
+                  </div>
+                  <p className="bots-overview__role">{bot.role}</p>
+                </div>
               </div>
 
-              <dl className="bots-overview__facts">
-                <dt>技能</dt>
-                <dd>{skillSummary(bot.skills)}</dd>
-                <dt>数据与工具</dt>
-                <dd>{tools.length === 0 ? '暂无' : tools.join('、')}</dd>
-                <dt>可以委派</dt>
-                <dd>{delegates.length === 0 ? '无' : delegates.join('、')}</dd>
-                <dt>主动任务</dt>
-                <dd>
-                  {bot.proactiveCount === undefined || bot.proactiveCount === 0
-                    ? '暂无'
-                    : `${bot.proactiveCount} 个已启用`}
-                </dd>
-                <dt>盯盘</dt>
-                <dd>
-                  {bot.watchCount === undefined || bot.watchCount === 0
-                    ? '暂无'
-                    : `${bot.watchCount} 条活跃`}
-                </dd>
-                <dt>记忆</dt>
-                <dd>{memorySummary(bot)}</dd>
-                <dt>工作目录</dt>
-                <dd className="bots-overview__path" title={bot.workspacePath ?? ''}>
-                  {bot.workspacePath === undefined || bot.workspacePath === ''
-                    ? '—'
-                    : shortenWorkspacePath(bot.workspacePath)}
-                </dd>
-                <dt>模型</dt>
-                <dd>{bot.modelDisplayName ?? bot.model}</dd>
-              </dl>
-
               <div className="bots-overview__actions">
-                <button type="button" className="bots-overview__action" disabled={permanent || saving !== null}
-                  aria-label={permanent ? bot.name+' · 常驻' : (bot.hired === false ? '聘用' : '解聘')+bot.name}
-                  onClick={() => void changeHire(bot)}>
-                  {permanent ? '常驻' : saving === bot.id ? '保存中…' : bot.hired === false ? '聘用' : '解聘'}
-                </button>
-                <button
-                  type="button"
-                  className="bots-overview__action bots-overview__action--primary"
-                  onClick={() => onOpenConversation(bot.id)}
-                >
-                  {bot.hired === false ? '查看历史对话' : '对话'}
-                </button>
+                <a className="bots-overview__action bots-overview__tasks-link"
+                  href={`#/settings?tab=tasks&bot=${encodeURIComponent(bot.id)}`}
+                  aria-label={`${jobTitle}的现有任务`}>
+                  现有任务
+                </a>
+
                 <button
                   type="button"
                   className="bots-overview__action"
-                  onClick={() => onOpenProfile(bot.id)}
+                  onClick={() => onOpenProfile(bot.id, 'data')}
                 >
-                  查看资料
+                  Bot 数据
+                </button>
+                <button type="button" className="bots-overview__action" onClick={() => onOpenProfile(bot.id, 'tools')}>
+                  工具管理
                 </button>
               </div>
             </article>
           );
         })}
       </div>
+      <dialog ref={employmentDialog} className="bots-overview__employment-dialog"
+        aria-labelledby="bot-employment-title" onCancel={event => { event.preventDefault(); closeEmployment(); }}>
+        {employmentBot && <>
+          <h2 id="bot-employment-title">{confirmHire === null ? employmentBot.name : (confirmHire ? '确认雇佣' : '确认解雇')}</h2>
+          {confirmHire === null ? (
+            (employmentBot.permanent ?? (employmentBot.id === 'ceo')) ? <p>该岗位是常驻 Bot。</p> : null
+          ) : <p>确定{confirmHire ? '雇佣' : '解雇'}「{employmentBot.name}」？</p>}
+          <div className="bots-overview__employment-options">
+            <button type="button" onClick={closeEmployment}>取消</button>
+            {confirmHire === null ? <>
+              <button type="button" disabled={employmentBot.hired !== false} onClick={() => setConfirmHire(true)}>雇佣</button>
+              <button type="button" disabled={employmentBot.hired === false || (employmentBot.permanent ?? employmentBot.id === 'ceo')}
+                onClick={() => setConfirmHire(false)}>解雇</button>
+            </> : <button type="button" onClick={() => void changeHire(employmentBot, confirmHire)}>
+              确认{confirmHire ? '雇佣' : '解雇'}
+            </button>}
+          </div>
+        </>}
+      </dialog>
+      {portraitBot && <BotPortraitPicker key={portraitBot.id} bot={portraitBot}
+        onClose={() => setPortraitBot(null)} onSaved={onPortraitSaved}/>}
     </div>
   );
 }

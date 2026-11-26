@@ -9,7 +9,7 @@ export const MCP_INFO: Record<string, McpInfo> = {
   cn_extra: { name: '分钟线与快照', description: '分钟线、盘口快照与扩展行情' },
   cn_research: { name: '研报与一致预期', description: '卖方研报、评级与一致预期' },
   market_watch: { name: '大盘与板块', description: '指数、板块与市场宽度' },
-  cn_watch: { name: '盯盘引擎', description: '自选股告警与盘中观察' },
+  cn_watch: { name: 'Chives 雷达', description: '自选股告警与盘中观察' },
   tavily: { name: '网页检索', description: '公开网页检索与来源定位' },
   scrape: { name: '网页抓取', description: '读取公开网页正文' },
   profile: { name: '你的画像', description: '你主动写下的偏好与约束' },

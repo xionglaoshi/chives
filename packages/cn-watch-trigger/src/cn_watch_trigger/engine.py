@@ -1,4 +1,4 @@
-"""Minimal read-only HTTP client for the cn-watch engine."""
+"""Minimal read-only HTTP client for the chives-radar engine."""
 
 from __future__ import annotations
 

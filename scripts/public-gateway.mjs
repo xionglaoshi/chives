@@ -154,6 +154,8 @@ async function handle(req,res){
   }
   if(p==='/chives/holdings-securities.json')
     return streamFile(req,res,join(root,'apps/web/public/holdings-securities.json'),{compress:true});
+  if(/^\/chives\/bot-portraits\/[a-z0-9-]+\.webp$/.test(p))
+    return streamFile(req,res,join(root,'apps/web/public',p.slice('/chives/'.length)));
   if(p==='/chives/chives.svg')return streamFile(req,res,join(build,'chives.svg'));
   if(/^\/chives\/assets\/[\w.-]+\.(?:js|css|svg|png|jpe?g|webp|woff2)$/.test(p))return streamFile(req,res,join(build,p.slice('/chives/'.length)));
   return finish(res,404);

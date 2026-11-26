@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "equity-evidence"
 version = "0.1.0"
 requires-python = ">=3.12"
-dependencies = ["pandas", "numpy", "requests", "akshare", "mcp", "cn-daily-store", "cn-market-gateway"]
+dependencies = ["pandas", "numpy", "requests", "akshare", "mcp", "cn-daily-store", "chives-data"]
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/equity_evidence"]

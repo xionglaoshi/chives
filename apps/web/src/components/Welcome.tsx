@@ -21,13 +21,13 @@ interface WelcomeCopy {
 
 const EXPERT_COPY: WelcomeCopy = {
   title: '今天想研究什么？',
-  subtitle: '总调度。啥事都可以找他',
+  subtitle: '总经理。啥事都可以找他',
   starters: STARTERS
 };
 
 /** Bots with their own first-run copy; others fall back to their name and role. */
 const COPY_BY_BOT: Record<string, WelcomeCopy> = {
-  operator: EXPERT_COPY
+  ceo: EXPERT_COPY
 };
 
 function welcomeCopy(botId: string | undefined, botName?: string, botRole?: string): WelcomeCopy {

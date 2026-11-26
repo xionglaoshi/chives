@@ -1,6 +1,6 @@
 /**
  * Host half: authenticated Fetch routes under /api (reads plus two restricted hub writes). `/api/watch/*`
- * proxies the local cn-watch engine, serves the analyses written by the trigger
+ * proxies the local chives-radar engine, serves the analyses written by the trigger
  * and exposes the engine's rule audit log; `/api/market/*` proxies the local
  * market-watch engine through the fixed route table in `marketProxy.ts`, and
  * the chives-hub service through `hubProxy.ts` (reads plus two restricted

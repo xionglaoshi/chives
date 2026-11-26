@@ -32,7 +32,8 @@ export interface NotificationServiceOptions {
   store: Store;
   bus: EventBus;
   now: () => Date;
-  forward?: (title:string, body:string)=>void;
+  botName?: (botId: string) => string;
+  forward?: (botId:string, title:string, body:string)=>void;
   platform?: NodeJS.Platform;
   /** Injected so tests can assert the exact osascript arguments. */
   execFile?: ExecFileFn;
@@ -55,9 +56,11 @@ export class NotificationService {
   private readonly execFile: ExecFileFn | undefined;
   private readonly log: (message: string, detail?: unknown) => void;
 
+  private readonly botName: NotificationServiceOptions['botName'];
   private readonly forward: NotificationServiceOptions['forward'];
   constructor(options: NotificationServiceOptions) {
     this.forward=options.forward;
+    this.botName=options.botName;
     this.store = options.store;
     this.bus = options.bus;
     this.now = options.now;
@@ -139,24 +142,33 @@ export class NotificationService {
     this.bus.publish({
       type: 'notification.created',
       botId: input.botId,
-      notification: toNotificationDto(notification),
+      notification: this.toDto(notification),
     });
     if (input.localOnly) return { ok: true, notification };
     const foreground = this.isForegroundTask(input.taskId);
     const settings = readProactiveSettings(this.store);
-    if(!foreground && settings.enabled && (!settings.importantOnly || input.level!=='info'))this.forward?.(title,body);
+    if(!foreground && settings.enabled && (!settings.importantOnly || input.level!=='info'))this.forward?.(input.botId,title,body);
     if (
       !foreground &&
       settings.systemNotify &&
       (!settings.importantOnly || input.level !== 'info')
     ) {
-      sendSystemNotification(title, body, {
+      const sender = this.botName?.(input.botId);
+      sendSystemNotification(sender ? `${sender} · ${title}` : title, body, {
         ...(this.platform === undefined ? {} : { platform: this.platform }),
         ...(this.execFile === undefined ? {} : { execFile: this.execFile }),
         log: this.log,
       });
     }
     return { ok: true, notification };
+  }
+
+  notifySystem(botId: string, service: string, title: string, body: string): void {
+    const notification = this.store.notifications.add({
+      id: randomUUID(), botId, taskId: `system:${service}`, title, body,
+      level: 'important', createdAt: this.now().toISOString(),
+    });
+    this.bus.publish({ type: 'notification.created', botId, notification: this.toDto(notification) });
   }
 
   /** Budget guardrail: bypasses `notify_user` validation but keeps persistence consistent. */
@@ -177,8 +189,13 @@ export class NotificationService {
     this.bus.publish({
       type: 'notification.created',
       botId: notification.botId,
-      notification: toNotificationDto(notification),
+      notification: this.toDto(notification),
     });
+  }
+
+  toDto(record: NotificationRecord) {
+    const dto = toNotificationDto(record);
+    return this.botName ? { ...dto, botName: this.botName(record.botId) } : dto;
   }
 
   list(options: { botId?: string; unreadOnly?: boolean; limit: number }): NotificationRecord[] {

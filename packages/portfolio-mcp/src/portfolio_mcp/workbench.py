@@ -27,7 +27,18 @@ def run(body):
     action = body.get("action")
     row = body.get("row", {})
     expected = body.get("original")
-    service = PortfolioService(EditStore(expected), quotes=None, kline=None)
+    store = EditStore(expected)
+    service = PortfolioService(store, quotes=None, kline=None)
+    if action == "behavior":
+        from collections import Counter
+        from portfolio_mcp.service import envelope
+        snapshot = store.snapshot()
+        counts = Counter((t["date"], t["code"], t["side"]) for t in snapshot.trades
+                         if body["start"] <= t["date"] <= body["end"]
+                         and (not body.get("code") or t["code"][:6] == body["code"][:6]))
+        rows = [{"day": day, "symbol": symbol, "side": side, "fills": n, "mode": "live"}
+                for (day, symbol, side), n in sorted(counts.items(), reverse=True)]
+        return envelope(status="ready", data={"days": rows, "source": "客户持仓账本已确认成交"}, warnings=snapshot.warnings, private=True)
     if action == "get":
         return service.get()
     if action in ("quote", "add"):

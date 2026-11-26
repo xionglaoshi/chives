@@ -34,7 +34,7 @@ dsh plugin --profile <profile> add "link:$PWD"
 
 | 变量 | 缺省 | 说明 |
 |---|---|---|
-| `CHIVES_ENGINE` | `WATCH_PANEL_ENGINE`，再缺省 `http://127.0.0.1:8765` | cn-watch 引擎地址。主机名必须是回环地址（`127.0.0.1`、`localhost`、`[::1]`），否则 Host 半在 `apply` 时抛错、拒绝加载。 |
+| `CHIVES_ENGINE` | `WATCH_PANEL_ENGINE`，再缺省 `http://127.0.0.1:8765` | chives-radar 引擎地址。主机名必须是回环地址（`127.0.0.1`、`localhost`、`[::1]`），否则 Host 半在 `apply` 时抛错、拒绝加载。 |
 
 路由不接受任何查询参数（400），只发 `GET /health` + `accept: application/json`，3 秒超时；连不上/超时返回 502 `{"error":"engine_unreachable"}`。响应头只回 `content-type: application/json; charset=utf-8`，不转发浏览器请求头，也不暴露引擎地址。
 
@@ -123,7 +123,7 @@ dsh plugin --profile <profile> add "link:$PWD"
 
 ## 「我的」页（T101）
 
-- 顶栏：标题、数据时间、行情时间、交易状态、隐藏金额眼睛开关、导入/诊断。交易状态取 `/api/watch/state` 的 `session`；cn-watch 不可达时显示"未知"。
+- 顶栏：标题、数据时间、行情时间、交易状态、隐藏金额眼睛开关、导入/诊断。交易状态取 `/api/watch/state` 的 `session`；chives-radar 不可达时显示"未知"。
 - 六格总览：总资产、持仓市值、今日盈亏、累计浮盈、仓位（细进度条）、现金；`price_unavailable` 行从汇总排除；`total_assets_cny`/`cash_cny` 缺失显示"未设置现金"而不是 0。
 - 持仓表：名称+代码、持仓（股）、成本、现价、今日盈亏、累计盈亏（金额 + 百分比）、占比（数字 + 细条）、标记（T+1 不可卖、涨停/跌停、行情缺失）；列头升降排序、默认占比降序；行内展开成本价、可卖数量、占总资产与"问 Chives 这只票"（提示语只含该股名称/代码/现价/成本）。
 - 风险卡：年化波动率、最大回撤、Beta、第一大持仓、有效 N + 一行白话解释；`risk` 为 null 显示"风险指标计算中…/暂不可用"与 `risk_reason`；`risk_pending` 20 秒后自动重取一次。
@@ -167,5 +167,5 @@ dsh plugin --profile <profile> add "link:$PWD"
 - 「我的」页的数据代理在 watch-panel：只装本包时页面能打开但请求 404。持仓行的涨停/跌停标记由 `change_pct` 与代码板块近似推断（主板 10%、创业板/科创板 20%、北交所 30%），ST 等特殊标的可能漏标。收益曲线"全部"最多请求 365 天。
 - `chives:panel` 是页面之间的轻量约定：本包只做 id 白名单校验后调用布局服务；若目标面板未注册，`selectPanel` 抛错被吞掉，页面不崩溃但不会切换。
 - 本包无法创建"新会话"：提问条/追问只把草稿填入当前对话输入框并切到对话面板（官方 `inputActions.setDraft`，不调用 `submit`）。"新建会话"按钮在 dsh 自带的侧栏顶部，不在本包控制范围内。
-- 告警分析全文只对 cn-watch 告警可用；market-watch 告警显示其 `detail`，契约没有单条分析正文端点。工作台的"个股抽屉"对榜单里、但不在自选中的股票只能显示榜单字段（无规则/无涨跌停价），页面会明确提示。
+- 告警分析全文只对 chives-radar 告警可用；chives-compass 告警显示其 `detail`，契约没有单条分析正文端点。工作台的"个股抽屉"对榜单里、但不在自选中的股票只能显示榜单字段（无规则/无涨跌停价），页面会明确提示。
 - 只在 Node 24 + macOS 上验证过类型检查、构建与离线测试；真实浏览器渲染与动效由验收者做，本包不声称已验证。

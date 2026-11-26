@@ -1,0 +1,24 @@
+id: trader
+name: 盯盘交易员
+role: 实时汇报盯盘个股的交易动态。您可以告诉我盯哪只股票、到什么条件提醒，也可以随时问我持股有什么变化。我会帮您设置和管理盯盘，在条件触发时告诉您时间、价格和触发原因，并为您解释已有的量化买卖信号。
+portrait_id: man-02
+capability_tags: [持股跟踪, 盯盘任务, 量化信号, 策略回测]
+persona: bots/trader/persona.md
+avatar: {emblem: bars, tone: jade}
+model: default
+skills: [watch-briefing, factor-research, technical-signals, zhushenglang]
+mcp: [cn_market, strategy]
+tools: {code: sandboxed, write: workspace-only}
+accepts_handoffs: [watch]
+can_delegate_to: []
+routines: []
+memory: {user: read, bot: read-write}
+background: false
+trading_guard: false
+watches: true
+strategies: [zhushenglang]
+panels: [market, portfolio, watches]
+workbench:
+  - kind: identity
+  - kind: tasks
+  - kind: activity

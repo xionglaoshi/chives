@@ -21,7 +21,10 @@ if not re.fullmatch('[a-z0-9_-]+', bot):
     raise ValueError('invalid bot')
 root = data / 'bots' / bot
 workspace_path = os.environ.get('CHIVES_BOT_WORKSPACE', '').strip()
-workspace = Path(workspace_path).resolve() if workspace_path else root / 'workspace'
+workspace = Path(workspace_path).resolve() if workspace_path else (
+    data.parent / 'workspace/bots/ceo' if bot == 'ceo' and data.name == 'user-data'
+    else root / 'workspace'
+)
 config = root / 'profile/resources.json'
 profile = json.loads(config.read_text()) if config.exists() else {}
 profile.update(json.loads(os.environ.get('CHIVES_EFFECTIVE_RESOURCES', '{}')))
@@ -74,7 +77,7 @@ def internal_call(route, params):
     req=urllib.request.Request(url,data=json.dumps(params).encode(),headers={
         'Content-Type':'application/json','Authorization':'Bearer '+os.environ['CHIVES_SESSION_TOKEN']})
     try:
-        with urllib.request.urlopen(req, timeout=30) as response:
+        with urllib.request.urlopen(req, timeout=75 if route == "desk/briefing" else 30) as response:
             return json.load(response)
     except urllib.error.HTTPError as error:
         message = json.load(error).get('error', {})
@@ -92,11 +95,11 @@ def recall_memory(query: str = '') -> dict:
 
 
 def inspect_database(database: str, table: str = '', limit: int = 10) -> dict:
-    """列出 SQLite 表或抽样读表。总调度传 chives-databases 枚举全部业务数据库，再传返回的数据库名。"""
+    """列出 SQLite 表或抽样读表。总经理传 chives-databases 枚举全部业务数据库，再传返回的数据库名。"""
     selected_dbs = profile.get('databases',['bot-library'])
     stores = {}
-    if bot == 'operator' and 'chives-databases' in selected_dbs:
-        from operator_documents import databases
+    if bot == 'ceo' and 'chives-databases' in selected_dbs:
+        from ceo_documents import databases
         stores = databases(data, data.parent/'runtime')
         if database in ('','chives-databases'):
             return {'databases':sorted(stores)}
@@ -136,7 +139,7 @@ def research_library() -> Path:
 
 def publish_research(topic: str, conclusion: str, as_of: str, source_url: str, method: str) -> dict:
     """发布行业或市场研究，保留日期、方法、结论和可追溯原文。同题同日同源可更新。"""
-    if bot not in ('research', 'operator'):
+    if bot not in ('research', 'ceo'):
         raise ValueError('此 Bot 未获发布权限')
     topic, conclusion, method, source_url = (v.strip() for v in (topic, conclusion, method, source_url))
     if not all((topic, conclusion, method)) or len(topic)>300 or max(len(conclusion),len(method))>30000:
@@ -171,7 +174,7 @@ def find_research(query: str = '', limit: int = 10) -> list[dict]:
 
 
 tools=[read_skill,save_report,remember,recall_memory,inspect_database,find_research]
-if bot in ("research","operator"):
+if bot in ("research","ceo"):
     tools.append(publish_research)
 repo = Path(__file__).resolve().parent.parent
 catalog = json.loads((repo/'config/equity-tools.json').read_text())
@@ -194,47 +197,48 @@ async def browser_research(url: str, steps: list[BrowserStep] | None = None, scr
     return await asyncio.to_thread(research_page, url, steps or [], directory)
 
 
-if bot == "operator":
-    from operator_documents import read_document, write_document
+if bot == "ceo":
+    from ceo_documents import read_document
 
     def read_local_document(mount: str = "", path: str = "", offset: int = 0) -> dict:
-        """列出本机文档目录、查看条目或分段读取 UTF-8 文件。留空列出目录。"""
-        return read_document(data, mount, path, offset)
-
-    def write_local_document(mount: str, path: str, text: str, expected_sha256: str = "") -> dict:
-        """创建或更新本机文档。覆盖已有文件时传入读取得到的 SHA-256，长期用户知识写 user-wiki。"""
-        import user_archive
-        with user_archive.locked(data):
-            result = write_document(data, mount, path, text, expected_sha256)
-            if mount == "user-wiki":
-                user_archive.reindex(data/"user")
-            return result
-
-    def update_user_attribute(key: str, previous: object, value: object, evidence: str, reason: str) -> dict:
-        """总调度直接更新共享用户属性。提供旧值、新值、证据与理由，保留任务来源和变更历史。"""
-        return internal_call("operator/attribute", dict(key=key,previous=previous,value=value,evidence=evidence,reason=reason))
+        """读取本岗位工作文件及已获准的客户材料。留空返回可读目录。"""
+        allowed = {"workspace"}
+        if policy.get("databaseRead") is not False:
+            allowed.update(("preferences", "user-wiki"))
+        if not mount:
+            return {"roots": sorted(allowed)}
+        if mount not in allowed or (mount == "workspace" and Path(path).parts[:1] == ("uploads",) and policy.get("attachmentsRead") is False):
+            raise ValueError("当前资料不在获准范围。")
+        result = read_document(data, mount, path, offset)
+        if mount == "workspace" and not Path(path).parts and policy.get("attachmentsRead") is False and "entries" in result:
+            result["entries"] = [name for name in result["entries"] if name != "uploads/"]
+        return result
 
     tools.append(read_local_document)
-    if policy.get("workspaceWrite") is not False:
-        tools.append(write_local_document)
-    if policy.get("memoryWrite") is not False:
-        tools.append(update_user_attribute)
 
 tools.append(browser_research)
 for tool in tools:
     if tool.__name__ in selected:
         server.tool()(tool)
-if bot == 'operator':
+if bot in {'analyst', 'cio'}:
     @server.tool()
     def published_valuation(code: str) -> dict:
-        """读取服务器已发布的合理股价和后市判断。证券代码带交易所后缀，未发布则返回空。"""
+        """读取服务器已发布的合理股价和后市判断。证券代码带交易所后缀。"""
         return internal_call("published-valuation", {"code": code})
 
+if bot in {'analyst', 'trader', 'cro', 'cio'}:
+    @server.tool()
+    def portfolio_snapshot() -> dict:
+        """只读获取用户持仓账本。行情和数据时间需用行情工具核对。"""
+        return internal_call("desk/portfolio", {})
+
+if bot in {'analyst', 'cro', 'cio', 'ceo'}:
     @server.tool()
     def user_watchlist(action: str = "read") -> dict | list:
-        """读取用户关注（自选股）。用户明确发出「确认加入用户关注：完整证券代码」后才用 add。"""
-        return internal_call("operator/watchlist", {"action": action})
+        """读取用户关注。总经理核对关注变动并取得本人明确确认后可添加，其他岗位只读。"""
+        return internal_call("desk/watchlist", {"action": action})
 
+if bot == 'ceo':
     from research_bridge import ResearchBridge
     research = ResearchBridge(json.loads(os.environ.get('CHIVES_RESEARCH_SERVERS', '[]')))
 
@@ -260,39 +264,71 @@ if bot == 'operator':
 
 
 @server.tool()
-def read_user_attributes(keys: list[str]) -> list:
-    """按 A01 等编号或英文键查共享属性、取值口径和现值；空列表返回目录。"""
-    return internal_call('user/attributes', {'keys':keys})
+def employee_roster() -> list:
+    """读取每位同事的岗位、职责及实时聘用状态。"""
+    return internal_call('desk/roster', {})
 
 
 @server.tool()
-def propose_user_attribute(key: str, value: object, quote: str, reason: str, alternatives: str) -> dict:
-    """依据本次对话中的本人原话提议新属性值。列出理由和其他解释。返回审核状态，merged 为真才已生效。"""
-    return internal_call('user/propose',dict(key=key,value=value,quote=quote,reason=reason,alternatives=alternatives))
+def handoff_request(intent: str, brief: str) -> dict:
+    """将当前客户的明确请求交给承办同事。intent 取 employee_roster 中承接岗位的 accepts 项。原话由系统绑定，brief 写事项说明，返回办理状态及入口。"""
+    return internal_call('desk/handoff', {'intent':intent,'brief':brief})
 
 
-@server.tool()
-def find_user_memory(query: str) -> list:
-    """按证券、委托或用户观点查个人 Wiki，返回少量片段与页名。"""
-    return internal_call('user/search', {'query':query})
+if bot == 'trader':
+    @server.tool()
+    def technical_watch(action: str = 'list', code: str = '') -> dict | list:
+        """默认技术盯盘；客户点名即 start，无需阈值。list、pause、resume、delete 管理同一只股票。另有价位条件用 watch_plan_create 叠加。"""
+        return internal_call('desk/technical', {'action':action,'code':code})
 
 
-@server.tool()
-def read_style_cards(ids: list[str]) -> list:
-    """按编号读取用户风格卡片，如 ["C25","C31"]。空列表读取全部；含状态、判断、关联字段及任务建议。"""
-    return internal_call('profile/cards', {'ids':ids})
+if bot in {'cio','cro'}:
+    @server.tool()
+    def briefing_inputs(offset: int = 0, flow_code: str = '') -> dict:
+        """取本次简报一致截稿的全部股票池、新闻覆盖及榜单。重复传 nextOffset 直至为空。可传 flow_code 读取该股最近三个已收盘交易日资金流。"""
+        return internal_call('desk/briefing', {'offset':offset,'flowCode':flow_code})
 
 
-@server.tool()
-def profile_options(ids: list[str]) -> list:
-    """按百题题号（如57）或画像参数名读取当前选项、答案，供澄清问题使用。选项索引从0起。"""
-    return internal_call('profile/options', {'ids':ids})
+if bot == 'ceo':
+    @server.tool()
+    def customer_behavior(code: str = '', mode: str = '', days: int = 90) -> dict:
+        """按证券、期间和 live 或 simulation 总结已记录成交，结合真实表述和近期记忆辨认本次资金用途。"""
+        return internal_call('desk/behavior',{'code':code,'mode':mode,'days':days})
+
+    @server.tool()
+    def read_user_attributes(keys: list[str]) -> list:
+        """按 A01 等编号或英文键查共享属性、取值口径和现值；空列表返回目录。"""
+        return internal_call('user/attributes', {'keys':keys})
 
 
-@server.tool()
-def propose_profile_change(changes: dict, reason: str) -> dict:
-    """用户说明长期偏好需要更正时提出改动。如 {"57":{"choice":2}}。多选用choices数组。逐条向用户展示旧值、新值及返回的确认短语，等待本人确认。"""
-    return internal_call('profile/propose', {'changes':changes,'reason':reason})
+    @server.tool()
+    def propose_user_attribute(key: str, value: object, quote: str, reason: str, alternatives: str) -> dict:
+        """依据本次对话中的本人原话提议新属性值。列出理由和其他解释。向本人列出原值、新值、影响和确认短语；等待二次确认。"""
+        return internal_call('user/propose',dict(key=key,value=value,quote=quote,reason=reason,alternatives=alternatives))
+
+
+    @server.tool()
+    def find_user_memory(query: str) -> list:
+        """按证券、委托或用户观点查个人 Wiki，返回少量片段与页名。"""
+        return internal_call('user/search', {'query':query})
+
+
+    @server.tool()
+    def read_style_cards(ids: list[str]) -> list:
+        """按编号读取用户风格卡片，如 ["C25","C31"]。空列表读取全部；含状态、判断、关联字段及任务建议。"""
+        return internal_call('profile/cards', {'ids':ids})
+
+
+    @server.tool()
+    def profile_options(ids: list[str]) -> list:
+        """按百题题号（如57）或画像参数名读取当前选项、答案，供澄清问题使用。选项索引从0起。"""
+        return internal_call('profile/options', {'ids':ids})
+
+
+    @server.tool()
+    def propose_customer_note(destination: str, text: str, quote: str, reason: str) -> dict:
+        """客户提出改档时拟定近期事项 recent、长期偏好 preferences 或主题笔记 thesis/research/watch/review。逐字引用客户原话，向本人展示影响及确认短语。"""
+        return internal_call('user/propose-note',dict(destination=destination,text=text,quote=quote,reason=reason))
 
 
 if __name__=='__main__':

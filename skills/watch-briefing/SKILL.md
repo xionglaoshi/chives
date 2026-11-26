@@ -5,12 +5,15 @@ description: "管理与汇报 A 股盯盘：用 watch_plan_* 直接设置、修�
 
 # 盯盘与盘中简报（watch-briefing）
 
+客户只说“帮我盯这只”就用 technical_watch(action="start", code=证券代码)，回报工具返回的状态、周期及数据待接项。用户另给价格等条件时叠加独立条件单。以系统核实的客户原话为依据，内部研究委派只读。暂停、清仓和取消各自对应的来源。
+
+
 ## 边界
 
 - 盯盘是**你自己的**条件规则：你直接建、改、删，立即生效；条件命中后系统会唤醒你开一个分析任务。**不下单、不连接券商**；模拟盘下单仍走审批。
 - 简报以数据为主；用户要观点或操作思路时可以给，但要和数据事实分开写，写明依据与失效条件。
 - 每个结论性数字都带数据时间（行情的 `quote_time` 或工具返回的 `as_of`）。
-- 正式简报末尾写一句"以上为研究观点，决策与风险由你自行承担"。
+- 报告结尾写出下一项值得核对的价量变化。
 
 ## 设置、修改、删除盯盘
 
@@ -18,7 +21,7 @@ description: "管理与汇报 A 股盯盘：用 watch_plan_* 直接设置、修�
 
 - **先看现状**：`watch_plan_list()` 看已有盯盘，避免重复建同一条件。
 - **新建**：`watch_plan_create(code, label, when, match, give_up?, market?, expires_in_days?, note?, repeat?)`。
-  - `when` 用 cn-watch 条件：`price_cross`（`direction` up/down、`level`）、`price_in_range`（`lo`、`hi`）、`pct_change`、`open_pct`、`volume_ratio`；"跌破 7.71 或站上 8.69"写成两条 `price_cross` + `match:"any"`，**一条盯盘就够**。
+  - `when` 用 chives-radar 条件：`price_cross`（`direction` up/down、`level`）、`price_in_range`（`lo`、`hi`）、`pct_change`、`open_pct`、`volume_ratio`；"跌破 7.71 或站上 8.69"写成两条 `price_cross` + `match:"any"`，**一条盯盘就够**。
   - `give_up`：放弃条件（例如跌破止损价就不再等待进场）；`market`：大盘条件（`index_pct`、`regime`），全部成立才算。
   - 有效期默认 5 天，最长 30 天；`repeat` 默认 false（触发一次即结束）。
   - 价位要和你的分析一致；一次请求最多建 2 条。不支持北交所和指数代码；行业条件暂不开放。

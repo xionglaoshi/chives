@@ -1,3 +1,4 @@
+import type { BotWorkbenchSection } from '../api/protocol.js';
 /** Declarative bot manifest types and the strict schema used to load them. */
 
 import { pixelIconIds } from './pixel-icons.js';
@@ -56,7 +57,10 @@ export interface BotManifest {
   id: string;
   name: string;
   role: string;
+  workbench?: BotWorkbenchSection[] | undefined;
+  portrait_id?: string | undefined;
   headline?: string | undefined;
+  capability_tags?: string[] | undefined;
   persona: string;
   avatar: { emblem: Emblem; tone: Tone };
   skills: string[];
@@ -64,6 +68,8 @@ export interface BotManifest {
   tools: { code: 'sandboxed'; write: 'workspace-only' };
   model: string;
   can_delegate_to: string[];
+  accepts_handoffs?: string[] | undefined;
+  factory_tasks?: 'customer_archive_daily'[] | undefined;
   routines: RoutineManifest[];
   memory: { user: 'read' | 'none'; bot: 'read-write' | 'read' | 'none' };
   background: boolean;
@@ -75,9 +81,14 @@ export interface BotManifest {
   watches?: boolean | undefined;
 }
 
-/** A bot may create, edit and list watches when it opts in or shows the watches panel. */
-export function botHasWatches(bot: Pick<BotManifest, 'panels' | 'watches'>): boolean {
-  return bot.watches === true || (bot.panels ?? []).includes('watches');
+export const WATCH_TRADER_ID = 'trader';
+export const INVESTMENT_DIRECTOR_ID = 'cio';
+export const HOLDINGS_READER_IDS: ReadonlySet<string> = new Set(['analyst', WATCH_TRADER_ID, 'cro', INVESTMENT_DIRECTOR_ID]);
+export const WATCH_REFERRAL = '盯盘由盯盘交易员承办。请使用 handoff_request 转述客户原话，并回报受理状态。';
+
+/** Watch-plan tools are reserved for the designated trading desk. */
+export function botHasWatches(bot: Pick<BotManifest, 'id' | 'panels' | 'watches'>): boolean {
+  return bot.id === WATCH_TRADER_ID && (bot.watches === true || (bot.panels ?? []).includes('watches'));
 }
 
 export interface BotCatalog {
@@ -128,7 +139,14 @@ export const botManifestSchema = z
     id: z.string().min(1),
     name: z.string().min(1),
     role: z.string().min(1),
+    workbench: z.array(z.object({
+      kind: z.enum(['identity', 'tasks', 'activity']),
+      title: z.string().trim().min(1).optional(),
+    }).strict()).min(1).refine(items => new Set(items.map(item => item.kind)).size === items.length,
+      '工作台模块不能重复').optional(),
+    portrait_id: z.string().regex(/^[a-z0-9-]+$/).optional(),
     headline: z.string().min(1).optional(),
+    capability_tags: z.array(z.string().min(1)).max(8).optional(),
     persona: z.string().min(1),
     avatar: avatarSchema,
     skills: z.array(z.string().min(1)),
@@ -136,6 +154,8 @@ export const botManifestSchema = z
     tools: toolsSchema,
     model: z.string().min(1),
     can_delegate_to: z.array(z.string().min(1)),
+    accepts_handoffs: z.array(z.string().regex(/^[a-z][a-z0-9_-]{0,47}$/)).optional(),
+    factory_tasks: z.array(z.literal('customer_archive_daily')).max(1).optional(),
     routines: z.array(routineSchema),
     memory: memorySchema,
     background: z.boolean(),

@@ -1,3 +1,4 @@
+import { BotWorkbench } from './components/BotWorkbench';
 import { useFollowupSuggestion } from './hooks/useFollowupSuggestion';
 import {initializationPrompts,useInitialization,type InitializationStep} from './components/DockInitialization';
 import { Hotspots } from './components/Hotspots';
@@ -304,15 +305,15 @@ export function App(): ReactElement {
   const orderSaving = useRef(false);
   const [orderError,setOrderError] = useState('');
   const moveDot = async (source:string,target:string) => {
-    if(orderSaving.current || source===target || source==='operator' || target==='operator') return;
-    const ids=bots.filter(b=>b.id!=='operator').map(b=>b.id);
+    if(orderSaving.current || source===target || source==='ceo' || target==='ceo') return;
+    const ids=bots.filter(b=>b.id!=='ceo').map(b=>b.id);
     const from=ids.indexOf(source), to=ids.indexOf(target);
     if(from<0 || to<0) return;
     ids.splice(from,1);ids.splice(to,0,source);
     orderSaving.current=true;
     try {
       await saveBotOrder(ids);
-      const ranks=new Map(['operator',...ids].map((id,i)=>[id,i]));
+      const ranks=new Map(['ceo',...ids].map((id,i)=>[id,i]));
       setBots(list=>[...list].sort((a,b)=>(ranks.get(a.id)??ranks.size)-(ranks.get(b.id)??ranks.size)));
       setOrderError('');
     } catch {setOrderError('排序未保存，请重试。');reload();}
@@ -355,15 +356,15 @@ export function App(): ReactElement {
     setSearch(null);
     setContinuation(null);
     setLocateTarget(target?.messageId ?? null);
-    setLocateTaskId(target?.taskId ?? null);
+    setLocateTaskId(target?.taskId ?? new URLSearchParams(window.location.hash.split('?')[1]).get('task'));
     setHighlightMessageId(null);
     previewTriggerRef.current = null;
   }, [currentRouteKey,selectedId]);
 
   useEffect(() => {
-    if (!askFile || route.name !== 'conversation' || selectedId !== 'operator') return;
+    if (!askFile || route.name !== 'conversation' || selectedId !== 'ceo') return;
     const request = new AbortController();
-    void uploadBotFile('operator', askFile, request.signal)
+    void uploadBotFile('ceo', askFile, request.signal)
       .then(attachment => {
         if (!request.signal.aborted) setAttachments(current => [...current, attachment]);
       })
@@ -423,8 +424,10 @@ export function App(): ReactElement {
   );
 
   const openNotification = useCallback(
-    async (notification: NotificationDto): Promise<void> => {
-      openConversationTarget({botId: notification.botId, taskId: notification.taskId});
+    async (notification: Pick<NotificationDto, 'id' | 'botId' | 'taskId' | 'readAt'>, messageId?: string, requireRead = false): Promise<void> => {
+      if (notification.taskId.startsWith('system:updates.')) window.location.hash='/settings?tab=updates';
+      else if (notification.taskId === 'system:doctor') window.location.hash='/settings?tab=kernels';
+      else openConversationTarget({botId: notification.botId, ...(messageId ? { messageId } : { taskId: notification.taskId })});
       if (notification.readAt !== null) return;
       const readAt = new Date().toISOString();
       setNotifications((current) =>
@@ -439,8 +442,14 @@ export function App(): ReactElement {
       );
       try {
         await markNotificationRead(notification.id);
-      } catch {
-        // The local read state is still useful; the next fetch reconciles it.
+      } catch (error) {
+        if (requireRead) {
+          setNotifications(current => current.map(entry =>
+            entry.id === notification.id && entry.readAt === readAt ? { ...entry, readAt: null } : entry));
+          setBots(current => current.map(bot => bot.id === notification.botId
+            ? { ...bot, unreadNotifications: (bot.unreadNotifications ?? 0) + 1 } : bot));
+          throw error;
+        }
       }
     },
     [openConversationTarget, setBots]
@@ -453,7 +462,7 @@ export function App(): ReactElement {
       if (proactiveSettings?.importantOnly !== false && notification.level === 'info') return;
       if (route.name === 'conversation' && selectedId === notification.botId) return;
       try {
-        const popup = new Notification(notification.title, { body: notification.body });
+        const popup = new Notification(notification.botName ? `${notification.botName} · ${notification.title}` : notification.title, { body: notification.body });
         popup.onclick = () => {
           window.focus();
           void openNotification(notification);
@@ -666,21 +675,27 @@ export function App(): ReactElement {
       url.hash='';
       window.open(url.toString(),'chives-style-interview');
     }else{
-      openConversationTarget({botId:'operator'});
-      if(step==='watch')void send('operator',initializationPrompts.watch);
+      const botId = step === 'watch' ? 'trader' : 'cio';
+      if (!hiredBots.some(bot => bot.id === botId)) {
+        navigate({name:'overview'});
+        setNotice(step === 'watch' ? '请先聘用盯盘交易员。' : '请先聘用投研总监。');
+        return;
+      }
+      openConversationTarget({botId});
+      if(step==='watch')void send(botId,initializationPrompts.watch);
       else if(!initialization.briefingPending){
         void desk<{pending:boolean}>('initial-briefing','POST',{action:'start'})
           .then(result=>{
             initialization.setBriefingPending(result.pending);
-            if(result.pending)void send('operator',initializationPrompts.briefing);
+            if(result.pending)void send(botId,initializationPrompts.briefing);
           })
-          .catch(()=>setNotice('暂时无法打开每日投研简报，请重试。'));
+          .catch(()=>setNotice('暂时无法打开盘前简报，请重试。'));
       }
     }
   }
 
   function askOperator(prompt: string, askFile: File) {
-    openConversationTarget({botId: 'operator', draft: prompt, askFile});
+    openConversationTarget({botId: 'ceo', draft: prompt, askFile});
   }
 
   const handleSend = useCallback(
@@ -930,7 +945,7 @@ export function App(): ReactElement {
         <main className="main">
           {orderError && <p role="alert">{orderError}</p>}
           {route.name==='workspace' && route.tool==='holdings' && <Holdings onAskExpert={askOperator}/>}
-          {route.name==='workspace' && route.tool==='watchlist' && <Watchlist onConversation={()=>openConversationTarget({botId:'operator'})}/> }
+          {route.name==='workspace' && route.tool==='watchlist' && <Watchlist onConversation={()=>openConversationTarget({botId:'cio'})}/> }
           {route.name==='workspace' && route.tool==='portrait' && <section className="desk-settings desk-workspace-portrait"><div className="desk-content"><div className="desk-page">
             <header className="desk-header"><p>工作台</p><h2>{workbenchTools.portrait}</h2><p>{portraitDescription}</p></header>
             <StyleAssessment onAskExpert={askOperator} interviewReturn="workspace"/>
@@ -947,7 +962,7 @@ export function App(): ReactElement {
           {route.name==='workspace' && route.tool!=='market' && route.tool!=='holdings' && route.tool!=='watchlist' && route.tool!=='portrait' && route.tool!=='trends' && <section className="workbench-placeholder"><h1>{workbenchTools[route.tool]}</h1><p>功能开发中</p></section>}
           {route.name === 'settings' ? (
             <Settings onAskExpert={askOperator} initializeModel={initializationFocus==='model'} onModelInitialized={()=>setInitializationFocus(null)}
-              onOpenProfile={(botId) => navigate({ name: 'profile', botId })}
+              onOpenProfile={(botId) => navigate({ name: 'profile', botId, view: 'tools' })}
             />
           ) : null}
 
@@ -957,9 +972,9 @@ export function App(): ReactElement {
               loading={loading}
               error={serverError}
               onRetry={reload}
+              onPortraitSaved={applyBotUpdate}
               onEmploymentSaved={states => setBots(list => list.map(bot => ({...bot, hired: states.get(bot.id) ?? bot.hired ?? true})))}
-              onOpenConversation={(botId) => navigate({ name: 'conversation', botId })}
-              onOpenProfile={(botId) => navigate({ name: 'profile', botId })}
+              onOpenProfile={(botId, view) => navigate({ name: 'profile', botId, view })}
             />
           ) : null}
 
@@ -974,11 +989,11 @@ export function App(): ReactElement {
               )
             ) : (
               <BotProfile
+                view={route.view}
                 bot={selectedBot}
                 onOpenConversation={(botId) =>
                   navigate({ name: 'conversation', botId })
                 }
-                onBotUpdated={applyBotUpdate}
                 onOpenDeliverable={openDeliverable}
                 onOpenWorkspaceMap={openWorkspaceMap}
                 activeDeliverableId={preview?.deliverable.id ?? null}
@@ -1006,7 +1021,7 @@ export function App(): ReactElement {
                 {dragActive ? <div className="conversation__drop">松开以上传文件</div> : null}
                 <div className="conversation__body">
                 <div className="conversation__chat">
-                {selectedBot.id==='operator'&&initialization.briefingPending&&
+                {selectedBot.id==='cio'&&initialization.briefingPending&&
                   <form className="initial-briefing-confirmation" onSubmit={event=>{
                     event.preventDefault();
                     if(briefingBusy||!briefingReply.trim())return;
@@ -1016,13 +1031,13 @@ export function App(): ReactElement {
                       .then(()=>{
                         initialization.setBriefingPending(false);
                         setBriefingReply('');
-                        setNotice('每日投研简报已启用，每周一至周五北京时间 09:00。');
+                        setNotice('盘前简报已启用，默认在 A 股交易日北京时间 08:30。');
                       })
-                      .catch(()=>setBriefingError('暂时无法创建每日投研简报，请重试。'))
+                      .catch(()=>setBriefingError('暂时无法创建盘前简报，请重试。'))
                       .finally(()=>setBriefingBusy(false));
                   }}>
-                    <strong>每日投研简报</strong>
-                    <p>每周一至周五北京时间 09:00，汇报持仓与关注、机会榜单精选、A股新闻及全球市场新闻。</p>
+                    <strong>盘前简报</strong>
+                    <p>默认在 A 股交易日北京时间 08:30，汇报持仓与关注、机会榜单精选、A股新闻及全球市场新闻。</p>
                     <label>你还想增加什么？
                       <input value={briefingReply} onChange={event=>setBriefingReply(event.target.value)}
                         placeholder="填写追加事项，或回复「没有」" maxLength={1000} required/>
@@ -1159,6 +1174,23 @@ export function App(): ReactElement {
             )
           ) : null}
         </main>
+        {showConversation && selectedBot && <BotWorkbench
+          key={selectedBot.id} bot={selectedBot}
+          runningTask={timelineMatchesBot && selectedBot.runningTaskId ? timeline.state.tasks[selectedBot.runningTaskId] : undefined}
+          watchRevision={watchRevision}
+          revision={JSON.stringify([
+            selectedBot.runningTaskId, latestFollowupMessage?.id,
+            notifications.filter(entry => entry.botId === selectedBot.id).map(entry => [entry.id, entry.readAt]),
+          ])}
+          previewOpen={preview !== null} onClosePreview={closePreview}
+          onLocateTask={id => openConversationTarget({ botId: selectedBot.id, taskId: id })}
+          onOpenActivity={entry => {
+            if (entry.kind === 'notification') return openNotification({
+              id: entry.id, botId: selectedBot.id, taskId: entry.taskId, readAt: entry.readAt,
+            }, entry.messageId ?? undefined, true);
+            openConversationTarget({ botId: selectedBot.id, ...(entry.messageId ? { messageId: entry.messageId } : { taskId: entry.taskId }) });
+          }}
+        />}
         {preview !== null ? (
           <DeliverablePreview
             deliverable={preview.deliverable}

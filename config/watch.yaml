@@ -1,4 +1,4 @@
-# 盯盘引擎的实际配置（你自己的文件，改完执行 scripts/watch-engine.sh restart 生效）。
+# Chives 雷达正式配置（你自己的文件，改完执行 scripts/watch-engine.sh restart 生效）。
 # 2026-11-17 起自选与通用规则清空：盯盘由 bot 设置的提醒驱动（提醒会自动加入监控代码）。旧值见 git 历史。校验：scripts/watch-engine.sh check
 watchlist: []
 polling:

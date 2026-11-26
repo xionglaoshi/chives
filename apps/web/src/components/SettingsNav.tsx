@@ -4,7 +4,7 @@ export const portraitDescription = '完成评测问卷、补充各类资料（�
 export const sections=[
  {label:'用户信息',items:[['account','用户资料','管理工作台中显示的身份和联系方式。'],['risk','风格评估',portraitDescription],['history','用户数据','回顾研究中的问题、证券和 Bot 记忆。']]},
  {label:'通用设置',items:[['messages','消息权限','决定 Bot 何时可以主动联系你。'],['channels','通讯频道','连接消息平台，将 Bot 提醒送到指定会话。'],['appearance','外观设置','调整工作台显示、时间格式和研究语言。']]},
- {label:'Agent 设置',items:[['chat','对话细节','选择任务进行时看到的细节，以及如何处理后续消息。'],['permissions','权限设置','为 Bot 资产设置统一上限，Bot 档案可以进一步收紧。'],['capabilities','能力管理','为 Bot 接入第三方 MCP，管理可用工具。'],['tasks','任务管理','查看各 Bot 的定时任务，调整自动执行安排。'],['kernels','内核设置','查看 dsh 版本，检查并选择是否升级。'],['models','模型设置','管理模型连接、测试可用性并选择默认模型。']]},
+ {label:'Agent 设置',items:[['chat','对话细节','选择任务进行时看到的细节，以及如何处理后续消息。'],['permissions','权限设置','为 Bot 资产设置统一上限，Bot 档案可以进一步收紧。'],['capabilities','能力管理','为 Bot 接入第三方 MCP，管理可用工具。'],['tasks','任务管理','查看和调整所有 Bot 的定时与条件任务。'],['kernels','内核设置','查看 dsh 版本，检查并选择是否升级。'],['models','模型设置','管理模型连接、测试可用性并选择默认模型。']]},
  {label:'系统维护',items:[['help','技术文档','常见操作和工作台运行说明。'],['backup','备份及导入','保存个人配置，在本机恢复已备份的数据。'],['updates','升级更新','比较更新仓库版本，按组件应用更新。']]}
 ];
 const paths:Record<string,string>={

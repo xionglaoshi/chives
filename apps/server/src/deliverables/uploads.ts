@@ -90,6 +90,10 @@ function assertMagic(name: string, data: Buffer): void {
       }
       return true;
     }
+    if (extension === 'silk') return startsWith(data, Buffer.from('#!SILK_V3')) || startsWith(data, Buffer.from('\x02#!SILK_V3'));
+    if (extension === 'ogg') return startsWith(data, Buffer.from('OggS'));
+    if (extension === 'mp3') return startsWith(data, Buffer.from('ID3')) || (data[0] === 0xff && ((data[1] ?? 0) & 0xe0) === 0xe0);
+    if (extension === 'm4a') return data.subarray(4, 8).toString('ascii') === 'ftyp';
     if (extension === 'pdf') return startsWith(data, PDF_MAGIC);
     if (extension === 'png') return startsWith(data, PNG_MAGIC);
     if (extension === 'jpg' || extension === 'jpeg') return startsWith(data, JPEG_MAGIC);
@@ -154,14 +158,14 @@ export function saveUpload(
   workspace: string,
   rawName: string,
   data: Buffer,
-  options: { now?: Date } = {},
+  options: { now?: Date; channelAudio?: boolean } = {},
 ): SavedUpload {
   if (data.length > MAX_UPLOAD_BYTES) {
     throw new AppError(413, 'payload_too_large', '单个文件不能超过 20 MB');
   }
   const name = sanitizeUploadFileName(rawName);
   const extension = extensionOf(name);
-  if (!ALLOWED_UPLOAD_EXTENSIONS.has(extension)) {
+  if (!ALLOWED_UPLOAD_EXTENSIONS.has(extension) && !(options.channelAudio && ['silk', 'ogg', 'mp3', 'm4a'].includes(extension))) {
     throw new AppError(400, 'unsupported_file_type', `不支持的文件类型：.${extension || '未知'}`);
   }
   assertMagic(name, data);

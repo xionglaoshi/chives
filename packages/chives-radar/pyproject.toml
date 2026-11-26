@@ -1,0 +1,30 @@
+[build-system]
+requires = ['hatchling']
+build-backend = 'hatchling.build'
+
+[project]
+name = 'chives-radar'
+version = '0.1.0'
+description = 'Deterministic A-share watch engine: poll snapshots, evaluate rules, log alerts, serve a read-only local API.'
+readme = 'README.md'
+requires-python = '>=3.12'
+license = { text = 'MIT' }
+authors = [{ name = 'dsh-finance' }]
+dependencies = [
+    'pyyaml>=6.0',
+    'requests>=2.31',
+]
+
+[project.optional-dependencies]
+test = [
+    'pytest>=8.0',
+]
+
+[project.scripts]
+chives-radar = 'chives_radar.cli:main'
+
+[tool.hatch.build.targets.wheel]
+packages = ['src/chives_radar']
+
+[tool.hatch.build.targets.sdist]
+include = ['src/chives_radar', 'tests', 'README.md', 'watch.example.yaml', 'pytest.ini']

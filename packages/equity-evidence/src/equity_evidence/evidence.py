@@ -2,7 +2,7 @@ from datetime import date
 from hashlib import sha256
 from time import time
 import json
-from cn_market_gateway.announcement import PdfExtractionError, extract_pdf_text, pdftotext_path
+from chives_data.announcement import PdfExtractionError, extract_pdf_text, pdftotext_path
 from .storage import library, save, snapshot, digest_id
 from .market import symbol
 from . import filings

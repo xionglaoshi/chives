@@ -145,7 +145,7 @@ def check(work, target):
         check_browser()
         print("Installed backend is healthy; all eight onboarding steps and personal records are empty.")
 
-    workspace = root / "workspace" / "bots" / "operator"
+    workspace = root / "workspace" / "bots" / "ceo"
     workspace.mkdir(parents=True, exist_ok=True)
     (workspace / "prior-report.md").write_text("prior user deliverable", encoding="utf-8")
     cache = root / "public-data" / "mechanical-cache" / "reset-check"
@@ -160,7 +160,7 @@ def check(work, target):
         for key in ("model", "portrait", "profile", "holdings", "watchlist", "weixin", "watch", "briefing"):
             assert state[key] is False, key
         assert not (workspace / "prior-report.md").exists()
-        recovered, = (root / "runtime").glob("user-reset-*/workspace/bots/operator/prior-report.md")
+        recovered, = (root / "runtime").glob("user-reset-*/workspace/bots/ceo/prior-report.md")
         assert recovered.read_text(encoding="utf-8") == "prior user deliverable"
         assert cache.read_text(encoding="utf-8") == "public data"
         print("Factory reset starts a new browser generation and empty workspace while preserving public cache.")

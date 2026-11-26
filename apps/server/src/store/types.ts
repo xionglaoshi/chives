@@ -270,7 +270,7 @@ export interface WatchRecord {
   name: string;
   label: string;
   note: string;
-  /** The complete Plan JSON sent to cn-watch; `id` is always `chives-<id>`. */
+  /** The complete Plan JSON sent to chives-radar; `id` is always `chives-<id>`. */
   plan: JsonRecord;
   repeat: boolean;
   status: WatchStatus;

@@ -1,6 +1,6 @@
 /**
  * Host half: one authenticated, read-only GET route that proxies the local
- * cn-watch engine's `/health`. The browser never learns the engine address and
+ * chives-radar engine's `/health`. The browser never learns the engine address and
  * the route accepts no query parameters; the address comes from CHIVES_ENGINE
  * (or WATCH_PANEL_ENGINE, so both panels can share one deployment) and must be
  * a loopback host.

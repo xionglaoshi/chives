@@ -5,7 +5,6 @@ import type { MessageAttachmentDto } from '@chives/server/protocol';
 
 import { botFileContentUrl } from '../api/client';
 import { formatFileSize } from '../utils/deliverables';
-import { ComposerModelPicker } from './ComposerModelPicker';
 import './Composer.css';
 
 const ACCEPTED_TYPES =
@@ -264,7 +263,6 @@ export function Composer({
             </div>
           )}
         </div>
-        {botId && <ComposerModelPicker key={botId} botId={botId} running={running} disabled={disabled || sending}/>}
         {running && !sendDisabled && <button type="submit" className="composer__send" aria-label="提交后续消息">↑</button>}
         {running ? (
           <button type="button" className="composer__stop" onClick={onStop} aria-label="停止当前任务">

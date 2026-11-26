@@ -637,7 +637,7 @@ export function marketRuleParams(rule: MarketRule): string {
   return entries.map(([key, value]) => `${key}=${String(value)}`).join(' \u00b7 ')
 }
 
-/** Status of a cn-watch alert given its analysis record. */
+/** Status of a chives-radar alert given its analysis record. */
 export function watchAlertStatus(record: AnalysisRecord | undefined): AlertStatus {
   if (!record) return 'pending'
   switch (record.status) {
@@ -681,7 +681,7 @@ function watchDetail(alert: AlertPayload): string {
 }
 
 /**
- * Merge cn-watch and market-watch alerts into one newest-first timeline.
+ * Merge chives-radar and market-watch alerts into one newest-first timeline.
  * Timestamps are compared as ISO text; invalid/missing times sort last.
  */
 export function buildTimeline(

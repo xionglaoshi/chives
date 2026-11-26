@@ -236,6 +236,24 @@ def portrait(data):
     if not result:
         paper.text("尚未保存个人风格评估。完成工作台问卷后，可在这里阅读个人报告。")
         return paper
+    if result.get("version") == 4:
+        paper.heading("总经理 · 客户访谈")
+        paper.text(f"已作答 {result['answered']} 题")
+        paper.text(result.get("overview"))
+        for key, title in (("preferences","长期服务约定"),("recent","访谈时交接的近期事项")):
+            if result.get(key):
+                paper.heading(title)
+                for row in result[key]:
+                    paper.text(row["text"])
+        for status in ("待核实","已采纳"):
+            rows = [r for r in result["findings"] if r["status"] == status]
+            paper.heading(f"{status} · {len(rows)} 项")
+            for row in rows:
+                value = row["value"]
+                label = ("是" if value else "否") if isinstance(value,bool) else "、".join(value) if isinstance(value,list) else str(value)
+                paper.text(row["label"] + (" · " + label if value is not None else ""), "strong")
+                paper.text(row["reason"] + "（" + "、".join(row["refs"]) + "）")
+        return paper
     report = result.get("report") or {}
     risk = report.get("risk") or {}
     grade = risk.get("grade") or result.get("grade")

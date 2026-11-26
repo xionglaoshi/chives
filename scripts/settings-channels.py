@@ -2,6 +2,7 @@
 import asyncio
 import base64
 import contextlib
+import hashlib
 import io
 import json
 import logging
@@ -28,6 +29,9 @@ def save(path,obj):
     with tempfile.NamedTemporaryFile(mode='w',dir=STORE,delete=False) as f:
         json.dump(obj,f); tmp=f.name
     os.replace(tmp,path)
+
+def weixin_binding(config):
+    return hashlib.sha256(json.dumps([config[k] for k in ('account', 'target', 'key')], ensure_ascii=False, separators=(',', ':')).encode('utf-8')).hexdigest()
 
 def qr_image(url):
     import qrcode
@@ -57,6 +61,12 @@ def pair(kind,status):
         if kind=='wecom':
             return channel.pair_wecom(show)
     raise ValueError('pairing expired')
+
+def send_text(kind, config, text):
+    limits = {'telegram': 1900, 'discord': 950, 'slack': 3500, 'feishu': 6000}
+    limit = limits.get(kind, len(text) or 1)
+    for start in range(0, len(text), limit):
+        connect(kind, config, text[start:start + limit])
 
 def connect(kind,cfg,message=None):
     import httpx
@@ -94,6 +104,9 @@ def connect(kind,cfg,message=None):
             if not re.fullmatch(r'[\w.@-]+',account):raise ValueError('account')
             folder=STORE/'hermes/weixin/accounts'
             context=read(folder/(account+'.context-tokens.json')).get(target)
+            inbox = read(STORE/'weixin.inbox')
+            if inbox.get('binding') == weixin_binding(cfg):
+                context = inbox.get('context') or context
             channel.send_weixin(cfg,message,context)
         elif not cfg.get('paired'):raise ValueError('请先扫码验证微信账号')
 
@@ -106,28 +119,102 @@ def main():
         for n in CHANNELS:
             c=read(STORE/(n+'.json')); q=read(STORE/(n+'.pair'))
             if time.time()-q.get('at',0)>300:q={}
-            out.append({'id':n,'configured':bool(c),'verified':bool(c.get('verified')),'enabled':bool(c.get('enabled')),'target':c.get('target',''),'account':c.get('account',''),'pair':q,'qr':n in QR_CHANNELS,'last':c.get('last','')})
+            out.append({'id':n,'configured':bool(c),'verified':bool(c.get('verified')),'enabled':bool(c.get('enabled')),'target':c.get('target',''),'account':c.get('account',''),'pair':q,'qr':n in QR_CHANNELS,'last':read(STORE/(n+'.delivery')).get('last',c.get('last','')) if c else ''})
         return out
     if kind not in CHANNELS:raise ValueError('channel')
     file=STORE/(kind+'.json'); status=STORE/(kind+'.pair'); config=read(file)
+    if kind == 'telegram' and op in ('poll', 'reply', 'ack', 'download', 'media_reply'):
+        from telegram_transport import Telegram
+        if not all(config.get(k) for k in ('verified', 'enabled', 'target', 'key')):
+            return {'enabled': False}
+        transport = Telegram(config)
+        binding = hashlib.sha256(json.dumps([config[k] for k in ('target', 'key')]).encode()).hexdigest()
+        state_file = STORE / 'telegram.inbox'
+        state = read(state_file)
+        if op == 'poll':
+            cursor = state.get('cursor', '') if state.get('binding') == binding else ''
+            return {'binding': binding, **transport.poll(cursor)}
+        if cfgin.get('binding') != binding:
+            raise ValueError('binding changed')
+        if op == 'download':
+            return transport.download(cfgin['item'])
+        if op == 'reply':
+            transport.reply(cfgin['message'])
+        elif op == 'media_reply':
+            transport.media_reply(cfgin['path'])
+        elif op == 'ack':
+            save(state_file, {'binding': binding, 'cursor': cfgin['cursor']})
+        return {'ok': True}
+    if kind == 'weixin' and op in ('poll', 'reply', 'ack', 'download', 'media_reply'):
+        state_file = STORE / 'weixin.inbox'
+        if not all(config.get(k) for k in ('paired', 'verified', 'enabled', 'target', 'key')):
+            return {'enabled': False}
+        if config['target'] != config.get('paired_target', config['target']):
+            return {'enabled': False}
+        binding = weixin_binding(config)
+        state = read(state_file)
+        if state.get('binding') != binding:
+            state = {}
+        if op == 'poll':
+            result = channel.poll_weixin(config, state.get('cursor', ''))
+            messages = []
+            for msg in result.get('msgs') or []:
+                if msg.get('from_user_id') != config['target'] or msg.get('message_type') != 1:
+                    continue
+                ident = msg.get('message_id') or msg.get('seq') or msg.get('create_time_ms')
+                context = msg.get('context_token')
+                texts = [item.get('text_item', {}).get('text', '') for item in msg.get('item_list') or []
+                         if item.get('type') == 1]
+                media = []
+                for item in msg.get('item_list') or []:
+                    field = {2: 'image_item', 3: 'voice_item', 4: 'file_item'}.get(item.get('type'))
+                    typed = item.get(field) or {}
+                    transcript = typed.get('text') if field == 'voice_item' else None
+                    if isinstance(transcript, str) and transcript.strip():
+                        texts.append(transcript)
+                    elif typed.get('media'):
+                        media.append(item)
+                message = '\n'.join(texts).strip()
+                if ident is not None and context and (message or media):
+                    messages.append(dict(id=str(ident), context=context, text=message, media=media[:10]))
+            if messages:
+                save(state_file, {**state, 'binding': binding, 'context': messages[-1]['context']})
+            return dict(binding=binding, cursor=result.get('get_updates_buf') or state.get('cursor', ''), messages=messages)
+        if cfgin.get('binding') != binding:
+            raise ValueError('binding changed')
+        if op == 'download':
+            from weixin_media import download
+            return download(cfgin['item'])
+        if op == 'media_reply':
+            channel.send_weixin_media(config, cfgin['path'], cfgin['context'], cfgin['deliveryId'])
+        elif op == 'reply':
+            channel.send_weixin(config, cfgin['message'], cfgin['context'], cfgin['deliveryId'])
+        else:
+            save(state_file, {**state, 'binding': binding, 'cursor': cfgin['cursor']})
+        return {'ok': True}
     if op=='pair':
         try:
             save(status,{'state':'starting','at':time.time()}); c=pair(kind,status)
-            save(file,{**c,'paired':True,'verified':True,'enabled':False})
-            save(status,{'state':'done','at':time.time()})
+            target = str(c.get('target') or '').strip()
+            save(file, {**c, 'target': target, 'paired_target': target, 'paired': True,
+                        'verified': True, 'enabled': bool(target)})
+            save(status, {'state': 'done' if target else 'awaiting_recipient', 'at': time.time()})
         except Exception:save(status,{'state':'failed','at':time.time()})
     elif op=='save':
         c={**config,**{k:str(cfgin.get(k,'')).strip() for k in ('account','target')}}
+        if kind == 'weixin' and config.get('paired'):
+            c['paired_target'] = config.get('paired_target', config.get('target', ''))
         if cfgin.get('key'):c.update(key=cfgin['key'],paired=False)
         connect(kind,c)
         if cfgin.get('enabled') and not c['target']:raise ValueError('recipient')
         save(file,{**c,'verified':True,'enabled':bool(cfgin.get('enabled'))})
     elif op=='delete':
         file.unlink(missing_ok=True);status.unlink(missing_ok=True)
+        (STORE/(kind+'.delivery')).unlink(missing_ok=True)
     elif op=='send' and config.get('enabled'):
-        try:connect(kind,config,cfgin['message']);config['last']='投递成功'
-        except Exception:config['last']='投递失败，请核对权限和接收会话'
-        save(file,config)
+        try:send_text(kind,config,cfgin['message']);last='投递成功'
+        except Exception:last='投递失败，请核对权限和接收会话'
+        save(STORE/(kind+'.delivery'), {'last': last})
     return {'ok':True}
 
 if __name__=='__main__':

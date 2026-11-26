@@ -21,7 +21,7 @@ mapped = {
 
 def tencent_universe():
     import requests
-    from cn_market_gateway.sources import parse_tencent_quotes
+    from chives_data.sources import parse_tencent_quotes
 
     directory = requests.get(
         "https://www.cninfo.com.cn/new/data/szse_stock.json", timeout=8

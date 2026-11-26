@@ -12,7 +12,7 @@ from typing import Optional
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode, urlsplit
 from urllib.request import Request,urlopen
-from uuid import uuid4
+from uuid import NAMESPACE_URL, uuid4, uuid5
 import httpx
 
 logger=logging.getLogger(__name__)
@@ -248,11 +248,44 @@ def pair_weixin(show):
             if time.monotonic()>=until:break
     raise ValueError('pairing expired')
 
-def send_weixin(cfg,text,context):
+def poll_weixin(cfg, cursor):
+    headers = {**WX_HEADERS, 'AuthorizationType': 'ilink_bot_token',
+               'Authorization': 'Bearer ' + cfg['key'],
+               'X-WECHAT-UIN': base64.b64encode(str(secrets.randbits(32)).encode()).decode()}
+    with httpx.Client(timeout=42, headers=headers) as client:
+        result = client.post(wx_base(cfg.get('base_url') or WX_BASE) + '/ilink/bot/getupdates',
+                             json={'get_updates_buf': cursor, 'base_info': {'channel_version': '2.2.0'}}).raise_for_status().json()
+    if any(result.get(code) not in (0, None) for code in ('ret', 'errcode')):
+        raise ValueError('Weixin polling rejected')
+    return result
+
+
+def wx_client_id(message_id):
+    return str(uuid5(NAMESPACE_URL, 'chives-weixin:' + message_id)) if message_id else str(uuid4())
+
+
+def send_weixin_media(cfg, path, context, message_id):
+    from weixin_media import upload
+    api = wx_base(cfg.get('base_url') or WX_BASE)
+    target = cfg['target']
+    headers = {**WX_HEADERS, 'AuthorizationType': 'ilink_bot_token',
+               'Authorization': 'Bearer ' + cfg['key'],
+               'X-WECHAT-UIN': base64.b64encode(str(secrets.randbits(32)).encode()).decode()}
+    with httpx.Client(timeout=30) as client:
+        item = upload(path, client, api, headers, target)
+        msg = {'from_user_id': '', 'to_user_id': target, 'client_id': wx_client_id(message_id),
+               'message_type': 2, 'message_state': 2, 'context_token': context, 'item_list': [item]}
+        result = client.post(api + '/ilink/bot/sendmessage', headers=headers,
+                             json={'msg': msg, 'base_info': {'channel_version': '2.2.0'}}).raise_for_status().json()
+    if any(result.get(code) not in (0, None) for code in ('ret', 'errcode')):
+        raise ValueError('Weixin media rejected')
+
+
+def send_weixin(cfg,text,context,message_id=None):
     target,token=cfg['target'],cfg['key']
     with httpx.Client(timeout=20,headers=WX_HEADERS) as client:
         for start in range(0,len(text),2000):
-            msg={'from_user_id':'','to_user_id':target,'client_id':uuid4().hex,'message_type':2,'message_state':2,
+            msg={'from_user_id':'','to_user_id':target,'client_id':wx_client_id(None if message_id is None else f'{message_id}:{start}'),'message_type':2,'message_state':2,
                  'item_list':[{'type':1,'text_item':{'text':text[start:start+2000]}}]}
             if context:msg['context_token']=context
             for attempt in range(2):
@@ -261,7 +294,7 @@ def send_weixin(cfg,text,context):
                          'X-WECHAT-UIN':base64.b64encode(str(secrets.randbits(32)).encode()).decode()}
                 response=client.post(wx_base(cfg.get('base_url') or WX_BASE)+'/ilink/bot/sendmessage',headers=headers,json=data).raise_for_status().json()
                 codes=(response.get('ret',0),response.get('errcode',0))
-                if all(v==0 for v in codes):break
+                if all(v in (0, None) for v in codes):break
                 stale=-14 in codes or (-2 in codes and response.get('errmsg','').lower() in ('unknown error','prepare failed'))
                 if not attempt and context and stale:
                     msg.pop('context_token',None);context=None;continue
