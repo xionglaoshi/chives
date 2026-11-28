@@ -43,7 +43,7 @@
 
 ## 为什么选 Chives
 
-这个项目的中文名是「老韭菜」，英文名是 Chives，由 [@xionglaoshi](https://github.com/xionglaoshi) 和 [@shihaoxiong](https://github.com/shihaoxiong) 共同构建。它从 Midas 的工程基线演进而来。两个姊妹产品各有侧重，分别探索不同的技术路线和投资策略，未来正式发布的产品可能结合两边的长处。 [Midas 仓库](https://github.com/shihaoxiong/midas)
+这个项目的中文名是「老韭菜」，英文名是 Chives。Chives 的创意由徐老师提出，项目由 [@xionglaoshi](https://github.com/xionglaoshi) 和 [@shihaoxiong](https://github.com/shihaoxiong) 负责创建。它从 Midas 的工程基线演进而来。两个姊妹产品各有侧重，分别探索不同的技术路线和投资策略，未来正式发布的产品可能结合两边的长处。 [Midas 仓库](https://github.com/shihaoxiong/midas)
 
 **你是不是也有这些痛点？** 你问股票 AI：「这只股票我已经亏了两成，还该继续拿吗？」它从基本面讲到均线和估值，头头是道，末了劝你「谨慎持有，最好再咨询专业顾问」。你随口说一句「我倒挺看好它下半年的表现」，它就可能打开「鼓吹模式」，把估值修复、订单回暖、新品放量一条条列给你。你反问「既然这么好，为什么一直不涨」，它又把同一家公司的利空讲得有鼻子有眼，听得你觉得今天不卖，明天就要爆雷。聊了半天，你连它自己更相信哪种判断都摸不准，怎么放心拿真金白银照着做？
 
